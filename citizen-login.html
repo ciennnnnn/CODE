@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRAPICO — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="base.css?v=20260527k" />
+  <link rel="stylesheet" href="login.css?v=20260527q" />
+</head>
+<body data-role="regular">
+
+
+  
+
+<div class="login-page">
+  <section class="login-left">
+    <div class="login-left-inner">
+      <div class="login-badge">TTMD • QUEZON CITY</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+        <img src="/logo.svg" alt="TRAPICO" style="height:56px;width:auto;filter:brightness(0) invert(1);flex-shrink:0" onerror="this.style.display='none'" />
+        <h1 class="login-title" style="margin:0">TRAPICO.</h1>
+      </div>
+      <p class="login-sub">Traffic Complaint Information System for selected barangays of Quezon City. Report, track, and resolve traffic issues in real time.</p>
+      <div class="login-stats" aria-label="System highlights">
+        <div class="login-stat-block">
+          <span class="login-stat-val">4</span>
+          <span class="login-stat-label">BARANGAYS</span>
+        </div>
+        <div class="login-stat-block">
+          <span class="login-stat-val">30m</span>
+          <span class="login-stat-label">RESPONSE</span>
+        </div>
+      </div>
+      <div class="login-watermark" aria-hidden="true">TRAPICO.</div>
+    </div>
+  </section>
+
+  <section class="login-right">
+    <div class="login-panel">
+      <h2 class="login-form-title">SIGN IN</h2>
+
+      <div class="login-form">
+        <div id="forgot-inline-notif" class="forgot-inline-notif hidden" aria-live="polite">
+          <span>Password reset instructions will be sent to your registered account email.</span>
+          <button type="button" class="forgot-inline-close" onclick="dismissForgotNotif()" aria-label="Dismiss notification">✕</button>
+        </div>
+
+        <div class="form-group login-field-group">
+          <label class="login-label" for="login-user">USERNAME OR EMAIL ADDRESS</label>
+          <input id="login-user" class="login-input" type="text" placeholder="e.g. fae@trapico.gov" autocomplete="username" />
+        </div>
+
+        <div class="form-group login-field-group">
+          <label class="login-label" for="login-pass">PASSWORD</label>
+          <div class="password-wrap">
+            <input id="login-pass" class="login-input login-input-password" type="password" placeholder="******" autocomplete="current-password" />
+            <button type="button" class="password-toggle" id="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">◔</button>
+          </div>
+        </div>
+
+        <div class="login-actions-row">
+          <a href="#" class="forgot-link" onclick="openForgotModal(event)">FORGOT PASSWORD?</a>
+        </div>
+
+        <div id="login-error" class="login-error hidden">Username or email address and password are required.</div>
+
+        <button class="login-submit" id="login-btn" onclick="doLogin()">ACCESS SYSTEM →</button>
+
+        <div class="login-footer-copy">Don't have an account? <a href="/CITIZEN/citizen-signup.html" class="signup-link">Sign up</a></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="forgot-modal-overlay" class="login-modal-overlay hidden" onclick="closeForgotModal(event)" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+  <div class="login-modal-card">
+    <h3 id="forgot-title" class="login-modal-title">FORGOT PASSWORD</h3>
+    <hr class="login-modal-divider" />
+    <p class="login-modal-body">Enter your username or email address. We will send a working reset link to your registered email.</p>
+    <div class="form-group login-field-group" style="margin-bottom:12px;">
+      <label class="login-label" for="forgot-identifier">USERNAME OR EMAIL</label>
+      <input id="forgot-identifier" class="login-input" type="text" placeholder="e.g. rikka or rikka@gmail.com" />
+    </div>
+    <div id="forgot-status" class="login-error hidden" style="margin-bottom:10px;"></div>
+    <button type="button" class="login-modal-close" onclick="submitForgotPassword()">SEND RESET LINK</button>
+    <button type="button" class="login-modal-close" style="margin-top:8px;background:#7d838c" onclick="closeForgotModal()">CLOSE</button>
+  </div>
+</div>
+
+<script src="data.js?v=20260510d"></script>
+<script src="api.js?v=20260510d"></script>
+<script src="login.js?v=20260510l"></script>
+</body>
+</html>

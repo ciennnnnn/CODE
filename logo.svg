@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 138" fill="none">
+  <!-- Road surface fill (ghost depth) -->
+  <path d="M 13 135 C 50 65 30 2 120 2 L 130 2 L 130 18 L 120 18 C 50 18 70 59 27 129 Z"
+        fill="currentColor" opacity="0.11"/>
+  <!-- Outer road edge: enters steeply from bottom-left, curves to go right -->
+  <path d="M 13 135 C 50 65 30 2 120 2 L 130 2"
+        stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  <!-- Inner road edge -->
+  <path d="M 27 129 C 70 59 50 18 120 18 L 130 18"
+        stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  <!-- Centre dashed line -->
+  <path d="M 20 132 C 60 62 40 10 120 10 L 130 10"
+        stroke="currentColor" stroke-width="2.4" stroke-dasharray="9.5 7.5" stroke-linecap="round"/>
+</svg>
