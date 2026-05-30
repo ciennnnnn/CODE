@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRAPICO — Dispatch Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="/base.css" />
+  <link rel="stylesheet" href="dispatch.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="mark">TRAPICO</div>
+      <div class="sub">Command Center</div>
+    </div>
+    <div class="sidebar-role-badge">
+      <span class="srb-icon">📡</span>
+      <div>
+        <div class="srb-name">Cpt. Maria Reyes</div>
+        <div class="srb-label">Dispatch Officer</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-item active" id="nav-dash"      onclick="openPage('dash')">      Command Center      </div>
+      <div class="nav-item"        id="nav-queue"     onclick="openPage('queue')">     Complaint Queue    <span class="nav-badge" id="badge-queue">5</span> </div>
+      <div class="nav-item"        id="nav-active"    onclick="openPage('active')">    Active Cases       <span class="nav-badge" id="badge-active">2</span> </div>
+      <div class="nav-item"        id="nav-officers"  onclick="openPage('officers')">  Field Officers <span class="nav-badge hidden" id="badge-officers-msg">0</span> </div>
+      <div class="nav-item"        id="nav-analytics" onclick="openPage('analytics')"> Analytics          </div>
+      <div class="nav-item"        id="nav-profile"   onclick="openPage('profile')">   My Profile        </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="logout-btn" onclick="logout()">
+        <span>⬡</span><span>Sign Out</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════ MAIN CONTENT ══════════════════════ -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-flex-row">
+        <button class="menu-btn" id="menu-btn" aria-label="Open menu" onclick="toggleSidebar()">☰</button>
+        <span id="topbar-title">Command Center</span>
+      </div>
+      <div class="topbar-right">
+        <style>
+        @media (max-width: 900px) {
+          .topbar {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 8px;
+            height: 54px;
+            min-height: 54px;
+            box-sizing: border-box;
+          }
+          .topbar-flex-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 auto;
+          }
+          #topbar-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-left: 0;
+            text-align: left;
+            letter-spacing: 0.5px;
+          }
+          .menu-btn {
+            margin-right: 8px;
+            margin-left: 0;
+            font-size: 26px;
+            padding: 0 4px;
+          }
+          .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+        }
+        @media (max-width: 540px) {
+          .topbar {
+            padding: 0 2px;
+            height: 48px;
+            min-height: 48px;
+          }
+          #topbar-title {
+            font-size: 17px;
+          }
+          .menu-btn {
+            font-size: 22px;
+            padding: 0 2px;
+          }
+        }
+        </style>
+        <div class="dispatch-status">
+          <span class="ds-dot"></span>
+          <span class="ds-label">System Online</span>
+        </div>
+        <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
+          🔔
+          <div class="notif-dot"></div>
+          <div class="notif-panel hidden" id="notif-panel">
+            <div class="notif-head">Notifications</div>
+            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">3 new complaints submitted — awaiting validation.</div><div class="notif-time">2 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">Ofc. Reyes checked in at Commonwealth Ave.</div><div class="notif-time">8 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">⚠ TRAPICO-000015: Possible duplicate detected.</div><div class="notif-time">15 min ago</div></div></div>
+            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">Ofc. Bautista at capacity — reassignment needed.</div><div class="notif-time">30 min ago</div></div></div>
+          </div>
+        </div>
+        <div class="user-chip" style="cursor:pointer" onclick="openPage('profile')">
+          <img id="topbar-user-photo" src="https://i.pravatar.cc/120?img=68" alt="Cpt. Reyes" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:8px" />
+          <span class="user-chip-name" id="topbar-user-name">Cpt. Reyes</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE BODY -->
+    <main class="page-body">
+
+      <!-- ═══════════════ PAGE: COMMAND CENTER ═══════════ -->
+      <section id="page-dash" class="page-section">
+        <div class="stats-row">
+          <div class="stat-card accent"><div class="stat-card-label">Pending Queue</div><div class="stat-card-val" id="stat-pending">—</div><div class="stat-card-sub">Awaiting validation</div></div>
+          <div class="stat-card accent"><div class="stat-card-label">Duplicate Flags</div><div class="stat-card-val" id="stat-dups">—</div><div class="stat-card-sub">Require review</div></div>
+          <div class="stat-card"><div class="stat-card-label">Active Cases</div><div class="stat-card-val" id="stat-active-count">—</div><div class="stat-card-sub">In field</div></div>
+          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val">91%</div><div class="stat-card-sub">This month</div></div>
+        </div>
+
+        <div class="alert alert-warn" id="dup-alert"></div>
+
+        <div class="dash-grid">
+          <!-- Pending queue preview -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Pending Queue</span>
+              <button class="btn-secondary btn-sm" onclick="openPage('queue')">View All</button>
+            </div>
+            <div id="dash-queue-list"></div>
+          </div>
+
+          <!-- Officer status -->
+          <div class="card">
+            <div class="card-head"><span class="card-title">Field Officer Status</span></div>
+            <div id="dash-officer-list"></div>
+          </div>
+        </div>
+
+        <!-- Officer availability map -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Live Officer Availability Map</span>
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)" id="map-last-updated">Updating…</span>
+          </div>
+          <div id="officer-live-map" style="height:340px;border-radius:8px;overflow:hidden;"></div>
+                </div>
+
+                <!-- FIELD OFFICERS PANEL -->
+                <section id="field-officers-panel" style="margin-top:32px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                    <div class="card-title" style="font-size:1.25rem;font-weight:700;">Field Officers</div>
+                    <button class="btn-primary" style="background:#111;color:#fff;padding:8px 18px;font-weight:600;border-radius:6px;font-size:15px;letter-spacing:0.02em;">+ ADD FIELD OFFICER</button>
+                  </div>
+                  <div class="fo-grid">
+                    <!-- Officer Card 1: Ramon Reyes -->
+                    <div class="fo-card">
+                      <div class="fo-header">
+                        <div class="fo-avatar" style="background:#111;">RR</div>
+                        <div class="fo-info">
+                          <div class="fo-name">Ofc. Ramon Reyes</div>
+                          <div class="fo-brgy">Brgy. Commonwealth</div>
+                        </div>
+                        <span class="fo-status available">AVAILABLE</span>
+                      </div>
+                      <div class="fo-stats-row">
+                        <div class="fo-stat"><div class="fo-stat-val">2</div><div class="fo-stat-label">Active Cases</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">94%</div><div class="fo-stat-label">On-Time Rate</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">0.3 km</div><div class="fo-stat-label">Distance</div></div>
+                      </div>
+                      <div class="fo-workload-row">
+                        <span>Workload</span>
+                        <span class="fo-workload-pct">40%</span>
+                      </div>
+                      <div class="fo-progress-bar"><div class="fo-progress-fill" style="width:40%"></div></div>
+                      <div class="fo-case-box">
+                        <div class="fo-case-id">TRAPICO-2026-03-000013</div>
+                        <div class="fo-case-type">Signal Malfunction</div>
+                        <div class="fo-case-status" style="color:#b97a00">Assigned</div>
+                      </div>
+                      <div class="fo-actions">
+                        <button class="btn-outline">VIEW DETAILS</button>
+                        <button class="btn-primary">MESSAGE</button>
+                      </div>
+                    </div>
+                    <!-- Officer Card 2: Liza Mendoza -->
+                    <div class="fo-card">
+                      <div class="fo-header">
+                        <div class="fo-avatar" style="background:#111;">LM</div>
+                        <div class="fo-info">
+                          <div class="fo-name">Ofc. Liza Mendoza</div>
+                          <div class="fo-brgy">Brgy. Batasan Hills</div>
+                        </div>
+                        <span class="fo-status available">AVAILABLE</span>
+                      </div>
+                      <div class="fo-stats-row">
+                        <div class="fo-stat"><div class="fo-stat-val">4</div><div class="fo-stat-label">Active Cases</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">87%</div><div class="fo-stat-label">On-Time Rate</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">1.1 km</div><div class="fo-stat-label">Distance</div></div>
+                      </div>
+                      <div class="fo-workload-row">
+                        <span>Workload</span>
+                        <span class="fo-workload-pct">80%</span>
+                      </div>
+                      <div class="fo-progress-bar"><div class="fo-progress-fill" style="width:80%"></div></div>
+                      <div class="fo-case-box fo-case-empty">No active cases</div>
+                      <div class="fo-actions">
+                        <button class="btn-outline">VIEW DETAILS</button>
+                        <button class="btn-primary">MESSAGE</button>
+                      </div>
+                    </div>
+                    <!-- Officer Card 3: Carlo Bautista -->
+                    <div class="fo-card">
+                      <div class="fo-header">
+                        <div class="fo-avatar" style="background:#111;">CB</div>
+                        <div class="fo-info">
+                          <div class="fo-name">Ofc. Carlo Bautista</div>
+                          <div class="fo-brgy">Brgy. Central</div>
+                        </div>
+                        <span class="fo-status at-capacity">AT CAPACITY</span>
+                      </div>
+                      <div class="fo-stats-row">
+                        <div class="fo-stat"><div class="fo-stat-val">5</div><div class="fo-stat-label">Active Cases</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">91%</div><div class="fo-stat-label">On-Time Rate</div></div>
+                        <div class="fo-stat"><div class="fo-stat-val">2.4 km</div><div class="fo-stat-label">Distance</div></div>
+                      </div>
+                      <div class="fo-workload-row">
+                        <span>Workload</span>
+                        <span class="fo-workload-pct">100%</span>
+                      </div>
+                      <div class="fo-progress-bar"><div class="fo-progress-fill" style="width:100%"></div></div>
+                      <div class="fo-case-box">
+                        <div class="fo-case-id">TRAPICO-2026-03-000014</div>
+                        <div class="fo-case-type">Road Damage</div>
+                        <div class="fo-case-status" style="color:#b97a00">In Progress</div>
+                      </div>
+                      <div class="fo-actions">
+                        <button class="btn-outline">VIEW DETAILS</button>
+                        <button class="btn-primary">MESSAGE</button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+        </div>
+
+        <!-- Officer Cards Image Inserted Below -->
+        <div style="margin-top:32px;display:flex;justify-content:center;">
+          <img src="/officer-cards-sample.png" alt="Officer Cards Sample" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.08);" />
+        </div>
+      </section>
+
+      <!-- ═══════════════ PAGE: COMPLAINT QUEUE ══════════ -->
+      <section id="page-queue" class="page-section hidden">
+        <div class="queue-filters">
+          <input class="form-input" style="max-width:280px" id="queue-search"    placeholder="Search by ID, category…"   oninput="renderQueueTable()" />
+          <select class="form-select" style="width:auto"   id="queue-priority"   onchange="renderQueueTable()">
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select class="form-select" style="width:auto"   id="queue-brgy"       onchange="renderQueueTable()">
+            <option value="">All Barangays</option>
+            <option>Commonwealth</option><option>Batasan Hills</option>
+            <option>Central</option><option>Sto. Cristo</option>
+          </select>
+        </div>
+
+        <div class="tabs" id="queue-tabs">
+          <div class="tab active" data-tab="submitted" onclick="switchQueueTab(this)">Submitted <span id="tab-submitted-count"></span></div>
+          <div class="tab"        data-tab="verified"  onclick="switchQueueTab(this)">Verified — Unassigned <span id="tab-verified-count"></span></div>
+          <div class="tab"        data-tab="resolved"  onclick="switchQueueTab(this)">Resolved — For Closing <span id="tab-resolved-count"></span></div>
+          <div class="tab"        data-tab="closed"    onclick="switchQueueTab(this)">Closed Cases <span id="tab-closed-count"></span></div>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Category</th><th>Reporter</th><th>Barangay</th><th>Priority</th><th>Date</th><th>Flags</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="queue-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ PAGE: ACTIVE CASES ═════════════ -->
+      <section id="page-active" class="page-section hidden">
+        <div id="active-cases-list"></div>
+      </section>
+
+      <!-- ═══════════════ PAGE: FIELD OFFICERS ═══════════ -->
+      <section id="page-officers" class="page-section hidden">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <span class="card-title">Live Map — Officer Positions</span>
+            <button class="btn-secondary btn-sm" onclick="refreshOfficerMap()">↺ Refresh</button>
+          </div>
+          <div id="officers-page-map" style="height:320px;border-radius:8px;overflow:hidden;"></div>
+          <!-- Officer Cards Design Inserted Below -->
+          <div class="officer-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:24px;">
+            <div class="officer-card minimalist">
+              <div class="officer-avatar" style="background:#222;color:#fff;">RR</div>
+              <div class="officer-name">Ofc. Ramon Reyes <span class="officer-status">AT CAPACITY</span></div>
+              <div class="officer-meta">Brgy. Commonwealth</div>
+              <div class="officer-stats">
+                <div class="officer-stat"><div class="officer-stat-val">2</div><div class="officer-stat-label">Active Cases</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">94%</div><div class="officer-stat-label">On-Time Rate</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">0.3 km</div><div class="officer-stat-label">Distance</div></div>
+              </div>
+              <div class="workload-bar"><div class="workload-bar-inner" style="width:40%"></div></div>
+              <div class="case-box"><span class="case-id">TRAPICO-2026-03-000013</span><br>Signal Malfunction<br>Assigned</div>
+              <div class="officer-actions">
+                <button class="officer-btn">VIEW DETAILS</button>
+                <button class="officer-btn primary">MESSAGE</button>
+              </div>
+            </div>
+            <div class="officer-card minimalist">
+              <div class="officer-avatar" style="background:#222;color:#fff;">LM</div>
+              <div class="officer-name">Ofc. Liza Mendoza <span class="officer-status">AT CAPACITY</span></div>
+              <div class="officer-meta">Brgy. Batasan Hills</div>
+              <div class="officer-stats">
+                <div class="officer-stat"><div class="officer-stat-val">4</div><div class="officer-stat-label">Active Cases</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">87%</div><div class="officer-stat-label">On-Time Rate</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">1.1 km</div><div class="officer-stat-label">Distance</div></div>
+              </div>
+              <div class="workload-bar"><div class="workload-bar-inner" style="width:80%"></div></div>
+              <div class="case-box" style="color:#888;">No active cases</div>
+              <div class="officer-actions">
+                <button class="officer-btn">VIEW DETAILS</button>
+                <button class="officer-btn primary">MESSAGE</button>
+              </div>
+            </div>
+            <div class="officer-card minimalist">
+              <div class="officer-avatar" style="background:#222;color:#fff;">CB</div>
+              <div class="officer-name">Ofc. Carlo Bautista <span class="officer-status">BUSY</span></div>
+              <div class="officer-meta">Brgy. Central</div>
+              <div class="officer-stats">
+                <div class="officer-stat"><div class="officer-stat-val">5</div><div class="officer-stat-label">Active Cases</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">91%</div><div class="officer-stat-label">On-Time Rate</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">2.4 km</div><div class="officer-stat-label">Distance</div></div>
+              </div>
+              <div class="workload-bar"><div class="workload-bar-inner" style="width:100%"></div></div>
+              <div class="case-box"><span class="case-id">TRAPICO-2026-03-000014</span><br>Road Damage<br><span style="color:#e67e22;">In Progress</span></div>
+              <div class="officer-actions">
+                <button class="officer-btn">VIEW DETAILS</button>
+                <button class="officer-btn primary">MESSAGE</button>
+              </div>
+            </div>
+            <div class="officer-card minimalist">
+              <div class="officer-avatar" style="background:#222;color:#fff;">DT</div>
+              <div class="officer-name">Ofc. Diana Tolentino <span class="officer-status">AVAILABLE</span></div>
+              <div class="officer-meta">Brgy. Commonwealth</div>
+              <div class="officer-stats">
+                <div class="officer-stat"><div class="officer-stat-val">1</div><div class="officer-stat-label">Active Cases</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">98%</div><div class="officer-stat-label">On-Time Rate</div></div>
+                <div class="officer-stat"><div class="officer-stat-val">0.7 km</div><div class="officer-stat-label">Distance</div></div>
+              </div>
+              <div class="workload-bar"><div class="workload-bar-inner" style="width:20%"></div></div>
+              <div class="case-box" style="color:#888;">No active cases</div>
+              <div class="officer-actions">
+                <button class="officer-btn">VIEW DETAILS</button>
+                <button class="officer-btn primary">MESSAGE</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="officer-grid" id="officers-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+      </section>
+
+      <!-- ═══════════════ PAGE: ANALYTICS ════════════════ -->
+      <section id="page-analytics" class="page-section hidden">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val">47</div></div>
+          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val">91%</div></div>
+          <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val">1.8<span class="unit">hr</span></div></div>
+          <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val">4</div></div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Complaints by Category</span></div>
+            <div id="cat-bars"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Officer Performance</span></div>
+            <div id="officer-perf-list"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">Resolution Time Trend — Last 4 Weeks</span></div>
+          <div class="bar-chart" id="trend-chart"></div>
+          <div class="chart-weeks"><span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4 ←</span></div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ PAGE: DISPATCH PROFILE ═══════════ -->
+      <section id="page-profile" class="page-section hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="profile-main-row">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Personal Information</span></div>
+            <div id="profile-static" style="padding:24px;">
+              <div style="display:flex;align-items:center;margin-bottom:20px">
+                <div style="width:80px;height:80px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;position:relative" id="prof-avatar-static">
+                  <img id="prof-avatar-img-static" src="" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                  <span id="prof-avatar-initials-static">MR</span>
+                </div>
+                <div style="margin-left:16px">
+                  <div style="font-size:18px;font-weight:600" id="prof-name-static">—</div>
+                  <div style="color:var(--mist);font-size:14px" id="prof-position-static">—</div>
+                </div>
+              </div>
+              <div class="detail-item"><label>Badge ID</label><span id="prof-badgeid-static">—</span></div>
+              <div class="detail-item"><label>Email</label><span id="prof-email-static">—</span></div>
+              <div class="detail-item"><label>Phone</label><span id="prof-phone-static">—</span></div>
+              <div class="detail-item"><label>Primary Barangay</label><span id="prof-brgy-static">—</span></div>
+              <div class="detail-item"><label>Rank / Title</label><span id="prof-rank-static">—</span></div>
+              <div class="detail-item"><label>Department</label><span id="prof-dept-static">—</span></div>
+              <div style="margin-top:18px;display:flex;gap:10px;">
+                <button type="button" class="officer-btn primary" style="min-width:100px;" onclick="showProfileEdit()">Edit</button>
+              </div>
+            </div>
+            <!-- Editable profile form (hidden by default) -->
+            <form id="profile-edit-form" style="padding:24px;display:none;" enctype="multipart/form-data" onsubmit="saveProfileEdit(event)">
+              <div style="display:flex;align-items:center;margin-bottom:20px">
+                <label for="dispatch-avatar-upload" style="cursor:pointer;width:80px;height:80px;display:inline-block">
+                  <div style="width:80px;height:80px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;position:relative" id="prof-avatar">
+                    <img id="prof-avatar-img" src="" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;" />
+                    <span id="prof-avatar-initials">MR</span>
+                    <input id="dispatch-avatar-upload" name="avatar" type="file" accept="image/*" style="display:none" onchange="onProfileAvatarChange(event)">
+                    <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;padding:2px 5px;font-size:14px;">📷</span>
+                  </div>
+                </label>
+                <div style="margin-left:16px">
+                  <input type="text" id="prof-name-input" name="name" style="font-size:18px;font-weight:600;width:180px;" placeholder="Full Name" required />
+                  <input type="text" id="prof-position-input" name="position" style="color:var(--mist);font-size:14px;width:180px;margin-top:4px;" placeholder="Position" required />
+                </div>
+              </div>
+              <div class="detail-item"><label>Badge ID</label><input type="text" id="prof-badgeid-input" name="badgeid" required /></div>
+              <div class="detail-item"><label>Email</label><input type="email" id="prof-email-input" name="email" required /></div>
+              <div class="detail-item"><label>Phone</label><input type="tel" id="prof-phone-input" name="phone" required /></div>
+              <div class="detail-item"><label>Primary Barangay</label><input type="text" id="prof-brgy-input" name="brgy" required /></div>
+              <div class="detail-item"><label>Rank / Title</label><input type="text" id="prof-rank-input" name="rank" required /></div>
+              <div class="detail-item"><label>Department</label><input type="text" id="prof-dept-input" name="dept" required /></div>
+              <div style="margin-top:18px;display:flex;gap:10px;">
+                <button type="submit" class="officer-btn primary" style="min-width:100px;">Save</button>
+                <button type="button" class="officer-btn" style="min-width:100px;" onclick="cancelProfileEdit()">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Performance &amp; Statistics</span></div>
+            <div style="padding:24px">
+              <div class="stat-row">
+                <div class="stat-box accent"><div class="stat-val" id="prof-cases">0</div><div class="stat-label">Cases Processed</div></div>
+                <div class="stat-box green"><div class="stat-val" id="prof-closed">0</div><div class="stat-label">Cases Closed</div></div>
+              </div>
+              <div class="detail-item"><label>Avg. Resolution Time</label><span id="prof-avgtime">—</span></div>
+              <div class="detail-item"><label>Current Case Load</label><span id="prof-caseload">0</span></div>
+              <div class="detail-item"><label>Officers Managed</label><span id="prof-officers-count">4</span></div>
+              <div class="detail-item"><label>Active Barangays</label><span id="prof-active-brgy">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px">
+          <div class="card-head"><span class="card-title">This Month's Performance</span></div>
+          <div style="padding:24px">
+            <div class="performance-row">
+              <div class="performance-box green">
+                <div class="performance-label">Resolution Rate</div>
+                <div class="performance-val" id="prof-resolution-rate">91%</div>
+              </div>
+              <div class="performance-box blue">
+                <div class="performance-label">On-Time Closure</div>
+                <div class="performance-val" id="prof-on-time">94%</div>
+              </div>
+              <div class="performance-box red">
+                <div class="performance-label">Average Rating</div>
+                <div class="performance-val" id="prof-avg-rating">4.6★</div>
+              </div>
+              <div class="performance-box purple">
+                <div class="performance-label">Efficiency Score</div>
+                <div class="performance-val" id="prof-efficiency">92/100</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px">
+          <div class="card-head"><span class="card-title">Quick Actions</span></div>
+          <div class="quick-actions">
+            <button onclick="editProfile()">✏️ Edit Profile</button>
+            <button onclick="changePassword()">🔑 Change Password</button>
+            <button onclick="viewActivityLog()">📋 Activity Log</button>
+            <button onclick="logout()">⬡ Sign Out</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODALS -->
+<!-- Review/Assign Modal -->
+<div id="modal-container"></div>
+
+</div>
+
+<!-- Scripts: Place at end of body for best performance -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="../data.js?v=20260508b"></script>
+<script src="../api.js?v=20260508b"></script>
+<script src="dispatch.js?v=20260508b"></script>
+<script src="dispatch.backend.js?v=20260510f"></script>
+function toggleSidebar() {
+  var sidebar = document.querySelector('.sidebar');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (sidebar.classList.contains('open')) {
+    document.body.addEventListener('click', closeSidebarOnClick, {capture:true});
+  } else {
+    document.body.removeEventListener('click', closeSidebarOnClick, {capture:true});
+  }
+}
+function closeSidebarOnClick(e) {
+  var sidebar = document.querySelector('.sidebar');
+  var menuBtn = document.getElementById('menu-btn');
+  if (sidebar && !sidebar.contains(e.target) && e.target !== menuBtn) {
+    sidebar.classList.remove('open');
+    document.body.removeEventListener('click', closeSidebarOnClick, {capture:true});
+  }
+}
+</script>
+</html>
