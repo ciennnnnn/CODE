@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRAPICO — Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/base.css?v=20260510b" />
+  <link rel="stylesheet" href="/login.css?v=20260527q" />
+  <link rel="stylesheet" href="/signup.css?v=20260527q" />
+</head>
+<body data-role="regular">
+<div class="login-page su-page">
+  <section class="login-left" aria-label="TRAPICO overview">
+    <div class="login-left-inner">
+      <div class="login-badge">TTMD • QUEZON CITY</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+        <img src="/logo.svg" alt="TRAPICO" style="height:56px;width:auto;filter:brightness(0) invert(1);flex-shrink:0" onerror="this.style.display='none'" />
+        <h1 class="login-title" style="margin:0">TRAPICO.</h1>
+      </div>
+      <p class="login-sub">Traffic Complaint Information System for selected barangays of Quezon City. Report, track, and resolve traffic issues in real time.</p>
+      <div class="login-stats" aria-label="System highlights">
+        <div class="login-stat-block">
+          <span class="login-stat-val">4</span>
+          <span class="login-stat-label">BARANGAYS</span>
+        </div>
+        <div class="login-stat-block">
+          <span class="login-stat-val">30m</span>
+          <span class="login-stat-label">RESPONSE</span>
+        </div>
+      </div>
+      <div class="login-watermark" aria-hidden="true">TRAPICO.</div>
+    </div>
+  </section>
+  <section class="su-right" aria-label="Create account">
+    <div class="su-wrap">
+      <h2 class="su-title">CREATE ACCOUNT</h2>
+      <form id="citizen-signup" class="su-form" autocomplete="off" onsubmit="return false" novalidate>
+        <div class="su-grid">
+          <div class="su-field">
+            <label class="su-label" for="cit-firstname">FIRST NAME *</label>
+            <input id="cit-firstname" class="su-input" type="text" placeholder="Juan" autocomplete="given-name" />
+          </div>
+          <div class="su-field">
+            <label class="su-label" for="cit-lastname">LAST NAME *</label>
+            <input id="cit-lastname" class="su-input" type="text" placeholder="Dela Cruz" autocomplete="family-name" />
+          </div>
+          <div class="su-field su-col-full">
+            <label class="su-label" for="cit-username">USERNAME *</label>
+            <input id="cit-username" class="su-input" type="text" placeholder="citizenuser" autocomplete="username" />
+          </div>
+          <div class="su-field su-col-full">
+            <label class="su-label" for="cit-email">EMAIL ADDRESS *</label>
+            <input id="cit-email" class="su-input" type="email" placeholder="citizen@email.com" autocomplete="email" />
+          </div>
+          <div class="su-field su-col-full">
+            <label class="su-label" for="cit-phone">PHONE *</label>
+            <input id="cit-phone" class="su-input" type="tel" placeholder="+63 9..." autocomplete="tel" />
+          </div>
+          <div class="su-field su-col-full">
+            <label class="su-label" for="cit-password">PASSWORD *</label>
+            <div class="su-pw-wrap">
+              <input id="cit-password" class="su-input su-pw-input" type="password" placeholder="At least 8 characters, 1 uppercase, 1 number" autocomplete="new-password" />
+              <button class="su-pw-toggle" type="button" id="cit-pw-toggle" onclick="toggleSuPassword('cit-password','cit-pw-toggle')" aria-label="Show password">
+                <span class="su-eye-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+          <div class="su-field su-col-full">
+            <label class="su-label" for="cit-confirm">CONFIRM *</label>
+            <div class="su-pw-wrap">
+              <input id="cit-confirm" class="su-input su-pw-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+              <button class="su-pw-toggle" type="button" id="cit-confirm-toggle" onclick="toggleSuPassword('cit-confirm','cit-confirm-toggle')" aria-label="Show confirm password">
+                <span class="su-eye-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="su-legal su-legal-inline">
+          <label class="su-check-row">
+            <input type="checkbox" id="cit-terms" class="su-checkbox" onchange="updateSubmitState()" />
+            <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('terms')">TERMS</button></span>
+          </label>
+          <label class="su-check-row">
+            <input type="checkbox" id="cit-privacy" class="su-checkbox" onchange="updateSubmitState()" />
+            <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('privacy')">PRIVACY</button></span>
+          </label>
+        </div>
+        <div id="cit-error" class="su-error hidden" role="alert"></div>
+        <button type="button" class="su-submit su-submit-disabled" id="cit-submit" disabled onclick="submitCitizenSignup()">CREATE ACCOUNT →</button>
+      </form>
+      <div class="su-footer-link">Already have an account? <a href="/citizen-login.html">Sign in</a></div>
+    </div>
+  </section>
+</div>
+<div class="legal-backdrop hidden" id="legal-backdrop" onclick="handleBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="legal-modal-head">
+  <div class="legal-modal" id="legal-modal">
+    <div class="legal-modal-head" id="legal-modal-head">TERMS AND CONDITIONS</div>
+    <hr class="legal-divider" />
+    <div class="legal-modal-body" id="legal-modal-body"></div>
+    <button class="legal-accept" type="button" onclick="acceptModal()">ACCEPT AND CLOSE</button>
+  </div>
+</div>
+<script src="/data.js?v=20260526b"></script>
+<script src="/api.js?v=20260526b"></script>
+<script src="/signup.js?v=20260526b"></script>
+</body>
+</html>
