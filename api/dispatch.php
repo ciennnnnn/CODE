@@ -151,8 +151,11 @@ if ($action === 'officers') {
                 END AS status,
                 fo.current_latitude AS lat, fo.current_longitude AS lng,
                 fo.gps_last_updated,
-                COALESCE(fo.total_resolved, 0) AS cases_closed,
-                COALESCE(fo.average_user_rating, 0) AS rating,
+                (SELECT COUNT(*) FROM assignments a2
+                 WHERE a2.field_officer_id = fo.officer_id
+                   AND a2.assignment_status = 'completed') AS cases_closed,
+                COALESCE((SELECT AVG(r.score) FROM ratings r
+                          WHERE r.field_officer_id = fo.officer_id), 0.00) AS rating,
                 (SELECT COUNT(*) FROM assignments a2
                  WHERE a2.field_officer_id = fo.officer_id
                    AND a2.assignment_status IN ('pending','in_progress')) AS active_count,
@@ -524,6 +527,7 @@ if ($action === 'officerCases') {
     if (!$officerId) {
         errorResponse('Officer ID required.');
     }
+    /* One row per complaint — use the most recent assignment from this officer */
     $stmt = $db->prepare(
         "SELECT c.tracking_id AS id, c.category AS cat, c.asset_town AS brgy,
                 c.priority, c.status, c.submitted_at AS date, c.description,
@@ -531,9 +535,14 @@ if ($action === 'officerCases') {
          FROM assignments a
          JOIN complaints c ON c.complaint_id = a.complaint_id
          WHERE a.field_officer_id = :oid
+           AND a.assignment_id = (
+               SELECT MAX(a2.assignment_id) FROM assignments a2
+               WHERE a2.complaint_id = a.complaint_id
+                 AND a2.field_officer_id = :oid2
+           )
          ORDER BY a.assigned_at DESC"
     );
-    $stmt->execute([':oid' => $officerId]);
+    $stmt->execute([':oid' => $officerId, ':oid2' => $officerId]);
     successResponse(['cases' => $stmt->fetchAll()]);
 }
 

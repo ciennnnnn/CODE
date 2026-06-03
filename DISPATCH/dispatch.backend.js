@@ -1223,16 +1223,64 @@ async function submitReject(id) {
       }
     }
 
-async function reassignCase(id) {
-    const availableOfficers = FIELD_OFFICERS_DATA.filter(o => o.status === 'available');
-    if (!availableOfficers.length) {
-        showToast('No available officers to reassign.');
+let _reassignSelectedOfficerId = null;
+
+function selectReassignOfficer(officerId) {
+    _reassignSelectedOfficerId = officerId;
+    document.querySelectorAll('.reassign-officer-card').forEach(c => c.classList.remove('selected'));
+    const el = document.getElementById(`reassign-ocard-${officerId}`);
+    if (el) el.classList.add('selected');
+}
+
+async function submitReassignFromCard(id) {
+    if (!_reassignSelectedOfficerId) {
+        showToast('Please select an officer first.');
         return;
     }
-    const officerOptions = availableOfficers.map(o => `<option value="${safeText(o.id)}">${safeText(o.name)} (${safeText(o.brgy)})</option>`).join('');
+    const officerId = _reassignSelectedOfficerId;
+    const officer = FIELD_OFFICERS_DATA.find(o => String(o.id) === String(officerId));
+    closeModal();
+    try {
+        await apiFetch('dispatch.php', {action: 'reassign', id, officer_id: officerId}, 'POST');
+        showToast(`Case reassigned to ${safeText(officer?.name || 'officer')}.`);
+        showNotification(`Complaint ${id} reassigned`, `Reassigned to ${officer?.name || 'officer'}`);
+        await loadDispatchData();
+        renderDashboard();
+        renderQueueTable();
+        renderActiveCases();
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+async function reassignCase(id) {
+    _reassignSelectedOfficerId = null;
+    const availableOfficers = FIELD_OFFICERS_DATA.filter(o => o.status === 'available');
+    if (!availableOfficers.length) {
+        showToast('No available field officers at this time. All are currently busy or offline.');
+        return;
+    }
+
+    const officerCards = availableOfficers.map(o => {
+        const active   = Number(o.active_count) || 0;
+        const handled  = Number(o.cases_closed) || 0;
+        const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+        return `
+        <div class="officer-card reassign-officer-card" id="reassign-ocard-${safeText(o.id)}"
+             onclick="selectReassignOfficer('${safeText(o.id)}')">
+          <div class="officer-name">${safeText(o.name)}</div>
+          <div class="officer-meta">Badge: ${safeText(o.code || '—')} · Brgy. ${safeText(o.brgy)}</div>
+          <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;font-family:var(--font-mono);color:var(--mist)">
+            <span>● Available</span>
+            <span>${active} active</span>
+            <span>${handled} handled</span>
+          </div>
+        </div>`;
+    }).join('');
+
     openModal(`
       <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-        <div class="modal" style="max-width:520px">
+        <div class="modal" style="max-width:540px">
           <div class="modal-head">
             <div>
               <div class="modal-title">Reassign Case</div>
@@ -1241,14 +1289,12 @@ async function reassignCase(id) {
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body">
-            <div class="form-group">
-              <label>Select new officer</label>
-              <select id="reassign-officer" class="form-select">${officerOptions}</select>
-            </div>
+            <div class="section-title" style="margin-bottom:12px">Select Available Field Officer</div>
+            <div class="officer-grid">${officerCards}</div>
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-            <button class="btn-success" onclick="submitReassign('${safeText(id)}')">Reassign</button>
+            <button class="btn-success" onclick="submitReassignFromCard('${safeText(id)}')">Reassign</button>
           </div>
         </div>
       </div>`);
@@ -1386,6 +1432,16 @@ function renderOfficers() {
     }).join('');
 }
 
+function switchOfficerCaseTab(el, targetId) {
+    const tabsEl = el.closest('.officer-case-tabs');
+    if (tabsEl) tabsEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    const body = el.closest('.modal-body');
+    if (body) body.querySelectorAll('.officer-case-panel').forEach(p => { p.style.display = 'none'; });
+    const target = document.getElementById(targetId);
+    if (target) target.style.display = '';
+}
+
 async function openOfficerCasesModal(officerId, officerName) {
     let cases = [];
     try {
@@ -1396,48 +1452,65 @@ async function openOfficerCasesModal(officerId, officerName) {
         return;
     }
 
-    const statusColors = {
-        pending: 'badge-assigned', in_progress: 'badge-progress', completed: 'badge-resolved',
-        failed: 'badge-rejected', reassigned: 'badge-cancelled',
-    };
+    const activeCases   = cases.filter(c => ['assigned', 'in_progress'].includes(c.status));
+    const resolvedCases = cases.filter(c => ['resolved', 'closed'].includes(c.status));
+    const failedCases   = cases.filter(c => ['failed', 'reassigned'].includes(c.asgn_status));
+    const allCases      = cases;
 
-    const tableRows = cases.length ? cases.map(c => {
-        const asgnBadge = `<span class="badge ${statusColors[c.asgn_status] || 'badge-submitted'}">${safeText(c.asgn_status || '—')}</span>`;
-        return `
+    const buildTable = (list) => {
+        if (!list.length) {
+            return `<div class="empty-state" style="padding:32px 0"><div class="empty-title">No cases in this category</div></div>`;
+        }
+        const rows = list.map(c => `
           <tr>
-            <td class="track-id" style="font-size:11px">${safeText(c.id)}</td>
+            <td class="track-id" style="font-size:11px;white-space:nowrap">${safeText(c.id)}</td>
             <td style="font-size:12px">${safeText(c.cat)}</td>
             <td style="font-size:12px">${safeText(c.brgy)}</td>
             <td>${priorityBadge(c.priority)}</td>
             <td>${statusBadge(c.status)}</td>
-            <td>${asgnBadge}</td>
             <td class="mono" style="font-size:11px">${formatDateTime(c.date)}</td>
-          </tr>`;
-    }).join('') :
-    `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--mist)">No cases found for this officer.</td></tr>`;
+          </tr>`).join('');
+        return `
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Tracking ID</th><th>Category</th><th>Barangay</th>
+                <th>Priority</th><th>Status</th><th>Date Assigned</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+    };
 
     openModal(`
       <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
         <div class="modal modal-lg" style="max-width:820px">
           <div class="modal-head">
             <div>
-              <div class="modal-title">Officer Case Tracking</div>
-              <div class="modal-subtitle">${safeText(officerName)} — ${cases.length} case(s) total</div>
+              <div class="modal-title">Case Tracking</div>
+              <div class="modal-subtitle">${safeText(officerName)} — ${allCases.length} case(s) on record</div>
             </div>
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body" style="padding:0">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tracking ID</th><th>Category</th><th>Barangay</th>
-                    <th>Priority</th><th>Case Status</th><th>Assignment</th><th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-              </table>
+            <div class="tabs officer-case-tabs" style="margin:0;padding:0 20px;border-bottom:2px solid var(--border)">
+              <div class="tab active" onclick="switchOfficerCaseTab(this,'oct-active')">
+                Active &nbsp;<span style="opacity:.6;font-size:11px">(${activeCases.length})</span>
+              </div>
+              <div class="tab" onclick="switchOfficerCaseTab(this,'oct-resolved')">
+                Resolved / Closed &nbsp;<span style="opacity:.6;font-size:11px">(${resolvedCases.length})</span>
+              </div>
+              <div class="tab" onclick="switchOfficerCaseTab(this,'oct-failed')">
+                Failed / Reassigned &nbsp;<span style="opacity:.6;font-size:11px">(${failedCases.length})</span>
+              </div>
+              <div class="tab" onclick="switchOfficerCaseTab(this,'oct-all')">
+                All &nbsp;<span style="opacity:.6;font-size:11px">(${allCases.length})</span>
+              </div>
             </div>
+            <div id="oct-active"   class="officer-case-panel">${buildTable(activeCases)}</div>
+            <div id="oct-resolved" class="officer-case-panel" style="display:none">${buildTable(resolvedCases)}</div>
+            <div id="oct-failed"   class="officer-case-panel" style="display:none">${buildTable(failedCases)}</div>
+            <div id="oct-all"      class="officer-case-panel" style="display:none">${buildTable(allCases)}</div>
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" onclick="closeModal()">Close</button>
