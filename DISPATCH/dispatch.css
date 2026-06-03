@@ -452,6 +452,15 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
   border: 1px solid var(--border) !important;
 }
+
+/* Keep Leaflet controls contained below modal overlay */
+.active-case-map .leaflet-top,
+.active-case-map .leaflet-bottom {
+  z-index: 400 !important;
+}
+.active-case-map .leaflet-pane {
+  z-index: 200 !important;
+}
 .leaflet-control-zoom-in,
 .leaflet-control-zoom-out {
   background-color: var(--white) !important;
@@ -616,6 +625,9 @@
   border-radius: 8px;
   overflow: hidden;
   background: #f0f0f0;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
 }
 
 /* ── MAP LEGEND ─────────────────────────────────────────────── */

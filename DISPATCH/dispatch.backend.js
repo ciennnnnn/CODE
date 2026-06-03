@@ -40,8 +40,17 @@ const BRGY_CENTERS = {
 };
 
 function _officerLatLng(o) {
-    if (o.lat && o.lng) return [parseFloat(o.lat), parseFloat(o.lng)];
-    return BRGY_CENTERS[o.brgy] || [14.6760, 121.0437];
+    const lat = parseFloat(o.lat);
+    const lng = parseFloat(o.lng);
+    if (isFinite(lat) && isFinite(lng) && lat !== 0 && lng !== 0) return [lat, lng];
+    const base = BRGY_CENTERS[o.brgy] || [14.6760, 121.0437];
+    const id = parseInt(o.id || 0);
+    const angle = (id * 47) % 360;
+    const radius = 0.0012 + (id % 5) * 0.0004;
+    return [
+        base[0] + radius * Math.sin(angle * Math.PI / 180),
+        base[1] + radius * Math.cos(angle * Math.PI / 180),
+    ];
 }
 
 function _normalizeOfficerSets(resp = {}) {
@@ -55,7 +64,9 @@ function _normalizeOfficerSets(resp = {}) {
 }
 
 function _badgeClassByStatus(status) {
-  return (status === 'available' || status === 'on_duty') ? 'badge-verified' : 'badge-assigned';
+  if (status === 'available' || status === 'on_duty') return 'badge-verified';
+  if (status === 'offline') return 'badge-closed';
+  return 'badge-assigned';
 }
 
 function _officerRoleLabel(officer) {
@@ -324,15 +335,19 @@ function renderDashboard() {
 
     const officerList = document.getElementById('dash-officer-list');
     if (officerList) {
-        officerList.innerHTML = OFFICERS_DATA.map(o => `
-          <div class="officer-status-item">
-            <div class="officer-initials">${safeText(String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase())}</div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
-              <div style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
-            </div>
-            <span class="badge ${_badgeClassByStatus(o.status)}">${safeText(o.status)}</span>
-          </div>`).join('');
+        officerList.innerHTML = OFFICERS_DATA.map(o => {
+            const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
+            const statusLabel = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : o.status === 'on_duty' ? 'ON DUTY' : 'OFFLINE';
+            return `
+            <div class="officer-status-item">
+              <div class="officer-initials">${initials}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
+              </div>
+              <span class="badge ${_badgeClassByStatus(o.status)}">${statusLabel}</span>
+            </div>`;
+        }).join('');
     }
 }
 
@@ -1328,36 +1343,107 @@ function renderOfficers() {
     const grid = document.getElementById('officers-grid');
     if (!grid) return;
 
-    grid.innerHTML = OFFICERS_DATA.map(o => `
-      <div class="officer-full-card">
-        <div class="officer-full-header">
-          <div class="officer-avatar-lg">${safeText(String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase())}</div>
-          <div style="flex:1">
-            <div class="officer-full-name">${safeText(o.name)}</div>
-            <div class="officer-full-brgy">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
+    grid.innerHTML = OFFICERS_DATA.map(o => {
+        const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
+        const handled  = Number(o.cases_closed) || 0;
+        const rating   = Number(o.rating) || 0;
+        const active   = Number(o.active_count) || 0;
+        const workload = Math.round(Math.min(100, (active / 5) * 100));
+        const statusLabel = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE';
+        const chatKey  = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
+        const hasAlert = officerChatAlertMap[chatKey];
+
+        return `
+        <div class="officer-full-card">
+          <div class="officer-full-header">
+            <div class="officer-avatar-lg">${initials}</div>
+            <div style="flex:1">
+              <div class="officer-full-name">${safeText(o.name)}</div>
+              <div class="officer-full-brgy">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
+            </div>
+            <span class="badge ${_badgeClassByStatus(o.status)}">${statusLabel}</span>
           </div>
-          <span class="badge ${_badgeClassByStatus(o.status)}">${safeText(o.status)}</span>
+          <div class="officer-stats-row">
+            <div class="officer-stat-box">
+              <div class="officer-stat-val">${handled}</div>
+              <div class="officer-stat-label">Handled</div>
+            </div>
+            <div class="officer-stat-box">
+              <div class="officer-stat-val">${rating.toFixed(2)}</div>
+              <div class="officer-stat-label">Score</div>
+            </div>
+            <div class="officer-stat-box">
+              <div class="officer-stat-val">${_officerRoleLabel(o)}</div>
+              <div class="officer-stat-label">Duty</div>
+            </div>
+          </div>
+          ${perfBar(`Workload`, workload)}
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">View Cases</button>
+            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+async function openOfficerCasesModal(officerId, officerName) {
+    let cases = [];
+    try {
+        const resp = await apiFetch('dispatch.php', {action: 'officerCases', officer_id: officerId});
+        cases = Array.isArray(resp.cases) ? resp.cases : [];
+    } catch (e) {
+        showToast('Could not load officer cases.');
+        return;
+    }
+
+    const statusColors = {
+        pending: 'badge-assigned', in_progress: 'badge-progress', completed: 'badge-resolved',
+        failed: 'badge-rejected', reassigned: 'badge-cancelled',
+    };
+
+    const tableRows = cases.length ? cases.map(c => {
+        const asgnBadge = `<span class="badge ${statusColors[c.asgn_status] || 'badge-submitted'}">${safeText(c.asgn_status || '—')}</span>`;
+        return `
+          <tr>
+            <td class="track-id" style="font-size:11px">${safeText(c.id)}</td>
+            <td style="font-size:12px">${safeText(c.cat)}</td>
+            <td style="font-size:12px">${safeText(c.brgy)}</td>
+            <td>${priorityBadge(c.priority)}</td>
+            <td>${statusBadge(c.status)}</td>
+            <td>${asgnBadge}</td>
+            <td class="mono" style="font-size:11px">${formatDateTime(c.date)}</td>
+          </tr>`;
+    }).join('') :
+    `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--mist)">No cases found for this officer.</td></tr>`;
+
+    openModal(`
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal modal-lg" style="max-width:820px">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Officer Case Tracking</div>
+              <div class="modal-subtitle">${safeText(officerName)} — ${cases.length} case(s) total</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="modal-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tracking ID</th><th>Category</th><th>Barangay</th>
+                    <th>Priority</th><th>Case Status</th><th>Assignment</th><th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">Close</button>
+          </div>
         </div>
-        <div class="officer-stats-row">
-          <div class="officer-stat-box">
-            <div class="officer-stat-val">${safeText(o.cases_closed ?? 0)}</div>
-            <div class="officer-stat-label">Handled</div>
-          </div>
-          <div class="officer-stat-box">
-            <div class="officer-stat-val">${safeText(o.rating ?? 0)}</div>
-            <div class="officer-stat-label">Score</div>
-          </div>
-          <div class="officer-stat-box">
-            <div class="officer-stat-val">${safeText(_officerRoleLabel(o))}</div>
-            <div class="officer-stat-label">Duty</div>
-          </div>
-        </div>
-        ${perfBar('Workload', Math.min(100, (o.cases_closed ?? 0) * 12))}
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn-secondary btn-sm" style="flex:1" onclick="showToast('Viewing cases for ${safeText(o.name)}')">View Cases</button>
-          <button id="contact-btn-${safeText(_chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id))}" class="${officerChatAlertMap[_chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id)] ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
-        </div>
-      </div>`).join('');
+      </div>`);
 }
 
     function refreshOfficerContactButtonStyles() {

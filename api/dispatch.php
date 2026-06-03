@@ -151,7 +151,11 @@ if ($action === 'officers') {
                 END AS status,
                 fo.current_latitude AS lat, fo.current_longitude AS lng,
                 fo.gps_last_updated,
-                fo.total_resolved AS cases_closed, fo.average_user_rating AS rating,
+                COALESCE(fo.total_resolved, 0) AS cases_closed,
+                COALESCE(fo.average_user_rating, 0) AS rating,
+                (SELECT COUNT(*) FROM assignments a2
+                 WHERE a2.field_officer_id = fo.officer_id
+                   AND a2.assignment_status IN ('pending','in_progress')) AS active_count,
                 'field_officer' AS officer_role
          FROM field_officers fo
          JOIN users u ON u.user_id = fo.user_id
@@ -513,6 +517,24 @@ if ($action === 'closeCase') {
        ->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'closed', ':notes' => 'Dispatch officer validated and closed the case.']);
 
     successResponse(['message' => 'Case closed successfully.']);
+}
+
+if ($action === 'officerCases') {
+    $officerId = intval($_REQUEST['officer_id'] ?? $data['officer_id'] ?? 0);
+    if (!$officerId) {
+        errorResponse('Officer ID required.');
+    }
+    $stmt = $db->prepare(
+        "SELECT c.tracking_id AS id, c.category AS cat, c.asset_town AS brgy,
+                c.priority, c.status, c.submitted_at AS date, c.description,
+                a.assigned_at, a.response_deadline, a.assignment_status AS asgn_status
+         FROM assignments a
+         JOIN complaints c ON c.complaint_id = a.complaint_id
+         WHERE a.field_officer_id = :oid
+         ORDER BY a.assigned_at DESC"
+    );
+    $stmt->execute([':oid' => $officerId]);
+    successResponse(['cases' => $stmt->fetchAll()]);
 }
 
 errorResponse('Unknown action.');
