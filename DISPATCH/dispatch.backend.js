@@ -1368,24 +1368,31 @@ async function renderProfile() {
 
     /* ── Fetch real profile stats from DB ── */
     try {
-        const stats = await apiFetch('dispatch.php', {action: 'dispatchProfile'});
+        const s = await apiFetch('dispatch.php', {action: 'dispatchProfile'});
 
-        setEl('prof-cases',         String(stats.processed        ?? '—'));
-        setEl('prof-closed',        String(stats.closed           ?? '—'));
-        setEl('prof-avgtime',       stats.avg_hours != null ? parseFloat(stats.avg_hours).toFixed(1) + 'h' : '—');
-        setEl('prof-caseload',      String(stats.caseload         ?? '—'));
-        setEl('prof-officers-count',String(stats.officers_managed ?? '—'));
-        setEl('prof-active-brgy',   String(stats.active_brgy      ?? '—'));
-        setEl('prof-resolution-rate', stats.rate != null          ? stats.rate          + '%' : '—');
-        setEl('prof-on-time',         stats.on_time_rate != null  ? stats.on_time_rate  + '%' : '—');
-        setEl('prof-efficiency',      stats.efficiency   != null  ? stats.efficiency    + '%' : '—');
-        setEl('prof-avg-rating',    '—');
+        /* Performance & Statistics card */
+        setEl('prof-cases',    String(s.processed ?? '—'));
+        setEl('prof-closed',   String(s.closed    ?? '—'));
+        setEl('prof-avgtime',  s.avg_hours != null ? parseFloat(s.avg_hours).toFixed(1) + 'h' : '—');
+        setEl('prof-caseload', String(s.caseload ?? '—'));
+        setEl('prof-officers-count', String(s.officers_managed ?? '—'));
+        setEl('prof-active-brgy',    String(s.active_brgy ?? '—'));
+
+        /* This Month's Performance boxes */
+        setEl('prof-resolution-rate', s.rate        != null ? s.rate        + '%' : '—');
+        setEl('prof-on-time',         s.on_time_rate != null ? s.on_time_rate + '%' : '—');
+        setEl('prof-efficiency',      s.efficiency  != null ? s.efficiency  + '%' : '—');
+        setEl('prof-avg-rating', '—');  /* No citizen-rating system for dispatch */
+
+        /* Also update the command center resolution rate card */
+        if (s.rate != null) setEl('stat-resolution-rate', s.rate + '%');
     } catch (_) {
-        /* Fallback to counts already in memory */
-        setEl('prof-cases',     String(ACTIVE_CASES.length));
-        setEl('prof-closed',    String(window.dispatchCounts?.closed_cases ?? 0));
-        setEl('prof-caseload',  String(ACTIVE_CASES.length));
+        /* Graceful fallback using in-memory data */
+        setEl('prof-cases',    String(window.dispatchCounts?.active_cases ?? ACTIVE_CASES.length));
+        setEl('prof-closed',   String(window.dispatchCounts?.closed_cases ?? 0));
+        setEl('prof-caseload', String(ACTIVE_CASES.length));
         setEl('prof-officers-count', String(FIELD_OFFICERS_DATA.length));
+        setEl('prof-active-brgy', '4');
     }
 }
 

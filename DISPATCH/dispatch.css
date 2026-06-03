@@ -4,139 +4,23 @@
   body.sidebar-open .sidebar-backdrop { z-index: 1490 !important; }
 }
 
-/* ── DISPATCH PROFILE — citizen-style layout ──────────────────── */
-#page-profile .profile-layout {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 24px;
-  align-items: start;
-}
-#page-profile .prof-left-card {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-#page-profile .prof-avatar-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 28px 20px 20px;
-  background: var(--ink);
-  color: #fff;
-}
-#page-profile .prof-avatar-wrap {
-  position: relative;
-  display: inline-flex;
-  margin-bottom: 12px;
-}
-#page-profile .prof-avatar-circle {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--font-head);
-  font-size: 36px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  overflow: hidden;
-  transition: opacity 0.15s;
-  border: 3px solid rgba(255,255,255,0.2);
-}
-#page-profile .prof-avatar-circle:hover { opacity: 0.85; }
-#page-profile .prof-avatar-upload {
-  position: absolute;
-  bottom: 0; right: 0;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: #fff;
-  color: var(--ink);
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-}
-#page-profile .prof-upload-copy {
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 10px;
-}
-#page-profile .prof-display-name {
-  font-family: var(--font-head);
-  font-size: 20px;
-  font-weight: 800;
-  color: #fff;
-  text-align: center;
-}
-#page-profile .prof-subtitle {
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-  margin-top: 2px;
-  text-align: center;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-#page-profile .prof-active-badge {
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--green);
-  font-family: var(--font-mono);
-}
-#page-profile .prof-stats-block {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  width: 100%;
-}
-#page-profile .prof-stats-heading {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--mist);
-  margin-bottom: 10px;
-}
-#page-profile .prof-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--surface);
-  font-size: 13px;
-}
-#page-profile .prof-stat-row:last-child { border-bottom: none; }
-#page-profile .prof-stat-label { color: var(--mist); }
-#page-profile .prof-stat-val { font-weight: 700; font-family: var(--font-head); font-size: 16px; }
-
-#page-profile .prof-right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-#page-profile .prof-panel-card { overflow: hidden; }
-
-/* Performance row: 2x2 grid always */
+/* ── DISPATCH PROFILE — field-officer style layout ────────────── */
+/* Performance row: 2×2 grid always */
 #page-profile .performance-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
+
+/* Profile grid stacks on tablet */
 @media (max-width: 860px) {
-  #page-profile .profile-layout { grid-template-columns: 1fr; }
+  #profile-main-row { grid-template-columns: 1fr !important; }
 }
+
+/* Mobile adjustments */
 @media (max-width: 540px) {
   #page-profile .performance-row { grid-template-columns: 1fr 1fr; gap: 10px; }
   #page-profile .performance-val { font-size: 22px; }
-  #page-profile .prof-avatar-block { padding: 20px 16px 16px; }
-  #page-profile .prof-avatar-circle { width: 80px; height: 80px; font-size: 28px; }
   #page-profile .quick-actions { gap: 8px; }
   #page-profile .quick-actions button { flex: 1 1 calc(50% - 4px); font-size: 13px; }
 }
