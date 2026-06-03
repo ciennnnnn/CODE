@@ -312,14 +312,21 @@ function renderDashboard() {
         }).join('');
 }
 
+/* Maps raw DB status values to their displayed filter category so filtering is consistent
+   with what the citizen sees in the badge (e.g. DB 'pending'/'unknown' both show as 'submitted'). */
+function normalizeStatusForFilter(raw) {
+    const map = { pending: 'submitted', unknown: 'submitted', en_route: 'assigned', validated: 'resolved' };
+    return map[(raw || '').toLowerCase()] || (raw || '').toLowerCase();
+}
+
 function renderComplaintsTable() {
     const search = (document.getElementById('complaints-search')?.value || '').toLowerCase();
     const statusFil = document.getElementById('complaints-filter-status')?.value || '';
     const brgyFil = document.getElementById('complaints-filter-brgy')?.value || '';
     const my = getMyComplaints().filter(c => {
         const matchSearch = !search || c.id.toLowerCase().includes(search) || c.cat.toLowerCase().includes(search);
-        const matchStatus = !statusFil || c.status === statusFil;
-        const matchBrgy = !brgyFil || c.brgy === brgyFil;
+        const matchStatus = !statusFil || normalizeStatusForFilter(c.status) === statusFil;
+        const matchBrgy = !brgyFil || (c.brgy || '').toLowerCase() === brgyFil.toLowerCase();
         return matchSearch && matchStatus && matchBrgy;
     });
 
@@ -652,12 +659,19 @@ function renderProfilePage() {
 
     // Edit form pre-fill
     const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-    setInput('edit-profile-name',     CIVILIAN_USER.name);
-    setInput('edit-profile-username', CIVILIAN_USER.username);
-    setInput('edit-profile-email',    CIVILIAN_USER.email);
-    setInput('edit-profile-phone',    CIVILIAN_USER.phone);
-    setInput('edit-emergency-name',   CIVILIAN_USER.emergency_contact_name);
-    setInput('edit-emergency-phone',  CIVILIAN_USER.emergency_contact_phone);
+    setInput('edit-profile-name',      CIVILIAN_USER.name);
+    setInput('edit-profile-middle',    CIVILIAN_USER.middle_name);
+    setInput('edit-profile-username',  CIVILIAN_USER.username);
+    setInput('edit-profile-email',     CIVILIAN_USER.email);
+    setInput('edit-profile-phone',     CIVILIAN_USER.phone);
+    setInput('edit-profile-birthdate', CIVILIAN_USER.birthdate);
+    setInput('edit-profile-street',    CIVILIAN_USER.street);
+    setInput('edit-profile-province',  CIVILIAN_USER.province || 'Metro Manila');
+    setInput('edit-profile-zip',       CIVILIAN_USER.zip_code);
+
+    // Sex select
+    const sexEl = document.getElementById('edit-profile-sex');
+    if (sexEl && CIVILIAN_USER.sex) sexEl.value = CIVILIAN_USER.sex;
 
     // Pre-select barangay in dropdown
     const brgySelect = document.getElementById('edit-profile-brgy');
@@ -695,13 +709,43 @@ function renderProfileStats() {
     if (el('prof-stat-cancelled')) el('prof-stat-cancelled').textContent = cancelled;
 }
 
-let editingProfile = false;
+let editingProfile   = false;
+let editingEmergency = false;
 
 function toggleProfileEdit() {
     editingProfile = !editingProfile;
     document.getElementById('profile-view').classList.toggle('hidden', editingProfile);
     document.getElementById('profile-edit').classList.toggle('hidden', !editingProfile);
     document.getElementById('edit-btn').textContent = editingProfile ? '✕ Cancel' : '✎ Edit';
+}
+
+function toggleEmergencyEdit() {
+    editingEmergency = !editingEmergency;
+    document.getElementById('emergency-view').classList.toggle('hidden', editingEmergency);
+    document.getElementById('emergency-edit').classList.toggle('hidden', !editingEmergency);
+    document.getElementById('edit-emergency-btn').textContent = editingEmergency ? '✕ Cancel' : 'Edit';
+    if (editingEmergency) {
+        const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        setInput('edit-emergency-name',  CIVILIAN_USER.emergency_contact_name);
+        setInput('edit-emergency-phone', CIVILIAN_USER.emergency_contact_phone);
+    }
+}
+
+async function saveEmergencyContact() {
+    const ename  = document.getElementById('edit-emergency-name')?.value.trim() || '';
+    const ephone = document.getElementById('edit-emergency-phone')?.value.trim() || '';
+    try {
+        await apiFetch('user.php', {action: 'updateEmergencyContact', emergency_name: ename, emergency_phone: ephone}, 'POST');
+        CIVILIAN_USER.emergency_contact_name  = ename;
+        CIVILIAN_USER.emergency_contact_phone = ephone;
+        const setField = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+        setField('prof-emergency-name',  ename);
+        setField('prof-emergency-phone', ephone);
+        toggleEmergencyEdit();
+        showToast('Emergency contact updated successfully.');
+    } catch (error) {
+        showToast(error.message);
+    }
 }
 
 function togglePasswordVisibility(inputId, button) {
@@ -788,12 +832,16 @@ async function saveProfilePictureUrl(url, statusEl) {
 }
 
 async function saveProfile() {
-    const name           = document.getElementById('edit-profile-name')?.value.trim() || '';
-    const email          = document.getElementById('edit-profile-email')?.value.trim() || '';
-    const phone          = document.getElementById('edit-profile-phone')?.value.trim() || '';
-    const brgy           = document.getElementById('edit-profile-brgy')?.value || '';
-    const emergencyName  = document.getElementById('edit-emergency-name')?.value.trim() || '';
-    const emergencyPhone = document.getElementById('edit-emergency-phone')?.value.trim() || '';
+    const name      = document.getElementById('edit-profile-name')?.value.trim() || '';
+    const middle    = document.getElementById('edit-profile-middle')?.value.trim() || '';
+    const email     = document.getElementById('edit-profile-email')?.value.trim() || '';
+    const phone     = document.getElementById('edit-profile-phone')?.value.trim() || '';
+    const brgy      = document.getElementById('edit-profile-brgy')?.value || '';
+    const sex       = document.getElementById('edit-profile-sex')?.value || '';
+    const birthdate = document.getElementById('edit-profile-birthdate')?.value || '';
+    const street    = document.getElementById('edit-profile-street')?.value.trim() || '';
+    const province  = document.getElementById('edit-profile-province')?.value.trim() || '';
+    const zip       = document.getElementById('edit-profile-zip')?.value.trim() || '';
 
     if (!name) { showToast('Full name is required.'); return; }
     if (!email) { showToast('Email is required.'); return; }
@@ -805,14 +853,18 @@ async function saveProfile() {
     try {
         await apiFetch('user.php', {
             action: 'updateProfile', name, email, phone, brgy,
-            emergency_name: emergencyName, emergency_phone: emergencyPhone,
+            middle_name: middle, sex, birthdate, street, province, zip_code: zip,
         }, 'POST');
-        CIVILIAN_USER.name                    = name;
-        CIVILIAN_USER.email                   = email;
-        CIVILIAN_USER.phone                   = phone;
-        CIVILIAN_USER.home_barangay           = brgy;
-        CIVILIAN_USER.emergency_contact_name  = emergencyName;
-        CIVILIAN_USER.emergency_contact_phone = emergencyPhone;
+        CIVILIAN_USER.name          = name;
+        CIVILIAN_USER.middle_name   = middle;
+        CIVILIAN_USER.email         = email;
+        CIVILIAN_USER.phone         = phone;
+        CIVILIAN_USER.home_barangay = brgy;
+        CIVILIAN_USER.sex           = sex;
+        CIVILIAN_USER.birthdate     = birthdate;
+        CIVILIAN_USER.street        = street;
+        CIVILIAN_USER.province      = province;
+        CIVILIAN_USER.zip_code      = zip;
         renderProfilePage();
         toggleProfileEdit();
         showToast('Profile updated successfully.');

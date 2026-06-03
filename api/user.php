@@ -8,6 +8,14 @@ $db          = getDb();
 
 /* Ensure extended profile columns exist for all environments */
 foreach ([
+    'middle_name'             => "VARCHAR(100) DEFAULT NULL",
+    'birthdate'               => "DATE DEFAULT NULL",
+    'sex'                     => "VARCHAR(30) DEFAULT NULL",
+    'street'                  => "VARCHAR(255) DEFAULT NULL",
+    'city'                    => "VARCHAR(100) DEFAULT NULL",
+    'province'                => "VARCHAR(100) DEFAULT NULL",
+    'zip_code'                => "VARCHAR(10) DEFAULT NULL",
+    'valid_id_url'            => "VARCHAR(512) DEFAULT NULL",
     'emergency_contact_name'  => "VARCHAR(200) DEFAULT NULL",
     'emergency_contact_phone' => "VARCHAR(30) DEFAULT NULL",
 ] as $_col => $_def) {
@@ -138,16 +146,26 @@ if ($action === 'updateProfile') {
         if ($phone === '' || $brgy === '') {
             errorResponse('Phone and barangay are required for civilian profile updates.');
         }
+        $middleName    = trim((string)($data['middle_name'] ?? ''));
+        $birthdate     = trim((string)($data['birthdate'] ?? ''));
+        $sex           = trim((string)($data['sex'] ?? ''));
+        $street        = trim((string)($data['street'] ?? ''));
+        $province      = trim((string)($data['province'] ?? ''));
+        $zipCode       = trim((string)($data['zip_code'] ?? ''));
         $emergencyName  = trim((string)($data['emergency_name'] ?? ''));
         $emergencyPhone = trim((string)($data['emergency_phone'] ?? ''));
         $stmt = $db->prepare(
             'UPDATE users SET full_name = :name, email = :email, phone_number = :phone, barangay = :brgy,
+             middle_name = :midname, birthdate = :bdate, sex = :sex, street = :street,
+             province = :province, zip_code = :zip,
              emergency_contact_name = :ename, emergency_contact_phone = :ephone
              WHERE user_id = :uid'
         );
         $stmt->execute([
-            ':name' => $name, ':email' => $email, ':phone' => $phone, ':brgy' => $brgy,
-            ':ename' => $emergencyName, ':ephone' => $emergencyPhone, ':uid' => $currentUid,
+            ':name'    => $name,    ':email'   => $email,   ':phone'    => $phone,    ':brgy'  => $brgy,
+            ':midname' => $middleName, ':bdate' => ($birthdate !== '' ? $birthdate : null),
+            ':sex'     => $sex,     ':street'  => $street,  ':province' => $province, ':zip'   => $zipCode,
+            ':ename'   => $emergencyName, ':ephone' => $emergencyPhone, ':uid' => $currentUid,
         ]);
 
     } elseif ($currentRole === 'dispatch') {
@@ -202,6 +220,17 @@ if ($action === 'changePassword') {
        ->execute([':hash' => $hash, ':uid' => $currentUid]);
 
     successResponse(['message' => 'Password changed successfully.']);
+}
+
+if ($action === 'updateEmergencyContact') {
+    if ($currentRole !== 'regular') {
+        errorResponse('Only regular users can update emergency contact.', 403);
+    }
+    $ename  = trim((string)($data['emergency_name'] ?? ''));
+    $ephone = trim((string)($data['emergency_phone'] ?? ''));
+    $db->prepare('UPDATE users SET emergency_contact_name = :ename, emergency_contact_phone = :ephone WHERE user_id = :uid')
+       ->execute([':ename' => $ename, ':ephone' => $ephone, ':uid' => $currentUid]);
+    successResponse(['message' => 'Emergency contact updated.']);
 }
 
 errorResponse('Unknown action.');
