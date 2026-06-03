@@ -144,13 +144,13 @@ async function initField() {
     await loadFieldProfile();
 
     const displayName = FIELD_USER.name || FIELD_USER.username || 'Field Officer';
-    const initials = String(displayName)
+    const initials = (String(displayName)
         .split(' ')
         .filter(Boolean)
         .map(part => part.charAt(0))
         .join('')
         .slice(0, 2)
-        .toUpperCase() || 'FO';
+        .toUpperCase()) || 'FO';
 
     const sidebarNameEl = document.getElementById('field-sb-name');
     if (sidebarNameEl) sidebarNameEl.textContent = displayName;
@@ -159,7 +159,10 @@ async function initField() {
     if (topNameEl) topNameEl.textContent = displayName;
 
     const topAvatarEl = document.getElementById('field-top-avatar');
-    if (topAvatarEl) topAvatarEl.textContent = initials;
+    if (topAvatarEl) {
+        topAvatarEl.textContent = initials;
+        topAvatarEl.style.fontSize = initials.length > 1 ? '11px' : '14px';
+    }
 
     await Promise.all([loadAssignedTasks(), loadHistory(), loadPerformance()]);
     renderDashboard();
@@ -198,9 +201,10 @@ function applyFieldAvatar(element, initial, imageUrl, fallbackClassName = '') {
 }
 
 function getFieldBadgeId() {
-        const assignmentBadge = ASSIGNMENTS.find(item => item.officer_badge)?.officer_badge;
-        if (assignmentBadge) return assignmentBadge;
-        return 'FO-' + String(FIELD_USER?.id || '001').padStart(4, '0');
+    if (FIELD_USER?.badge_number) return FIELD_USER.badge_number;
+    const assignmentBadge = ASSIGNMENTS.find(item => item.officer_badge)?.officer_badge;
+    if (assignmentBadge) return assignmentBadge;
+    return 'EMP-' + String(FIELD_USER?.officer_id || FIELD_USER?.id || '001').padStart(4, '0');
 }
 
 function renderProfile() {
@@ -553,10 +557,7 @@ async function loadFieldChatThread() {
 function renderFieldChatMessages(messages) {
     const body = document.getElementById('messenger-messages-body');
     if (!body) return;
-    const myName = (FIELD_USER && (FIELD_USER.name || FIELD_USER.username)) || 'Me';
-    const contactName = fieldActiveContact ? (fieldActiveContact.name || 'Dispatch') : 'Dispatch';
-    const myInitials = myName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
-    const theirInitials = contactName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+    const myUserId = FIELD_USER ? String(FIELD_USER.user_id || FIELD_USER.id || '') : '';
 
     if (!messages.length) {
         body.innerHTML = '<div class="msg-date-divider">No messages yet. Send the first message!</div>';
@@ -564,27 +565,29 @@ function renderFieldChatMessages(messages) {
     }
 
     let lastDate = '';
-    body.innerHTML = messages.map(msg => {
-        const isMine = String(msg.senderRole || '') === 'field';
-        const senderName = isMine ? myName : contactName;
-        const initials = isMine ? myInitials : theirInitials;
+    const rows = [];
+    for (const msg of messages) {
+        const isMine = myUserId ? String(msg.senderId) === myUserId : String(msg.senderRole || '') === 'field';
+        const senderName = msg.senderName || (isMine ? (FIELD_USER?.name || 'Me') : (fieldActiveContact?.name || 'Dispatch'));
+        const initials = String(senderName).split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase() || '?';
         const sentAt = new Date(msg.sentAt);
         const dateStr = sentAt.toLocaleDateString();
         let dateDivider = '';
         if (dateStr !== lastDate) {
             lastDate = dateStr;
-            dateDivider = `<div class="msg-date-divider">${dateStr}</div>`;
+            dateDivider = `<div class="msg-date-divider">${safeText(dateStr)}</div>`;
         }
         const timeStr = sentAt.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        return `${dateDivider}<div class="messenger-msg-row ${isMine ? 'sent' : 'received'}">
+        rows.push(`${dateDivider}<div class="messenger-msg-row ${isMine ? 'sent' : 'received'}">
             <div class="msg-sender-avatar ${isMine ? 'my-avatar' : 'their-avatar'}">${safeText(initials)}</div>
             <div class="msg-bubble-wrap ${isMine ? 'sent' : ''}">
                 <div class="msg-sender-name">${safeText(senderName)}</div>
                 <div class="msg-bubble ${isMine ? 'sent' : 'received'}">${safeText(msg.message)}</div>
-                <div class="msg-time">${timeStr}</div>
+                <div class="msg-time">${safeText(timeStr)}</div>
             </div>
-        </div>`;
-    }).join('');
+        </div>`);
+    }
+    body.innerHTML = rows.join('');
     body.scrollTop = body.scrollHeight;
 }
 

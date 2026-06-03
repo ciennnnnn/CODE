@@ -268,11 +268,17 @@ document.addEventListener('click', e => {
 
 function renderDashboard() {
     const counts = window.dispatchCounts || {pending: 0, dup_count: 0, active_cases: 0};
-    document.getElementById('stat-pending').textContent = counts.pending;
-    document.getElementById('stat-dups').textContent = counts.dup_count;
-    document.getElementById('stat-active-count').textContent = counts.active_cases;
-    document.getElementById('badge-queue').textContent = counts.pending;
-    document.getElementById('badge-active').textContent = counts.active_cases;
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('stat-pending', counts.pending ?? '—');
+    setEl('stat-dups', counts.dup_count ?? '—');
+    setEl('stat-active-count', counts.active_cases ?? '—');
+    setEl('badge-queue', counts.pending ?? '0');
+    setEl('badge-active', counts.active_cases ?? '0');
+    /* Resolution rate from analytics if available */
+    if (window.dispatchAnalytics) {
+        const rate = window.dispatchAnalytics.rate;
+        setEl('stat-resolution-rate', rate != null ? rate + '%' : '—');
+    }
 
     const queueList = document.getElementById('dash-queue-list');
     if (queueList) {
@@ -1157,7 +1163,7 @@ function renderProfile() {
     setEl('prof-email-static', user.email || '—');
     setEl('prof-phone-static', user.phone || '—');
     setEl('prof-badgeid-static', user.badge_number || ('DISP-' + String(user.id || '001').padStart(4, '0')));
-    setEl('prof-brgy-static', user.home_barangay || user.brgy || 'QC Command');
+    setEl('prof-brgy-static', user.home_barangay || user.brgy || user.assigned_barangay || 'QC Command');
     setEl('prof-rank-static', 'Dispatch Officer');
     setEl('prof-dept-static', 'Traffic Management Division');
 
@@ -1300,9 +1306,12 @@ async function renderAnalytics() {
     /* Summary stats */
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     if (analyticsData) {
+        window.dispatchAnalytics = analyticsData;  /* cache for dashboard */
         setEl('analytics-total', analyticsData.total ?? '—');
-        const rateStr = String(analyticsData.rate ?? '—').replace('%','');
-        setEl('analytics-rate', rateStr !== '—' ? rateStr + '%' : '—');
+        const rate = analyticsData.rate;
+        const rateDisplay = rate != null ? String(rate).replace('%','') + '%' : '—';
+        setEl('analytics-rate', rateDisplay);
+        setEl('stat-resolution-rate', rateDisplay);  /* update command center stat too */
         setEl('analytics-avg', analyticsData.avg_hours != null ? parseFloat(analyticsData.avg_hours).toFixed(1) + 'h' : '—');
         setEl('analytics-rejected', analyticsData.rejected ?? '—');
     }
@@ -1536,10 +1545,10 @@ function openChatModal(officerId, officerName, receiverRole = 'field') {
             </div>
             <button class="modal-close" onclick="closeModal();stopChatPolling();">&#x2715;</button>
           </div>
-          <div id="chat-body" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:6px;background:#f2f4f8"></div>
-          <div style="display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid var(--border);flex-shrink:0">
-            <input id="chat-input" class="form-input" style="flex:1;border-radius:999px;padding:10px 16px" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}" />
-            <button class="btn-primary" style="border-radius:999px;padding:10px 20px;flex-shrink:0" onclick="sendChatMessage()">Send</button>
+          <div id="chat-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:6px;background:#f2f4f8"></div>
+          <div style="display:flex;gap:8px;padding:10px 14px;background:#fff;border-top:1px solid var(--border);flex-shrink:0;align-items:center">
+            <input id="chat-input" class="form-input" style="flex:1;border-radius:999px;padding:8px 14px;font-size:13px" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}" />
+            <button onclick="sendChatMessage()" style="border-radius:999px;padding:8px 16px;font-size:12px;font-weight:700;background:var(--ink);color:#fff;border:none;cursor:pointer;flex-shrink:0;letter-spacing:0.04em">SEND</button>
           </div>
         </div>
       </div>`);
@@ -1570,39 +1579,39 @@ async function loadChatThread() {
 function renderChatMessages(messages) {
     const body = document.getElementById('chat-body');
     if (!body) return;
-    const myName = (DISPATCH_USER && (DISPATCH_USER.name || DISPATCH_USER.username)) || 'Dispatch';
-    const theirName = (activeChat && activeChat.name) || 'Field Officer';
-    const myInitials = myName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
-    const theirInitials = theirName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+    const myUserId = DISPATCH_USER ? String(DISPATCH_USER.user_id || DISPATCH_USER.id || '') : '';
 
     if (!messages.length) {
-        body.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--mist);padding:24px">No messages yet.</div>';
+        body.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--mist);padding:24px">No messages yet. Send the first message.</div>';
         return;
     }
 
     let lastDate = '';
-    body.innerHTML = messages.map(msg => {
-        const isMine = String(msg.senderRole || '') === 'dispatch';
-        const senderName = isMine ? myName : theirName;
-        const initials = isMine ? myInitials : theirInitials;
+    const rows = [];
+    for (const msg of messages) {
+        const isMine = myUserId ? String(msg.senderId) === myUserId : String(msg.senderRole || '') === 'dispatch';
+        const senderName = msg.senderName || (isMine ? 'Me' : (activeChat && activeChat.name) || 'Field Officer');
+        const initials = String(senderName).split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase() || '?';
         const sentAt = new Date(msg.sentAt);
         const dateStr = sentAt.toLocaleDateString();
         let dateDivider = '';
         if (dateStr !== lastDate) {
             lastDate = dateStr;
-            dateDivider = `<div style="text-align:center;font-size:11px;color:var(--mist);padding:8px 0;font-family:var(--font-mono)">${dateStr}</div>`;
+            dateDivider = `<div style="text-align:center;font-size:11px;color:var(--mist);padding:8px 0;font-family:var(--font-mono)">${safeText(dateStr)}</div>`;
         }
         const timeStr = sentAt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const avatarColor = isMine ? 'var(--accent)' : '#444';
-        return `${dateDivider}<div style="display:flex;align-items:flex-end;gap:8px;${isMine ? 'flex-direction:row-reverse' : ''}">
-            <div style="width:30px;height:30px;border-radius:50%;background:${avatarColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${safeText(initials)}</div>
-            <div style="max-width:72%;display:flex;flex-direction:column;${isMine ? 'align-items:flex-end' : ''}">
-                <div style="font-size:10px;font-weight:600;color:var(--mist);margin-bottom:3px;padding:0 4px">${safeText(senderName)}</div>
-                <div style="padding:10px 14px;border-radius:18px;font-size:13px;line-height:1.5;word-break:break-word;${isMine ? 'background:var(--accent);color:#fff;border-bottom-right-radius:4px' : 'background:#fff;color:var(--ink);border:1px solid #e0e5f0;border-bottom-left-radius:4px'}">${safeText(msg.message)}</div>
-                <div style="font-size:10px;color:var(--mist);margin-top:3px;padding:0 4px">${timeStr}</div>
+        const avatarColor = isMine ? '#111' : '#555';
+        rows.push(`${dateDivider}
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:4px;${isMine ? 'flex-direction:row-reverse' : ''}">
+            <div style="width:28px;height:28px;border-radius:50%;background:${avatarColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${safeText(initials)}</div>
+            <div style="max-width:72%;display:flex;flex-direction:column;${isMine ? 'align-items:flex-end' : 'align-items:flex-start'}">
+                <div style="font-size:10px;font-weight:600;color:#888;margin-bottom:3px;padding:0 4px">${safeText(senderName)}</div>
+                <div style="padding:9px 13px;border-radius:16px;font-size:13px;line-height:1.5;word-break:break-word;${isMine ? 'background:#111;color:#fff;border-bottom-right-radius:4px' : 'background:#fff;color:#111;border:1px solid #e0e5f0;border-bottom-left-radius:4px'}">${safeText(msg.message)}</div>
+                <div style="font-size:10px;color:#aaa;margin-top:3px;padding:0 4px">${safeText(timeStr)}</div>
             </div>
-        </div>`;
-    }).join('');
+        </div>`);
+    }
+    body.innerHTML = rows.join('');
     body.scrollTop = body.scrollHeight;
 }
 

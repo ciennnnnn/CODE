@@ -389,27 +389,19 @@
 .officer-card.minimalist .officer-btn:active {
   background: #eee;
 }
-/* Fixed Officer Map in Field Officers Section */
-@media (min-width: 900px) {
-  #page-officers .card {
-    position: fixed;
-    top: 90px;
-    right: 40px;
-    width: 420px;
-    max-width: 90vw;
-    z-index: 100;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-  }
-  #officers-grid {
-    margin-right: 460px;
-  }
+/* Officer Map: full-width above the officer grid */
+#page-officers > .card {
+  position: static;
+  width: 100%;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-/* Sticky Officer Map in Field Officers Section */
 #officers-page-map {
-  position: sticky;
-  top: 24px;
-  z-index: 10;
+  position: static;
   background: #fff;
+}
+#officers-grid {
+  margin-right: 0;
 }
 @media (max-width: 900px) {
   .dash-grid, .analytics-grid {

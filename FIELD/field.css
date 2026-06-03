@@ -800,12 +800,16 @@
 .messenger-input {
   flex: 1;
   border-radius: 999px !important;
-  padding: 10px 16px !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
 }
 
 .messenger-send-btn {
   border-radius: 999px !important;
-  padding: 10px 20px !important;
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
   flex-shrink: 0;
 }
 

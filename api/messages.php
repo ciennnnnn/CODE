@@ -25,7 +25,6 @@ function ensureChatMessagesTable(PDO $db): void
     );
 }
 
-/* Normalize role variants so conversation keys are consistent */
 function normalizeRole(string $role): string
 {
     $map = ['field_officer' => 'field', 'dispatch_officer' => 'dispatch', 'citizen' => 'regular'];
@@ -42,22 +41,37 @@ function buildConversationKey(string $roleA, int $idA, string $roleB, int $idB):
 
 ensureChatMessagesTable($db);
 
-/* Both sides always pass user_id directly — no extension-PK resolution needed */
 $senderRole = normalizeRole($user['role']);
 $senderId   = (int)($user['user_id'] ?? $user['id'] ?? 0);
 
-$receiverRole   = normalizeRole(trim((string)($data['receiver_role'] ?? $_REQUEST['receiver_role'] ?? '')));
-$receiverId     = (int)trim((string)($data['receiver_id'] ?? $_REQUEST['receiver_id'] ?? 0));
+$receiverRole = normalizeRole(trim((string)($data['receiver_role'] ?? $_REQUEST['receiver_role'] ?? '')));
+$receiverId   = (int)($data['receiver_id'] ?? $_REQUEST['receiver_id'] ?? 0);
 
 $currentKey = '';
 if ($receiverRole !== '' && $receiverId > 0 && $senderId > 0) {
     $currentKey = buildConversationKey($senderRole, $senderId, $receiverRole, $receiverId);
 }
 
+/* Shared SELECT with sender name joined from users table */
+$selectSql =
+    'SELECT cm.message_id AS id,
+            cm.sender_role AS senderRole,
+            cm.sender_id AS senderId,
+            cm.receiver_role AS receiverRole,
+            cm.receiver_id AS receiverId,
+            cm.message_text AS message,
+            cm.sent_at AS sentAt,
+            COALESCE(u.full_name, u.username, cm.sender_role) AS senderName
+     FROM chat_messages cm
+     LEFT JOIN users u ON u.user_id = cm.sender_id';
+
 if ($action === 'send') {
     $message = trim((string)($data['message'] ?? ''));
     if ($message === '' || $receiverRole === '' || $receiverId === 0) {
         errorResponse('Message text, receiver role, and receiver ID are required.');
+    }
+    if ($currentKey === '') {
+        errorResponse('Unable to build conversation key. Sender or receiver ID missing.');
     }
     $stmt = $db->prepare(
         'INSERT INTO chat_messages (conversation_key, sender_role, sender_id, receiver_role, receiver_id, message_text)
@@ -78,10 +92,7 @@ if ($action === 'poll') {
     if ($currentKey === '') errorResponse('A conversation key is required.');
     $lastId = (int)($data['last_id'] ?? $_REQUEST['last_id'] ?? 0);
     $stmt = $db->prepare(
-        'SELECT message_id AS id, sender_role AS senderRole, sender_id AS senderId,
-                receiver_role AS receiverRole, receiver_id AS receiverId,
-                message_text AS message, sent_at AS sentAt
-         FROM chat_messages WHERE conversation_key = :key AND message_id > :last ORDER BY message_id ASC'
+        $selectSql . ' WHERE cm.conversation_key = :key AND cm.message_id > :last ORDER BY cm.message_id ASC'
     );
     $stmt->execute([':key' => $currentKey, ':last' => $lastId]);
     successResponse(['messages' => $stmt->fetchAll()]);
@@ -90,13 +101,24 @@ if ($action === 'poll') {
 if ($action === 'thread') {
     if ($currentKey === '') errorResponse('A conversation key is required.');
     $stmt = $db->prepare(
-        'SELECT message_id AS id, sender_role AS senderRole, sender_id AS senderId,
-                receiver_role AS receiverRole, receiver_id AS receiverId,
-                message_text AS message, sent_at AS sentAt
-         FROM chat_messages WHERE conversation_key = :key ORDER BY message_id ASC'
+        $selectSql . ' WHERE cm.conversation_key = :key ORDER BY cm.message_id ASC'
     );
     $stmt->execute([':key' => $currentKey]);
-    successResponse(['messages' => $stmt->fetchAll()]);
+    $messages = $stmt->fetchAll();
+
+    /* Fallback: if empty, try both sender/receiver orderings to catch old messages */
+    if (empty($messages) && $senderId > 0 && $receiverId > 0) {
+        $altKey = buildConversationKey($receiverRole, $receiverId, $senderRole, $senderId);
+        if ($altKey !== $currentKey) {
+            $stmt2 = $db->prepare(
+                $selectSql . ' WHERE cm.conversation_key = :key ORDER BY cm.message_id ASC'
+            );
+            $stmt2->execute([':key' => $altKey]);
+            $messages = $stmt2->fetchAll();
+        }
+    }
+
+    successResponse(['messages' => $messages]);
 }
 
 errorResponse('Unknown action.');

@@ -12,7 +12,8 @@ $currentUid  = (int)($user['user_id'] ?? $currentId);  // always users.user_id
 if ($action === 'profile') {
     $profile = [
         'role'                => $currentRole,
-        'id'                  => $currentId,
+        'id'                  => $currentId,    /* extension PK (dispatch_id / officer_id) */
+        'user_id'             => $currentUid,   /* always users.user_id — used for chat sender matching */
         'name'                => $user['name'] ?? '',
         'email'               => $user['email'] ?? '',
         'profile_picture_url' => $user['profile_picture_url'] ?? '',
@@ -36,38 +37,44 @@ if ($action === 'profile') {
 
     } elseif ($currentRole === 'dispatch') {
         $stmt = $db->prepare(
-            'SELECT u.username, u.full_name AS name, u.email, u.profile_picture_url
+            'SELECT u.username, u.full_name AS name, u.email, u.profile_picture_url,
+                    d.badge_number, d.assigned_barangay AS home_barangay
              FROM users u
-             JOIN dispatch_officers d ON d.user_id = u.user_id
-             WHERE d.dispatch_id = :id'
+             LEFT JOIN dispatch_officers d ON d.user_id = u.user_id
+             WHERE u.user_id = :uid'
         );
-        $stmt->execute([':id' => $currentId]);
+        $stmt->execute([':uid' => $currentUid]);
         $row = $stmt->fetch();
         if ($row) {
-            $profile['username'] = $row['username'];
-            $profile['name']     = $row['name'];
-            $profile['email']    = $row['email'];
-            $profile['profile_picture_url'] = $row['profile_picture_url'];
+            $profile['username']      = $row['username'] ?? '';
+            $profile['name']          = $row['name'] ?? '';
+            $profile['email']         = $row['email'] ?? '';
+            $profile['badge_number']  = $row['badge_number'] ?? '';
+            $profile['home_barangay'] = $row['home_barangay'] ?? '';
+            $profile['profile_picture_url'] = $row['profile_picture_url'] ?? '';
         }
 
     } elseif ($currentRole === 'field') {
         $stmt = $db->prepare(
             'SELECT u.username, u.full_name AS name, u.email, u.phone_number AS phone,
                 u.profile_picture_url,
-                    f.assigned_barangay AS home_barangay
+                f.assigned_barangay AS home_barangay,
+                f.badge_number, f.officer_id
              FROM users u
-             JOIN field_officers f ON f.user_id = u.user_id
-             WHERE f.officer_id = :id'
+             LEFT JOIN field_officers f ON f.user_id = u.user_id
+             WHERE u.user_id = :uid'
         );
-        $stmt->execute([':id' => $currentId]);
+        $stmt->execute([':uid' => $currentUid]);
         $row = $stmt->fetch();
         if ($row) {
-            $profile['username']      = $row['username'];
-            $profile['name']          = $row['name'];
-            $profile['email']         = $row['email'];
-            $profile['phone']         = $row['phone'];
-            $profile['home_barangay'] = $row['home_barangay'];
-            $profile['profile_picture_url'] = $row['profile_picture_url'];
+            $profile['username']      = $row['username'] ?? '';
+            $profile['name']          = $row['name'] ?? '';
+            $profile['email']         = $row['email'] ?? '';
+            $profile['phone']         = $row['phone'] ?? '';
+            $profile['home_barangay'] = $row['home_barangay'] ?? '';
+            $profile['badge_number']  = $row['badge_number'] ?? '';
+            $profile['officer_id']    = $row['officer_id'] ?? $currentId;
+            $profile['profile_picture_url'] = $row['profile_picture_url'] ?? '';
         }
     }
 
