@@ -295,9 +295,8 @@ function renderDashboard() {
                 return;
         }
         tbody.innerHTML = my.slice(0, 5).map(c => {
-            const canCancel = c?.status === 'submitted' && c?.date &&
-                (Date.now() - new Date(c.date).getTime() < 30 * 60 * 1000);
-            const minsLeft = canCancel ? (30 - Math.floor((Date.now() - new Date(c.date).getTime()) / 60000)) : 0;
+            const submittedStatuses = ['submitted', 'pending', 'unknown'];
+            const canCancel = submittedStatuses.includes((c?.status || '').toLowerCase());
             return `<tr>
                 <td class="track-id">${safeText(c?.id || '')}</td>
                 <td>${safeText(c?.cat || '')}</td>
@@ -306,7 +305,7 @@ function renderDashboard() {
                 <td class="mono" style="font-size:12px">${formatDateTime(c?.date || '')}</td>
                 <td style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c?.id || '')}')">Track</button>
-                    ${canCancel ? `<button class="btn-danger btn-sm" title="Cancel (${minsLeft} min remaining)" onclick="cancelComplaint('${safeText(c?.id || '')}')">Cancel</button>` : ''}
+                    ${canCancel ? `<button class="btn-danger btn-sm" onclick="cancelComplaint('${safeText(c?.id || '')}')">Cancel</button>` : ''}
                 </td>
             </tr>`;
         }).join('');
@@ -372,11 +371,9 @@ function renderComplaintsTable() {
     }
 
     tbody.innerHTML = my.map(c => {
-        /* Show Cancel only for submitted complaints filed within the last 30 minutes */
-        const canCancel = c.status === 'submitted' && c.date &&
-            (Date.now() - new Date(c.date).getTime() < 30 * 60 * 1000);
-        const minutesAgo = c.date ? Math.floor((Date.now() - new Date(c.date).getTime()) / 60000) : 999;
-        const cancelTitle = canCancel ? `Cancel (${30 - minutesAgo} min remaining)` : '';
+        /* Show Cancel for submitted/pending/unknown status — backend enforces 30-min window */
+        const submittedStatuses = ['submitted', 'pending', 'unknown'];
+        const canCancel = submittedStatuses.includes((c.status || '').toLowerCase());
         return `<tr>
           <td class="track-id">${safeText(c.id)}</td>
           <td>${safeText(c.cat)}</td>
@@ -386,7 +383,7 @@ function renderComplaintsTable() {
           <td class="mono" style="font-size:12px">${formatDateTime(c.date)}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c.id)}')">Track</button>
-            ${canCancel ? `<button class="btn-danger btn-sm" title="${safeText(cancelTitle)}" onclick="cancelComplaint('${safeText(c.id)}')">Cancel</button>` : ''}
+            ${canCancel ? `<button class="btn-danger btn-sm" onclick="cancelComplaint('${safeText(c.id)}')">Cancel</button>` : ''}
           </td>
         </tr>`;
     }).join('');
@@ -787,6 +784,46 @@ function toggleEmergencyEdit() {
         setInput('edit-emergency-name',  CIVILIAN_USER.emergency_contact_name);
         setInput('edit-emergency-phone', CIVILIAN_USER.emergency_contact_phone);
     }
+}
+
+async function uploadProfileValidId(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowed.includes(file.type)) { showToast('Only JPG, PNG, WebP, or PDF files are accepted for valid ID.'); return; }
+    if (file.size > 50 * 1024 * 1024) { showToast('File size must be under 50 MB.'); return; }
+
+    const statusEl = document.getElementById('profile-id-status');
+    if (statusEl) statusEl.textContent = 'Uploading…';
+
+    const fd = new FormData();
+    fd.append('action', 'upload_evidence');
+    fd.append('file', file);
+
+    try {
+        const resp = await apiFetch('media.php', fd, 'POST');
+        const url = resp?.url || resp?.file_url || '';
+        if (!url) throw new Error('Upload succeeded but no URL was returned.');
+
+        /* Save URL to profile */
+        await apiFetch('user.php', {action: 'updateProfile',
+            name: CIVILIAN_USER.name || '', email: CIVILIAN_USER.email || '',
+            phone: CIVILIAN_USER.phone || '', brgy: CIVILIAN_USER.home_barangay || '',
+            valid_id_url: url,
+        }, 'POST');
+
+        CIVILIAN_USER.valid_id_url = url;
+
+        const vidEl = document.getElementById('prof-valid-id');
+        if (vidEl) {
+            vidEl.innerHTML = `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue,#2563eb);text-decoration:underline;text-underline-offset:3px;font-weight:600;font-size:13px">View Uploaded ID &rarr;</a>`;
+            vidEl.style.color = '';
+        }
+        if (statusEl) { statusEl.textContent = '✓ ID uploaded successfully!'; setTimeout(() => { statusEl.textContent = ''; }, 3500); }
+    } catch (err) {
+        if (statusEl) statusEl.textContent = '✗ ' + err.message;
+    }
+    event.target.value = '';
 }
 
 async function saveEmergencyContact() {

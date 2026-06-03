@@ -332,7 +332,17 @@
                   <div class="prof-info-item"><div class="prof-info-label">CITY</div><div class="prof-info-val" id="prof-city">Quezon City</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">PROVINCE</div><div class="prof-info-val" id="prof-province">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">ZIP CODE</div><div class="prof-info-val" id="prof-zip">&mdash;</div></div>
-                  <div class="prof-info-item" style="grid-column:1/-1"><div class="prof-info-label">VALID ID</div><div id="prof-valid-id" style="margin-top:4px;font-size:13px;font-weight:500;color:var(--mist)">Not uploaded</div></div>
+                  <div class="prof-info-item" style="grid-column:1/-1">
+                    <div class="prof-info-label">VALID ID</div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap">
+                      <div id="prof-valid-id" style="font-size:13px;font-weight:500;color:var(--mist)">Not uploaded</div>
+                      <label style="cursor:pointer">
+                        <input type="file" id="profile-id-input" accept="image/*,application/pdf" style="display:none" onchange="uploadProfileValidId(event)" />
+                        <span class="btn-secondary btn-sm" onclick="document.getElementById('profile-id-input').click()">Upload / Replace ID</span>
+                      </label>
+                      <span id="profile-id-status" style="font-size:11px;color:var(--mist)"></span>
+                    </div>
+                  </div>
                 </div>
                 <div style="margin-top:12px;font-size:11px;color:var(--mist);letter-spacing:0.04em">Fields showing &ldquo;Not set&rdquo; can be updated via the Edit button above.</div>
               </div>

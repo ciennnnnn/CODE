@@ -154,19 +154,23 @@ if ($action === 'updateProfile') {
         $zipCode       = trim((string)($data['zip_code'] ?? ''));
         $emergencyName  = trim((string)($data['emergency_name'] ?? ''));
         $emergencyPhone = trim((string)($data['emergency_phone'] ?? ''));
+        $validIdUrl     = trim((string)($data['valid_id_url'] ?? ''));
         $stmt = $db->prepare(
             'UPDATE users SET full_name = :name, email = :email, phone_number = :phone, barangay = :brgy,
              middle_name = :midname, birthdate = :bdate, sex = :sex, street = :street,
              province = :province, zip_code = :zip,
              emergency_contact_name = :ename, emergency_contact_phone = :ephone
+             ' . ($validIdUrl !== '' ? ', valid_id_url = :valid_id' : '') . '
              WHERE user_id = :uid'
         );
-        $stmt->execute([
+        $params = [
             ':name'    => $name,    ':email'   => $email,   ':phone'    => $phone,    ':brgy'  => $brgy,
             ':midname' => $middleName, ':bdate' => ($birthdate !== '' ? $birthdate : null),
             ':sex'     => $sex,     ':street'  => $street,  ':province' => $province, ':zip'   => $zipCode,
             ':ename'   => $emergencyName, ':ephone' => $emergencyPhone, ':uid' => $currentUid,
-        ]);
+        ];
+        if ($validIdUrl !== '') $params[':valid_id'] = $validIdUrl;
+        $stmt->execute($params);
 
     } elseif ($currentRole === 'dispatch') {
         $stmt = $db->prepare('UPDATE users SET full_name = :name, email = :email WHERE user_id = :uid');

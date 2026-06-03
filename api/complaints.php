@@ -51,13 +51,6 @@ if ($action === 'timeline') {
 }
 
 if ($action === 'submit') {
-        // Debug: log the received payload for troubleshooting
-        file_put_contents(__DIR__ . '/complaint_debug.log', print_r([
-            'POST' => $_POST,
-            'GET' => $_GET,
-            'RAW' => file_get_contents('php://input'),
-            'JSON' => $data,
-        ], true), FILE_APPEND);
     // Move all variable declarations outside try-catch so they are always defined
     $category    = trim((string)($data['category'] ?? ''));
     $barangay    = trim((string)($data['barangay'] ?? ''));
@@ -111,10 +104,7 @@ if ($action === 'submit') {
             errorResponse('Description must be at least 50 characters.');
         }
         if (!is_array($media) || count($media) === 0) {
-            errorResponse([
-                'error' => 'At least one evidence file is required before submitting a complaint.',
-                'received' => $data,
-            ]);
+            errorResponse('At least one evidence file is required before submitting a complaint.');
         }
         if (count($media) > 3) {
             errorResponse('You can upload up to 3 evidence files only.');
@@ -222,14 +212,22 @@ if ($action === 'cancel') {
         errorResponse('Complaint ID is required.');
     }
 
-    $stmt = $db->prepare('SELECT complaint_id, status FROM complaints WHERE tracking_id = :id AND user_id = :uid');
+    $stmt = $db->prepare(
+        'SELECT complaint_id, status,
+                TIMESTAMPDIFF(MINUTE, submitted_at, NOW()) AS minutes_ago
+         FROM complaints WHERE tracking_id = :id AND user_id = :uid'
+    );
     $stmt->execute([':id' => $id, ':uid' => $userId]);
     $row = $stmt->fetch();
     if (!$row) {
         errorResponse('Complaint not found.');
     }
-    if ($row['status'] !== 'submitted') {
-        errorResponse('Only complaints that are still submitted may be cancelled.');
+    $cancelableStatuses = ['submitted', 'pending', 'unknown'];
+    if (!in_array(strtolower((string)($row['status'] ?? '')), $cancelableStatuses, true)) {
+        errorResponse('Only submitted complaints may be cancelled.');
+    }
+    if ((int)$row['minutes_ago'] > 30) {
+        errorResponse('The 30-minute cancellation window has passed. Please contact the Barangay office for further assistance.');
     }
 
     $db->prepare("UPDATE complaints SET status = 'cancelled' WHERE complaint_id = :cid")
