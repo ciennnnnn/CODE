@@ -9,20 +9,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/base.css" />
-  <link rel="stylesheet" href="field.css?v=20260510a" />
+  <link rel="stylesheet" href="field.css?v=20260603a" />
 </head>
 <body>
 
 <div class="app-shell">
 
-  <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="mark">TRAPICO</div>
       <div class="sub">Field Operations</div>
     </div>
     <div class="sidebar-role-badge">
-      <span class="srb-icon">🛡️</span>
+      <span class="srb-icon" style="font-size:18px;font-weight:700">FO</span>
       <div>
         <div class="srb-name" id="field-sb-name">Field Officer</div>
         <div class="srb-label">Field Officer</div>
@@ -30,93 +30,51 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Navigation</div>
-      <div class="nav-item active" id="nav-dash"        onclick="setActivePage('dash')">        <span class="nav-icon">🏠</span> My Dashboard     </div>
-      <div class="nav-item"        id="nav-assigned"    onclick="setActivePage('assigned')">    <span class="nav-icon">📋</span> Assigned Cases  <span class="nav-badge" id="badge-assigned">3</span> </div>
-      <div class="nav-item"        id="nav-job"         onclick="setActivePage('job')">         <span class="nav-icon">🔴</span> Active Job <span class="nav-badge hidden" id="badge-dispatch-msg">0</span>      </div>
-      <div class="nav-item"        id="nav-drafts"      onclick="setActivePage('drafts')">      <span class="nav-icon">🧾</span> Drafts           </div>
-      <div class="nav-item"        id="nav-history"     onclick="setActivePage('history')">     <span class="nav-icon">📁</span> Case History     </div>
-      <div class="nav-item"        id="nav-performance" onclick="setActivePage('performance')"> <span class="nav-icon">📊</span> My Performance   </div>
-      <div class="nav-item"        id="nav-profile"     onclick="setActivePage('profile')">     <span class="nav-icon">👤</span> My Profile       </div>
+      <div class="nav-item active" id="nav-dash"        onclick="setActivePage('dash')">        My Dashboard     </div>
+      <div class="nav-item"        id="nav-assigned"    onclick="setActivePage('assigned')">    Assigned Cases   <span class="nav-badge" id="badge-assigned">0</span> </div>
+      <div class="nav-item"        id="nav-job"         onclick="setActivePage('job')">         Active Job       <span class="nav-badge hidden" id="badge-dispatch-msg">0</span> </div>
+      <div class="nav-item"        id="nav-messages"    onclick="setActivePage('messages')">    Messages         <span class="nav-badge hidden" id="badge-messages">0</span> </div>
+      <div class="nav-item"        id="nav-drafts"      onclick="setActivePage('drafts')">      Drafts           </div>
+      <div class="nav-item"        id="nav-history"     onclick="setActivePage('history')">     Case History     </div>
+      <div class="nav-item"        id="nav-performance" onclick="setActivePage('performance')"> My Performance   </div>
+      <div class="nav-item"        id="nav-profile"     onclick="setActivePage('profile')">     My Profile       </div>
     </nav>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">
-        <span>⬡</span><span>Sign Out</span>
+        <span>&#8594;</span><span>Sign Out</span>
       </div>
     </div>
   </aside>
 
-  <!-- ══════════════════ MAIN CONTENT ══════════════════════ -->
+  <!-- MAIN CONTENT -->
   <div class="main-content">
 
     <!-- TOPBAR -->
     <header class="topbar">
       <div class="topbar-flex-row">
-        <button class="menu-btn" id="menu-btn" aria-label="Open menu" onclick="toggleSidebar()">☰</button>
+        <button class="menu-btn" id="menu-btn" aria-label="Open menu" onclick="toggleSidebar()">&#9776;</button>
         <span id="topbar-title">My Dashboard</span>
       </div>
       <div class="topbar-right">
         <style>
         @media (max-width: 900px) {
-          .topbar {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 0 8px;
-            height: 54px;
-            min-height: 54px;
-            box-sizing: border-box;
-          }
-          .topbar-flex-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-            flex: 1 1 auto;
-          }
-          #topbar-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-left: 0;
-            text-align: left;
-            letter-spacing: 0.5px;
-          }
-          .menu-btn {
-            margin-right: 8px;
-            margin-left: 0;
-            font-size: 26px;
-            padding: 0 4px;
-          }
-          .topbar-right {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
+          .topbar { display:flex;flex-direction:row;align-items:center;justify-content:flex-start;padding:0 8px;height:54px;min-height:54px;box-sizing:border-box; }
+          .topbar-flex-row { display:flex;flex-direction:row;align-items:center;gap:10px;flex:1 1 auto; }
+          #topbar-title { font-size:20px;font-weight:700;margin-left:0;text-align:left;letter-spacing:0.5px; }
+          .menu-btn { margin-right:8px;margin-left:0;font-size:26px;padding:0 4px; }
+          .topbar-right { margin-left:auto;display:flex;align-items:center;gap:8px; }
         }
         @media (max-width: 540px) {
-          .topbar {
-            padding: 0 2px;
-            height: 48px;
-            min-height: 48px;
-          }
-          #topbar-title {
-            font-size: 17px;
-          }
-          .menu-btn {
-            font-size: 22px;
-            padding: 0 2px;
-          }
+          .topbar { padding:0 2px;height:48px;min-height:48px; }
+          #topbar-title { font-size:17px; }
+          .menu-btn { font-size:22px;padding:0 2px; }
         }
         </style>
         <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
-          🔔
+          &#128276;
           <div class="notif-dot"></div>
           <div class="notif-panel hidden" id="notif-panel">
             <div class="notif-head">Notifications</div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">New assignment: Road Damage, Central.</div><div class="notif-time">5 min ago</div></div></div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">30-min arrival window started. Depart now.</div><div class="notif-time">11 min ago</div></div></div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">Resolution for #000012 approved by Dispatch.</div><div class="notif-time">1 hr ago</div></div></div>
           </div>
         </div>
         <div class="user-chip" style="cursor:pointer" onclick="setActivePage('profile')">
@@ -129,9 +87,8 @@
     <!-- PAGE BODY -->
     <main class="page-body">
 
-      <!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
+      <!-- PAGE: DASHBOARD -->
       <section id="page-dash" class="page-section">
-
         <div class="stats-row">
           <div class="stat-card accent"><div class="stat-card-label">Assigned to Me</div><div class="stat-card-val" id="stat-assigned">0</div><div class="stat-card-sub">Pending action</div></div>
           <div class="stat-card"><div class="stat-card-label">In Progress</div><div class="stat-card-val" id="stat-inprog">0</div><div class="stat-card-sub">Currently on-site</div></div>
@@ -140,8 +97,8 @@
         </div>
 
         <div class="alert alert-warn hidden" id="dash-urgent-alert">
-          ⏱ <div>You have an active assignment with <strong id="dash-countdown">--:--</strong> remaining on the 30-minute window.
-          <a href="#" onclick="setActivePage('job');return false" style="color:var(--ink);font-weight:700;text-decoration:underline">Go to Active Job →</a></div>
+          <div>You have an active assignment with <strong id="dash-countdown">--:--</strong> remaining on the 30-minute window.
+          <a href="#" onclick="setActivePage('job');return false" style="color:var(--ink);font-weight:700;text-decoration:underline">Go to Active Job</a></div>
         </div>
 
         <div class="card">
@@ -153,16 +110,15 @@
         </div>
       </section>
 
-      <!-- ═══════════════ PAGE: ASSIGNED CASES ═══════════ -->
+      <!-- PAGE: ASSIGNED CASES -->
       <section id="page-assigned" class="page-section hidden">
         <div id="assigned-list"></div>
       </section>
 
-      <!-- ═══════════════ PAGE: ACTIVE JOB ═══════════════ -->
+      <!-- PAGE: ACTIVE JOB -->
       <section id="page-job" class="page-section hidden">
 
         <div class="active-job-card">
-          <!-- Case header -->
           <div class="job-header">
             <div>
               <div class="job-id-row">
@@ -170,11 +126,10 @@
                 <span class="badge badge-progress">In Progress</span>
                 <span class="badge badge-medium"><span class="priority-dot dot-medium"></span>Medium</span>
               </div>
-              <div class="job-meta">Road Damage · Barangay Central · 2026-03-24 09:30</div>
+              <div class="job-meta">Road Damage &middot; Barangay Central &middot; 2026-03-24 09:30</div>
             </div>
           </div>
 
-          <!-- Countdown -->
           <div class="countdown-box">
             <div>
               <div class="countdown-val" id="job-countdown">18:42</div>
@@ -187,45 +142,37 @@
           </div>
 
           <div id="job-fta-alert" class="alert alert-danger hidden">
-            🚨 <div>You are approaching the 30-minute arrival deadline. Failure to check in will trigger an automated <strong>Failure-to-Arrive</strong> alert to Dispatch.</div>
+            <div>You are approaching the 30-minute arrival deadline. Failure to check in will trigger an automated <strong>Failure-to-Arrive</strong> alert to Dispatch.</div>
           </div>
 
-          <!-- Map -->
           <div class="map-placeholder" style="height:220px;margin-bottom:20px">
-            <div class="map-icon">🗺️</div>
-            <div class="map-label">Navigate to site · Timog Ave., Central QC</div>
-            <div class="map-sub">14.6390, 121.0100 · Tap to open in Google Maps</div>
+            <div class="map-label">Navigate to site &middot; Timog Ave., Central QC</div>
+            <div class="map-sub">14.6390, 121.0100 &middot; Tap to open in Google Maps</div>
           </div>
 
-          <!-- GPS Check-in -->
           <div class="checkin-panel">
             <div class="checkin-title">GPS Geofence Check-In</div>
             <div class="checkin-sub">You must be within 150m of the incident site to check in. The system verifies your GPS coordinates.</div>
             <div class="checkin-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-              <button class="btn-danger" id="btn-checkin" onclick="attemptCheckin()">📍 Check In (GPS)</button>
-              <button class="btn-secondary" onclick="openDispatchChat()">💬 Chat with Dispatch</button>
-              <button class="btn-success" id="btn-simulate" onclick="simulateArrival()">🧪 Simulate Arrival</button>
+              <button class="btn-danger" id="btn-checkin" onclick="attemptCheckin()">Check In (GPS)</button>
+              <button class="btn-success" id="btn-simulate" onclick="simulateArrival()">Simulate Arrival</button>
             </div>
             <div class="checkin-status" id="checkin-status"></div>
           </div>
 
-          <!-- Resolution Form -->
           <div id="resolution-form">
             <div class="section-title" style="margin-bottom:16px">Resolution Report</div>
 
-            <!-- Before / After uploads -->
             <div class="evidence-grid">
               <div>
-                <label class="evidence-label">Before — Incident Evidence</label>
+                <label class="evidence-label">Before &mdash; Incident Evidence</label>
                 <div class="upload-box" style="height:110px">
-                  <div class="upload-icon">📸</div>
                   <div class="upload-text" style="font-size:12px">Upload BEFORE photo/video</div>
                 </div>
               </div>
               <div>
-                <label class="evidence-label">After — Proof of Resolution</label>
+                <label class="evidence-label">After &mdash; Proof of Resolution</label>
                 <div class="upload-box" style="height:110px">
-                  <div class="upload-icon">✅</div>
                   <div class="upload-text" style="font-size:12px">Upload AFTER photo/video</div>
                 </div>
               </div>
@@ -262,13 +209,51 @@
 
             <div class="btn-row">
               <button class="btn-secondary" onclick="saveDraft()">Save Draft</button>
-              <button class="btn-success" onclick="submitResolution()">Submit Resolution Report ✓</button>
+              <button class="btn-success" onclick="submitResolution()">Submit Resolution Report</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ═══════════════ PAGE: DRAFTS ═══════════════ -->
+      <!-- PAGE: MESSAGES -->
+      <section id="page-messages" class="page-section hidden">
+        <div class="messenger-shell">
+          <!-- Contact list -->
+          <div class="messenger-contacts" id="messenger-contacts">
+            <div class="messenger-contacts-head">
+              <span class="card-title" style="font-size:15px">Dispatch Officers</span>
+              <span style="font-size:11px;color:var(--mist)">Select to chat</span>
+            </div>
+            <div id="contact-list">
+              <div class="contact-empty">Loading contacts…</div>
+            </div>
+          </div>
+          <!-- Chat window -->
+          <div class="messenger-chat" id="messenger-chat">
+            <div class="messenger-chat-placeholder" id="chat-placeholder">
+              <div style="font-size:32px;margin-bottom:12px;color:var(--mist)">&#128172;</div>
+              <div style="font-weight:600;font-size:15px;margin-bottom:6px">Select a contact</div>
+              <div style="font-size:13px;color:var(--mist)">Choose a Dispatch Officer from the list to start messaging</div>
+            </div>
+            <div class="messenger-chat-active hidden" id="chat-active-area">
+              <div class="messenger-chat-header" id="chat-header">
+                <div class="chat-header-avatar" id="chat-header-avatar">D</div>
+                <div>
+                  <div class="chat-header-name" id="chat-header-name">Dispatch Officer</div>
+                  <div class="chat-header-sub">Dispatch Command Center</div>
+                </div>
+              </div>
+              <div class="messenger-messages" id="messenger-messages-body"></div>
+              <div class="messenger-composer">
+                <input id="field-chat-input" class="form-input messenger-input" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFieldMessage();}" />
+                <button class="btn-primary messenger-send-btn" onclick="sendFieldMessage()">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: DRAFTS -->
       <section id="page-drafts" class="page-section hidden">
         <div class="card">
           <div class="card-head">
@@ -279,7 +264,7 @@
         </div>
       </section>
 
-      <!-- ═══════════════ PAGE: CASE HISTORY ══════════════ -->
+      <!-- PAGE: CASE HISTORY -->
       <section id="page-history" class="page-section hidden">
         <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
           <input class="form-input" style="max-width:280px" id="history-search" placeholder="Search case history…" oninput="renderHistory()" />
@@ -300,7 +285,7 @@
         </div>
       </section>
 
-      <!-- ═══════════════ PAGE: MY PERFORMANCE ════════════ -->
+      <!-- PAGE: MY PERFORMANCE -->
       <section id="page-performance" class="page-section hidden">
         <div class="stats-row">
           <div class="stat-card green"><div class="stat-card-label">Efficiency Score</div><div class="stat-card-val" id="perf-efficiency">0%</div><div class="stat-card-sub">This month</div></div>
@@ -310,26 +295,23 @@
         </div>
 
         <div class="perf-grid">
-          <!-- Metrics table -->
           <div class="card">
             <div class="card-head"><span class="card-title">Performance Metrics</span></div>
             <div id="perf-metrics-list"></div>
           </div>
-          <!-- KPI bars -->
           <div class="card">
             <div class="card-head"><span class="card-title">KPI Breakdown</span></div>
             <div id="perf-kpi-bars"></div>
           </div>
         </div>
 
-        <!-- Satisfaction ratings -->
         <div class="card">
           <div class="card-head"><span class="card-title">Recent User Ratings</span></div>
           <div id="perf-ratings"></div>
         </div>
       </section>
 
-      <!-- ═══════════════ PAGE: MY PROFILE ════════════ -->
+      <!-- PAGE: MY PROFILE -->
       <section id="page-profile" class="page-section hidden">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
           <div class="card" style="grid-column:1">
@@ -386,7 +368,7 @@
               </div>
               <div style="background:var(--accent-light);padding:16px;border-radius:8px;border-left:4px solid var(--accent)">
                 <div style="color:var(--mist);font-size:12px;font-weight:600">Average Rating</div>
-                <div style="font-size:28px;font-weight:800;color:var(--accent);margin-top:8px" id="prof-avg-rating">0.0★</div>
+                <div style="font-size:28px;font-weight:800;color:var(--accent);margin-top:8px" id="prof-avg-rating">0.0</div>
               </div>
               <div style="background:#f3e5f5;padding:16px;border-radius:8px;border-left:4px solid #9c27b0">
                 <div style="color:var(--mist);font-size:12px;font-weight:600">Efficiency Score</div>
@@ -399,10 +381,10 @@
         <div class="card" style="margin-top:24px">
           <div class="card-head"><span class="card-title">Quick Actions</span></div>
           <div style="padding:20px;display:flex;gap:12px;flex-wrap:wrap">
-            <button class="btn-secondary" onclick="editProfile()">✏️ Edit Profile</button>
-            <button class="btn-secondary" onclick="changePassword()">🔑 Change Password</button>
-            <button class="btn-secondary" onclick="viewActivityLog()">📋 Activity Log</button>
-            <button class="btn-secondary" onclick="logout()">⬡ Sign Out</button>
+            <button class="btn-secondary" onclick="editProfile()">Edit Profile</button>
+            <button class="btn-secondary" onclick="changePassword()">Change Password</button>
+            <button class="btn-secondary" onclick="viewActivityLog()">Activity Log</button>
+            <button class="btn-secondary" onclick="logout()">Sign Out</button>
           </div>
         </div>
       </section>
@@ -411,18 +393,37 @@
   </div>
 </div>
 
+<!-- Sidebar backdrop (mobile) -->
+<div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebar()" style="display:none"></div>
+
 <!-- Modal container -->
 <div id="modal-container"></div>
 
-</div>
-
-<!-- Scripts: Place at end of body for best performance -->
+<!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="/data.js?v=20260508c"></script>
-<script src="../api.js?v=20260508c"></script>
-<script src="field.js?v=20260508c"></script>
-<script src="/data.js?v=20260508c"></script>
-<script src="/api.js?v=20260508c"></script>
-<script src="field.js?v=20260508c"></script>
-<script src="field.backend.js?v=20260510a"></script>
+<script src="/data.js?v=20260603a"></script>
+<script src="/api.js?v=20260603a"></script>
+<script src="field.js?v=20260603a"></script>
+<script src="field.backend.js?v=20260603a"></script>
+<script>
+function toggleSidebar() {
+  var sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  var isOpen = sidebar.classList.toggle('open');
+  document.body.classList.toggle('sidebar-open', isOpen);
+  var backdrop = document.getElementById('sidebar-backdrop');
+  if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
+}
+function closeSidebar() {
+  var sidebar = document.querySelector('.sidebar');
+  if (sidebar) sidebar.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+  var backdrop = document.getElementById('sidebar-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+}
+document.querySelectorAll('.nav-item, .logout-btn').forEach(function(el) {
+  el.addEventListener('touchstart', function(){}, {passive: true});
+});
+</script>
+</body>
 </html>

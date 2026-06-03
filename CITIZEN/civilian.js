@@ -119,7 +119,7 @@ function renderBrgyGrid() {
   const BARANGAYS_SAFE = typeof BARANGAYS !== 'undefined' ? BARANGAYS : ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'];
   grid.innerHTML = BARANGAYS_SAFE.map(b => `
     <div class="brgy-card">
-      <div class="brgy-card-icon">📍</div>
+      <div class="brgy-card-icon"></div>
       <div class="brgy-card-name">${b}</div>
       <div class="brgy-card-label"><span class="brgy-card-dot"></span>Active</div>
     </div>`).join('');
@@ -143,7 +143,7 @@ function renderComplaintsTable() {
     tbody.innerHTML = `
       <tr><td colspan="7">
         <div class="empty-state">
-          <div class="empty-icon">📭</div>
+          <div class="empty-icon"></div>
           <div class="empty-title">No complaints found</div>
           <div class="empty-sub">Try adjusting your search or filter.</div>
         </div>

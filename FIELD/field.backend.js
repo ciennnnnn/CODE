@@ -16,12 +16,6 @@ let evidenceUploads = {before: null, after: null};
 let activeJobMap = null;
 let activeJobIncidentMarker = null;
 let activeJobOfficerMarker = null;
-let activeChat = null;
-let chatLastId = 0;
-let chatInterval = null;
-let dispatchChatAlert = false;
-let dispatchLastIncomingId = 0;
-let dispatchChatAlertInterval = null;
 
 window.addEventListener('DOMContentLoaded', initField);
 let notificationLastId = 0;
@@ -117,11 +111,7 @@ function startPerformanceRefresh() {
 
 function getCurrentPositionPromise() {
     if (!window.isSecureContext) {
-<<<<<<< HEAD
-        return Promise.reject(new Error('GPS requires a secure origin. Open this app via https://.'));
-=======
-        return Promise.reject(new Error('GPS requires a secure origin. Please use HTTPS (https://yourdomain) for GPS features.'));
->>>>>>> 906d5df481d66fb25a8efc250ef9388054df4945
+        return Promise.reject(new Error('GPS requires a secure origin. Please use HTTPS for GPS features.'));
     }
     if (!navigator.geolocation) {
         return Promise.reject(new Error('Geolocation is not supported by your browser.'));
@@ -177,9 +167,10 @@ async function initField() {
     renderActiveJob();
     renderHistory();
     renderPerformance();
-        renderProfile();
+    renderProfile();
     startPerformanceRefresh();
-    startDispatchChatAlertPolling();
+    loadFieldContacts();
+    startGlobalUnreadPolling();
 }
 
 async function loadFieldProfile() {
@@ -479,76 +470,211 @@ function viewActivityLog() {
             </div>`);
 }
 
-function getDispatchChatButtonClass() {
-    return dispatchChatAlert ? 'btn-danger' : 'btn-secondary';
-}
+/* ── MESSAGES PAGE ─────────────────────────────────────────── */
+let fieldContacts = [];
+let fieldActiveContact = null;
+let fieldChatLastId = 0;
+let fieldChatInterval = null;
+let fieldUnreadMap = {};
+let fieldBaselineMap = {};
 
-function updateDispatchChatButtonStyles() {
-    const btn = document.getElementById('btn-chat-dispatch');
-    if (btn) {
-        btn.classList.remove('btn-secondary', 'btn-danger');
-        btn.classList.add(getDispatchChatButtonClass());
-    }
-
-    const navBadge = document.getElementById('badge-dispatch-msg');
-    if (navBadge) {
-        navBadge.textContent = dispatchChatAlert ? '1' : '0';
-        navBadge.classList.toggle('hidden', !dispatchChatAlert);
-    }
-
-    const notifDot = document.querySelector('#notif-btn .notif-dot');
-    if (notifDot) {
-        notifDot.classList.toggle('hidden', !dispatchChatAlert);
-    }
-}
-
-async function refreshDispatchChatAlerts({baselineOnly = false} = {}) {
-    const assignment = getActiveAssignment();
-    if (!assignment || !assignment.dispatch_id) return;
-
-    const receiverRole = 'dispatch';
-    const receiverId = String(assignment.dispatch_id);
-
+async function loadFieldContacts() {
     try {
-        const resp = await apiFetch('messages.php', {action: 'thread', receiver_role: receiverRole, receiver_id: receiverId});
-        const messages = Array.isArray(resp.messages) ? resp.messages : [];
-        const incoming = messages.filter(m => String(m.senderRole || '') !== 'field');
-        const lastIncomingId = incoming.length ? Number(incoming[incoming.length - 1].id || 0) : 0;
-
-        if (dispatchLastIncomingId === 0 || baselineOnly) {
-            dispatchLastIncomingId = lastIncomingId;
-            updateDispatchChatButtonStyles();
-            return;
-        }
-
-        const newIncomingCount = incoming.filter(m => Number(m.id || 0) > dispatchLastIncomingId).length;
-        if (newIncomingCount > 0) {
-            const sameOpenChat = activeChat
-                && String(activeChat.receiverRole) === receiverRole
-                && String(activeChat.receiverId) === receiverId;
-
-            if (!sameOpenChat) {
-                dispatchChatAlert = true;
-                showNotification('New message from Dispatch', `${newIncomingCount} unread message(s)`);
-                updateDispatchChatButtonStyles();
-            }
-        }
-
-        dispatchLastIncomingId = Math.max(dispatchLastIncomingId, lastIncomingId);
+        const resp = await apiFetch('field.php', {action: 'contacts'});
+        fieldContacts = resp.contacts || [];
+        renderContactList();
+        pollAllContactsForUnread();
     } catch (error) {
-        console.warn('Unable to refresh dispatch chat alerts:', error.message);
+        console.warn('Could not load contacts:', error.message);
     }
 }
 
-function startDispatchChatAlertPolling() {
-    if (dispatchChatAlertInterval) {
-        clearInterval(dispatchChatAlertInterval);
+function renderContactList() {
+    const listEl = document.getElementById('contact-list');
+    if (!listEl) return;
+    if (!fieldContacts.length) {
+        listEl.innerHTML = '<div class="contact-empty">No dispatch officers available.</div>';
+        return;
+    }
+    listEl.innerHTML = fieldContacts.map(c => {
+        const initials = String(c.name || 'D').split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+        const unread = fieldUnreadMap[String(c.user_id)] || 0;
+        const isActive = fieldActiveContact && String(fieldActiveContact.user_id) === String(c.user_id);
+        return `<div class="contact-item${isActive ? ' active' : ''}" onclick="selectFieldContact(${JSON.stringify(c).replace(/'/g, '&#39;')})">
+            <div class="contact-avatar">${safeText(initials)}</div>
+            <div class="contact-info">
+                <div class="contact-name">${safeText(c.name || 'Dispatch Officer')}</div>
+                <div class="contact-brgy">${safeText(c.brgy ? 'Brgy. ' + c.brgy : 'Command Center')}</div>
+            </div>
+            ${unread > 0 ? `<div class="contact-unread">${unread}</div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function selectFieldContact(contact) {
+    fieldActiveContact = contact;
+    fieldChatLastId = 0;
+    fieldUnreadMap[String(contact.user_id)] = 0;
+    renderContactList();
+    openFieldChat(contact);
+    loadFieldChatThread();
+    startFieldChatPolling();
+    updateMessagesNavBadge();
+}
+
+function openFieldChat(contact) {
+    const initials = String(contact.name || 'D').split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+    const placeholder = document.getElementById('chat-placeholder');
+    const chatArea = document.getElementById('chat-active-area');
+    if (placeholder) placeholder.classList.add('hidden');
+    if (chatArea) chatArea.classList.remove('hidden');
+    const avatarEl = document.getElementById('chat-header-avatar');
+    const nameEl = document.getElementById('chat-header-name');
+    if (avatarEl) avatarEl.textContent = initials;
+    if (nameEl) nameEl.textContent = contact.name || 'Dispatch Officer';
+}
+
+async function loadFieldChatThread() {
+    if (!fieldActiveContact) return;
+    try {
+        const resp = await apiFetch('messages.php', {
+            action: 'thread',
+            receiver_role: 'dispatch',
+            receiver_id: String(fieldActiveContact.user_id),
+        });
+        const messages = resp.messages || [];
+        fieldChatLastId = messages.length ? Number(messages[messages.length - 1].id) : 0;
+        renderFieldChatMessages(messages);
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function renderFieldChatMessages(messages) {
+    const body = document.getElementById('messenger-messages-body');
+    if (!body) return;
+    const myName = (FIELD_USER && (FIELD_USER.name || FIELD_USER.username)) || 'Me';
+    const contactName = fieldActiveContact ? (fieldActiveContact.name || 'Dispatch') : 'Dispatch';
+    const myInitials = myName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+    const theirInitials = contactName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+
+    if (!messages.length) {
+        body.innerHTML = '<div class="msg-date-divider">No messages yet. Send the first message!</div>';
+        return;
     }
 
-    refreshDispatchChatAlerts({baselineOnly: true});
-    dispatchChatAlertInterval = setInterval(() => {
-        refreshDispatchChatAlerts();
-    }, 5000);
+    let lastDate = '';
+    body.innerHTML = messages.map(msg => {
+        const isMine = String(msg.senderRole || '') === 'field';
+        const senderName = isMine ? myName : contactName;
+        const initials = isMine ? myInitials : theirInitials;
+        const sentAt = new Date(msg.sentAt);
+        const dateStr = sentAt.toLocaleDateString();
+        let dateDivider = '';
+        if (dateStr !== lastDate) {
+            lastDate = dateStr;
+            dateDivider = `<div class="msg-date-divider">${dateStr}</div>`;
+        }
+        const timeStr = sentAt.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        return `${dateDivider}<div class="messenger-msg-row ${isMine ? 'sent' : 'received'}">
+            <div class="msg-sender-avatar ${isMine ? 'my-avatar' : 'their-avatar'}">${safeText(initials)}</div>
+            <div class="msg-bubble-wrap ${isMine ? 'sent' : ''}">
+                <div class="msg-sender-name">${safeText(senderName)}</div>
+                <div class="msg-bubble ${isMine ? 'sent' : 'received'}">${safeText(msg.message)}</div>
+                <div class="msg-time">${timeStr}</div>
+            </div>
+        </div>`;
+    }).join('');
+    body.scrollTop = body.scrollHeight;
+}
+
+async function sendFieldMessage() {
+    const input = document.getElementById('field-chat-input');
+    if (!input || !fieldActiveContact) return;
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = '';
+    try {
+        await apiFetch('messages.php', {
+            action: 'send',
+            receiver_role: 'dispatch',
+            receiver_id: String(fieldActiveContact.user_id),
+            message,
+        }, 'POST');
+        await loadFieldChatThread();
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function startFieldChatPolling() {
+    stopFieldChatPolling();
+    fieldChatInterval = setInterval(async () => {
+        if (!fieldActiveContact) return;
+        try {
+            const resp = await apiFetch('messages.php', {
+                action: 'poll',
+                receiver_role: 'dispatch',
+                receiver_id: String(fieldActiveContact.user_id),
+                last_id: fieldChatLastId,
+            });
+            const newMsgs = resp.messages || [];
+            if (newMsgs.length) {
+                fieldChatLastId = Number(newMsgs[newMsgs.length - 1].id);
+                await loadFieldChatThread();
+            }
+        } catch (error) {
+            console.warn('Chat poll failed:', error.message);
+        }
+    }, 3000);
+}
+
+function stopFieldChatPolling() {
+    if (fieldChatInterval) {
+        clearInterval(fieldChatInterval);
+        fieldChatInterval = null;
+    }
+}
+
+async function pollAllContactsForUnread() {
+    for (const c of fieldContacts) {
+        try {
+            const resp = await apiFetch('messages.php', {
+                action: 'thread',
+                receiver_role: 'dispatch',
+                receiver_id: String(c.user_id),
+            });
+            const messages = resp.messages || [];
+            const incoming = messages.filter(m => String(m.senderRole || '') !== 'field');
+            const lastId = incoming.length ? Number(incoming[incoming.length - 1].id) : 0;
+            const baseline = fieldBaselineMap[String(c.user_id)];
+            if (baseline === undefined) {
+                fieldBaselineMap[String(c.user_id)] = lastId;
+            } else {
+                const unread = incoming.filter(m => Number(m.id) > baseline).length;
+                if (unread > 0 && !(fieldActiveContact && String(fieldActiveContact.user_id) === String(c.user_id))) {
+                    fieldUnreadMap[String(c.user_id)] = (fieldUnreadMap[String(c.user_id)] || 0) + unread;
+                    fieldBaselineMap[String(c.user_id)] = lastId;
+                }
+            }
+        } catch (_) {}
+    }
+    renderContactList();
+    updateMessagesNavBadge();
+}
+
+function updateMessagesNavBadge() {
+    const total = Object.values(fieldUnreadMap).reduce((s, n) => s + Number(n || 0), 0);
+    const badge = document.getElementById('badge-messages');
+    if (!badge) return;
+    badge.textContent = String(total);
+    badge.classList.toggle('hidden', total <= 0);
+}
+
+function startGlobalUnreadPolling() {
+    setInterval(async () => {
+        await pollAllContactsForUnread();
+    }, 8000);
 }
 
 async function loadAssignedTasks() {
@@ -569,10 +695,6 @@ async function loadPerformance() {
 function toggleNotif() {
     fieldNotifOpen = !fieldNotifOpen;
     document.getElementById('notif-panel').classList.toggle('hidden', !fieldNotifOpen);
-    if (fieldNotifOpen) {
-        dispatchChatAlert = false;
-        updateDispatchChatButtonStyles();
-    }
 }
 
 document.addEventListener('click', e => {
@@ -653,7 +775,7 @@ function renderDashboard() {
                 <div class="task-body">
                     <div class="task-id">${safeText(c.id)}</div>
                     <div class="task-cat">${safeText(c.cat)}</div>
-                    <div class="task-meta">📍 Brgy. ${safeText(c.brgy)} · ${formatDateTime(c.date)}</div>
+                    <div class="task-meta">Brgy. ${safeText(c.brgy)} &middot; ${formatDateTime(c.date)}</div>
                     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
                         ${statusBadge(c.status)} ${priorityBadge(c.priority)}
                     </div>
@@ -721,7 +843,7 @@ function renderAssigned() {
     cleanupAssignedMaps();
 
     if (!list.length) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">No assigned cases</div><div class="empty-sub">You have no active assignments. Stand by.</div></div>`;
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">--</div><div class="empty-title">No assigned cases</div><div class="empty-sub">You have no active assignments. Stand by.</div></div>`;
         return;
     }
 
@@ -883,7 +1005,7 @@ function renderActiveJob() {
 
         const assignment = getActiveAssignment();
         if (!assignment) {
-                page.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">No active job</div><div class="empty-sub">You have no pending or in-progress assignments right now.</div></div>`;
+                page.innerHTML = `<div class="empty-state"><div class="empty-icon">--</div><div class="empty-title">No active job</div><div class="empty-sub">You have no pending or in-progress assignments right now.</div></div>`;
                 stopLiveTracking();
                 return;
         }
@@ -925,7 +1047,7 @@ function renderActiveJob() {
                 </div>
 
                 <div id="job-fta-alert" class="alert alert-danger hidden">
-                    🚨 <div>You are approaching the 30-minute arrival deadline. Failure to check in will trigger an automated <strong>Failure-to-Arrive</strong> alert to Dispatch.</div>
+                    <div>You are approaching the 30-minute arrival deadline. Failure to check in will trigger an automated <strong>Failure-to-Arrive</strong> alert to Dispatch.</div>
                 </div>
 
                                 <div style="margin-bottom:20px">
@@ -939,11 +1061,10 @@ function renderActiveJob() {
                     <div class="checkin-title">GPS Geofence Check-In</div>
                     <div class="checkin-sub">You must be within 150m of the incident site to check in. The system verifies your GPS coordinates.</div>
                     <div class="checkin-actions" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-                        <button class="btn-danger" id="btn-checkin" onclick="attemptCheckin()" ${checkedIn ? 'disabled style="opacity:.45"' : ''}>📍 Check In (GPS)</button>
-                        <button class="${getDispatchChatButtonClass()}" id="btn-chat-dispatch" onclick="openDispatchChat()">💬 Chat with Dispatch</button>
-                        <button class="btn-success" id="btn-simulate" onclick="simulateArrival()" ${checkedIn ? 'disabled style="opacity:.45"' : ''}>🧪 Simulate Arrival</button>
+                        <button class="btn-danger" id="btn-checkin" onclick="attemptCheckin()" ${checkedIn ? 'disabled style="opacity:.45"' : ''}>Check In (GPS)</button>
+                        <button class="btn-success" id="btn-simulate" onclick="simulateArrival()" ${checkedIn ? 'disabled style="opacity:.45"' : ''}>Simulate Arrival</button>
                     </div>
-                    <div class="checkin-status ${checkedIn ? 'ok' : ''}" id="checkin-status">${checkedIn ? '✓ Already checked in for this assignment.' : ''}</div>
+                    <div class="checkin-status ${checkedIn ? 'ok' : ''}" id="checkin-status">${checkedIn ? 'Already checked in for this assignment.' : ''}</div>
                 </div>
 
                 <div id="resolution-form">
@@ -954,7 +1075,6 @@ function renderActiveJob() {
                             <label class="evidence-label">Before — Incident Evidence</label>
                             <input type="file" id="evidence-before-input" accept="image/*,video/mp4,video/quicktime" style="display:none" onchange="handleEvidenceSelected('before', this)" />
                             <div class="upload-box" style="height:110px;cursor:pointer" onclick="chooseEvidence('before')">
-                                <div class="upload-icon">📸</div>
                                 <div class="upload-text" style="font-size:12px">Upload BEFORE photo/video</div>
                                 <div class="upload-sub" id="evidence-before-status">No file uploaded</div>
                             </div>
@@ -963,7 +1083,6 @@ function renderActiveJob() {
                             <label class="evidence-label">After — Proof of Resolution</label>
                             <input type="file" id="evidence-after-input" accept="image/*,video/mp4,video/quicktime" style="display:none" onchange="handleEvidenceSelected('after', this)" />
                             <div class="upload-box" style="height:110px;cursor:pointer" onclick="chooseEvidence('after')">
-                                <div class="upload-icon">✅</div>
                                 <div class="upload-text" style="font-size:12px">Upload AFTER photo/video</div>
                                 <div class="upload-sub" id="evidence-after-status">No file uploaded</div>
                             </div>
@@ -1322,6 +1441,14 @@ window.setActivePage = function(pageId) {
     if (pageId === 'performance') renderPerformance();
     if (pageId === 'drafts') renderDrafts();
     if (pageId === 'profile') renderProfile();
+    if (pageId === 'messages') {
+        loadFieldContacts();
+        /* Clear unread counts for active contact when returning to messages */
+        if (fieldActiveContact) {
+            fieldUnreadMap[String(fieldActiveContact.user_id)] = 0;
+            updateMessagesNavBadge();
+        }
+    }
 };
 
 function renderDrafts() {
@@ -1340,7 +1467,7 @@ function renderDrafts() {
                 .sort((a, b) => new Date(b.draft?.saved_at || 0) - new Date(a.draft?.saved_at || 0));
 
         if (!rows.length) {
-                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-title">No saved drafts</div><div class="empty-sub">Saved resolution drafts will appear here.</div></div>`;
+                container.innerHTML = `<div class="empty-state"><div class="empty-title">No saved drafts</div><div class="empty-sub">Saved resolution drafts will appear here.</div></div>`;
                 return;
         }
 
@@ -1377,7 +1504,7 @@ function renderHistory() {
     if (!tbody) return;
 
     if (!closed.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">No history found</div></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-title">No history found</div></div></td></tr>`;
         return;
     }
 
@@ -1460,106 +1587,6 @@ function renderPerformance() {
     }
 }
 
-function openDispatchChat() {
-    const assignment = getActiveAssignment();
-    if (!assignment || !assignment.dispatch_id) {
-        showToast('Dispatch chat is available once the case is assigned by dispatch.');
-        return;
-    }
-
-    activeChat = {receiverRole: 'dispatch', receiverId: String(assignment.dispatch_id), name: 'Dispatch Officer'};
-    dispatchChatAlert = false;
-    updateDispatchChatButtonStyles();
-    chatLastId = 0;
-    loadChatThread();
-    startChatPolling();
-
-    openModal(`
-      <div class="modal-overlay" onclick="if(event.target===this){ closeModal(); stopChatPolling(); }">
-                <div class="modal" style="max-width:560px;min-height:560px;padding:0;overflow:hidden">
-          <div class="modal-head">
-            <div>
-                            <div class="modal-title">Dispatch Messenger</div>
-                            <div class="modal-subtitle">Live coordination channel</div>
-            </div>
-            <button class="modal-close" onclick="closeModal(); stopChatPolling();">✕</button>
-          </div>
-                    <div class="msg-shell">
-                        <div class="msg-body" id="chat-body"></div>
-                        <div class="msg-composer">
-                            <input id="chat-input" class="form-input msg-input" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendChatMessage();" />
-                            <button class="btn-primary" onclick="sendChatMessage()">Send</button>
-                        </div>
-          </div>
-        </div>
-      </div>`);
-}
-
-async function loadChatThread() {
-    if (!activeChat) return;
-    try {
-        const resp = await apiFetch('messages.php', {action: 'thread', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId});
-        const messages = resp.messages || [];
-        const incoming = messages.filter(m => String(m.senderRole || '') !== 'field');
-        const lastIncomingId = incoming.length ? Number(incoming[incoming.length - 1].id || 0) : 0;
-        dispatchLastIncomingId = Math.max(dispatchLastIncomingId, lastIncomingId);
-        dispatchChatAlert = false;
-        updateDispatchChatButtonStyles();
-        chatLastId = messages.length ? messages[messages.length - 1].id : 0;
-        renderChatMessages(messages);
-    } catch (error) {
-        showToast(error.message);
-    }
-}
-
-function renderChatMessages(messages) {
-    const body = document.getElementById('chat-body');
-    if (!body) return;
-    body.innerHTML = messages.map(msg => {
-        const sentByMe = msg.senderRole === 'field';
-        return `<div class="chat-row ${sentByMe ? 'mine' : 'theirs'}"><div class="chat-bubble ${sentByMe ? 'chat-sent' : 'chat-received'}"><div>${safeText(msg.message)}</div><div class="chat-meta">${formatDateTime(msg.sentAt)}</div></div></div>`;
-    }).join('');
-    body.scrollTop = body.scrollHeight;
-}
-
-async function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    if (!input || !activeChat) return;
-    const message = input.value.trim();
-    if (!message) return;
-    try {
-        await apiFetch('messages.php', {action: 'send', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId, message}, 'POST');
-        input.value = '';
-        await loadChatThread();
-    } catch (error) {
-        showToast(error.message);
-    }
-}
-
-function startChatPolling() {
-    stopChatPolling();
-    chatInterval = setInterval(async () => {
-        if (!activeChat) return;
-        try {
-            const resp = await apiFetch('messages.php', {action: 'poll', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId, last_id: chatLastId});
-            const messages = resp.messages || [];
-            if (messages.length) {
-                chatLastId = messages[messages.length - 1].id;
-                               showNotification('New message from ' + (activeChat.name || 'Dispatch'), 'You have a new message');
-                await loadChatThread();
-            }
-        } catch (error) {
-            console.warn(error.message);
-        }
-    }, 3000);
-}
-
-function stopChatPolling() {
-    if (chatInterval) {
-        clearInterval(chatInterval);
-        chatInterval = null;
-    }
-}
 
 function showNotification(title, message) {
     const container = document.getElementById('notif-panel') || document.querySelector('.notif-panel');

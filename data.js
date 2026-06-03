@@ -87,7 +87,7 @@ function mapPlaceholder(height = 200, label = 'Leaflet.js + OpenStreetMap', lat,
   const coordLabel = (lat && lng) ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}` : label;
   return `
     <div class="map-placeholder" style="height:${height}px">
-      <div class="map-icon">📍</div>
+      <div class="map-icon"></div>
       <div class="map-label">${coordLabel}</div>
       <div class="map-sub">Nominatim geocoding · GPS auto-detect</div>
     </div>`;
@@ -96,7 +96,6 @@ function mapPlaceholder(height = 200, label = 'Leaflet.js + OpenStreetMap', lat,
 function uploadBox(height, label = 'Drag &amp; drop or click to upload', sub = 'JPG, PNG, MP4 · Max 50MB') {
   return `
     <div class="upload-box"${height ? ` style="height:${height}px"` : ''}>
-      <div class="upload-icon">📎</div>
       <div class="upload-text">${label}</div>
       <div class="upload-sub">${sub}</div>
     </div>`;

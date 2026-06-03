@@ -54,13 +54,23 @@ if ($action === 'analytics') {
     $catSt->execute([':m' => $monthStart]);
     $categories = $catSt->fetchAll(PDO::FETCH_ASSOC);
 
+    $weeklyTrend = [];
+    for ($w = 3; $w >= 0; $w--) {
+        $wStart = date('Y-m-d H:i:s', strtotime("-{$w} weeks monday this week"));
+        $wEnd   = date('Y-m-d H:i:s', strtotime("-{$w} weeks sunday this week 23:59:59"));
+        $wSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE submitted_at BETWEEN :ws AND :we");
+        $wSt->execute([':ws' => $wStart, ':we' => $wEnd]);
+        $weeklyTrend[] = (int)$wSt->fetchColumn();
+    }
+
     successResponse([
-        'total'      => $total,
-        'resolved'   => $resolved,
-        'rejected'   => $rejected,
-        'rate'       => $rate . '%',
-        'avg_hours'  => $avgHours ?: 0,
-        'categories' => $categories,
+        'total'        => $total,
+        'resolved'     => $resolved,
+        'rejected'     => $rejected,
+        'rate'         => $rate,
+        'avg_hours'    => $avgHours ?: 0,
+        'categories'   => $categories,
+        'weekly_trend' => $weeklyTrend,
     ]);
 }
 
@@ -151,7 +161,7 @@ if ($action === 'officers') {
     $fieldOfficers = $fieldStmt->fetchAll();
 
     $dispStmt = $db->query(
-        "SELECT do.dispatch_id AS id, do.badge_number AS code, u.full_name AS name,
+        "SELECT do.dispatch_id AS id, do.user_id, do.badge_number AS code, u.full_name AS name,
                 do.assigned_barangay AS brgy,
                 CASE WHEN do.is_on_duty = 1 THEN 'on_duty' ELSE 'offline' END AS status,
                 'dispatch_officer' AS officer_role

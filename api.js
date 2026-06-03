@@ -145,9 +145,17 @@ async function requireLoginRedirect() {
         dispatch: '/dispatch-login.html',
         field: '/field-login.html',
     };
-    const loginPage = loginMap[role] || '/index.html';
+    const loginPage = loginMap[role] || '/citizen-login.html';
 
     if (!user) {
+        window.location.href = loginPage;
+        return null;
+    }
+
+    /* Verify the session user's role matches the current page's required role */
+    if (role && user.role && user.role !== role) {
+        /* Wrong role in session — clear sessionStorage and redirect to correct login */
+        ['regular', 'dispatch', 'field'].forEach(r => sessionStorage.removeItem('trapico_uid_' + r));
         window.location.href = loginPage;
         return null;
     }

@@ -188,7 +188,7 @@ async function initDispatch() {
 
     await loadDispatchData();
     renderDashboard();
-    renderAnalytics();
+    renderAnalytics();   /* async but fire-and-forget on init */
     renderProfile();
     renderProfileCard();
     renderQueueTable();
@@ -284,7 +284,7 @@ function renderDashboard() {
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               ${priorityBadge(c.priority)}
-              ${c.duplicate ? '<span class="dup-flag">⚠ Dup.</span>' : ''}
+              ${c.duplicate ? '<span class="dup-flag">Dup.</span>' : ''}
               ${statusBadge(c.status)}
             </div>
           </div>`).join('');
@@ -294,7 +294,7 @@ function renderDashboard() {
     if (officerList) {
         officerList.innerHTML = OFFICERS_DATA.map(o => `
           <div class="officer-status-item">
-            <div class="officer-initials">${safeText(o.code.slice(-2) || o.name.split(' ').map(x => x[0]).join(''))}</div>
+            <div class="officer-initials">${safeText(String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase())}</div>
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
               <div style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
@@ -359,7 +359,7 @@ function renderQueueTable() {
     if (!tbody) return;
 
     if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">No complaints</div></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-title">No complaints</div></div></td></tr>`;
         return;
     }
 
@@ -371,7 +371,7 @@ function renderQueueTable() {
         <td style="font-size:12px">${safeText(c.brgy)}</td>
         <td>${priorityBadge(c.priority)}</td>
         <td class="mono" style="font-size:12px">${formatDateTime(c.date)}</td>
-        <td>${c.duplicate ? '<span class="dup-flag">⚠ Dup.</span>' : '—'}</td>
+        <td>${c.duplicate ? '<span class="dup-flag">Dup.</span>' : '—'}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-secondary btn-sm" onclick="openReviewModal('${safeText(c.id)}')">Review</button>
@@ -400,7 +400,7 @@ function openCloseCaseModal(id) {
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body">
-            ${alertBox('warn', '⚠️', 'This will finalize the resolved complaint and move it to closed status.')}
+            ${alertBox('warn', '', 'This will finalize the resolved complaint and move it to closed status.')}
             <div class="form-group" style="margin-top:12px">
               <label>Final Dispatch Notes (optional)</label>
               <textarea class="form-input" id="close-case-feedback" rows="3" placeholder="Validation notes before closing..."></textarea>
@@ -468,7 +468,7 @@ function renderActiveCases() {
             <div class="active-case-desc">${safeText(c.desc || c.description || '')}</div>
           </div>
           <div class="map-placeholder" style="height:120px">
-            <div class="map-icon">📍</div>
+            <div class="map-icon"></div>
             <div class="map-label">${safeText(coordLabel)}</div>
           </div>
         </div>
@@ -804,7 +804,7 @@ function mountReviewMap(mapId, lat, lng) {
     return;
   }
   if (!window.L) {
-    mapEl.innerHTML = `<div class="map-placeholder" style="height:180px"><div class="map-icon">📍</div><div class="map-label">${safeText(pointLat.toFixed(5))}, ${safeText(pointLng.toFixed(5))}</div><div class="map-sub">Leaflet failed to load.</div></div>`;
+    mapEl.innerHTML = `<div class="map-placeholder" style="height:180px"><div class="map-icon"></div><div class="map-label">${safeText(pointLat.toFixed(5))}, ${safeText(pointLng.toFixed(5))}</div><div class="map-sub">Leaflet failed to load.</div></div>`;
     return;
   }
 
@@ -880,7 +880,7 @@ async function openReviewModalAsync(id) {
           <div class="modal-body">
             <div class="badge-row">
               ${statusBadge(detailComplaint.status)} <span id="review-priority-badge-${safeText(detailComplaint.id)}">${priorityBadge(detailComplaint.priority)}</span>
-              ${detailComplaint.duplicate ? '<span class="dup-flag">⚠ Potential Duplicate within 100m / 24hr window</span>' : ''}
+              ${detailComplaint.duplicate ? '<span class="dup-flag">Potential Duplicate within 100m / 24hr window</span>' : ''}
             </div>
             <div class="detail-grid">
               <div class="detail-item"><label>Category</label><span>${safeText(detailComplaint.cat)}</span></div>
@@ -1025,7 +1025,7 @@ function openRejectModal(id) {
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body">
-            ${alertBox('warn', '⚠️', 'A rejection reason is required and will be displayed to the commuter on their Transparency Timeline.')}
+            ${alertBox('warn', '', 'A rejection reason is required and will be displayed to the commuter on their Transparency Timeline.')}
             <div class="form-group">
               <label>Rejection Reason *</label>
               <textarea class="form-input" id="stand-reject-reason" rows="4" placeholder="Provide a clear reason for rejection…"></textarea>
@@ -1131,59 +1131,68 @@ async function submitReassign(id) {
 }
 
 function renderProfileCard() {
-    const user = DISPATCH_USER;
-    const mini = document.getElementById('profile-mini-card');
-    if (!mini) return;
-    mini.innerHTML = `
-      <div class="card" style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
-        <img src="https://i.pravatar.cc/120?img=68" alt="Profile" style="width:48px;height:48px;border-radius:50%;object-fit:cover" />
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:14px">${safeText(user.name)}</div>
-          <div style="color:var(--mist);font-size:12px">Dispatch Officer • ${safeText(user.name)}</div>
-        </div>
-        <button class="btn-secondary btn-sm" onclick="setActivePage('profile')">View Profile</button>
-      </div>`;
+    /* profile-mini-card was removed; no-op */
 }
 
 function renderProfile() {
     const user = DISPATCH_USER;
     if (!user) return;
 
-    const initial = (user.name || 'D').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const initial = (user.name || 'D').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+    /* Topbar */
     const topbarName = document.getElementById('topbar-user-name');
-    if (topbarName) topbarName.textContent = user.name;
+    if (topbarName) topbarName.textContent = user.name || 'Dispatch';
+    const topbarAvatar = document.getElementById('topbar-user-avatar');
+    if (topbarAvatar) topbarAvatar.textContent = initial;
 
-    const profAvatar = document.getElementById('prof-avatar');
-    if (profAvatar) {
-        profAvatar.textContent = initial;
-        profAvatar.style.backgroundImage = '';
-    }
+    /* Sidebar */
+    const sbName = document.getElementById('dispatch-sb-name');
+    if (sbName) sbName.textContent = user.name || 'Dispatch Officer';
 
-    document.getElementById('prof-name').textContent = user.name || '—';
-    document.getElementById('prof-position').textContent = 'Dispatch Officer';
-    document.getElementById('prof-email').textContent = user.email || '—';
-    document.getElementById('prof-phone').textContent = user.phone || '—';
-    document.getElementById('prof-badgeid').textContent = 'DSP-' + String(user.id || '001').padStart(4, '0');
-    document.getElementById('prof-brgy').textContent = user.home_barangay || 'QC Command';
-    document.getElementById('prof-cases').textContent = ACTIVE_CASES.length;
-    document.getElementById('prof-closed').textContent = window.dispatchCounts?.closed_cases ?? 0;
-    document.getElementById('prof-avgtime').textContent = '1.8 hours';
-    document.getElementById('prof-caseload').textContent = ACTIVE_CASES.length;
-    document.getElementById('prof-officers-count').textContent = OFFICERS_DATA.length;
-    document.getElementById('prof-active-brgy').textContent = 4;
-    document.getElementById('prof-resolution-rate').textContent = '91%';
-    document.getElementById('prof-on-time').textContent = '94%';
-    document.getElementById('prof-avg-rating').textContent = '4.6★';
-    document.getElementById('prof-efficiency').textContent = '92/100';
+    /* Static view */
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('prof-name-static', user.name || '—');
+    setEl('prof-position-static', 'Dispatch Officer');
+    setEl('prof-email-static', user.email || '—');
+    setEl('prof-phone-static', user.phone || '—');
+    setEl('prof-badgeid-static', user.badge_number || ('DISP-' + String(user.id || '001').padStart(4, '0')));
+    setEl('prof-brgy-static', user.home_barangay || user.brgy || 'QC Command');
+    setEl('prof-rank-static', 'Dispatch Officer');
+    setEl('prof-dept-static', 'Traffic Management Division');
 
-    /* Also update sidebar badge */
-    const sbName = document.querySelector('.srb-name');
-    if (sbName) sbName.textContent = user.name;
-    /* Update topbar user chip */
-    const chip = document.querySelector('.user-chip-name');
-    if (chip) chip.textContent = user.name.split(' ').slice(-1)[0];
-    const avatar = document.querySelector('.user-avatar');
-    if (avatar) avatar.textContent = initial;
+    const initialsEl = document.getElementById('prof-avatar-initials-static');
+    if (initialsEl) initialsEl.textContent = initial;
+
+    /* Pre-fill edit form */
+    const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setInput('prof-name-input', user.name);
+    setInput('prof-position-input', 'Dispatch Officer');
+    setInput('prof-email-input', user.email);
+    setInput('prof-phone-input', user.phone);
+    setInput('prof-badgeid-input', user.badge_number || ('DISP-' + String(user.id || '001').padStart(4, '0')));
+    setInput('prof-brgy-input', user.home_barangay || user.brgy || '');
+    setInput('prof-rank-input', 'Dispatch Officer');
+    setInput('prof-dept-input', 'Traffic Management Division');
+    const editInitials = document.getElementById('prof-avatar-initials');
+    if (editInitials) editInitials.textContent = initial;
+
+    /* Stats */
+    setEl('prof-cases', String(window.dispatchCounts?.active_cases ?? ACTIVE_CASES.length));
+    setEl('prof-closed', String(window.dispatchCounts?.closed_cases ?? 0));
+    setEl('prof-avgtime', '—');
+    setEl('prof-caseload', String(ACTIVE_CASES.length));
+    setEl('prof-officers-count', String(FIELD_OFFICERS_DATA.length));
+    setEl('prof-active-brgy', '4');
+
+    /* Load live analytics for profile performance boxes */
+    apiFetch('dispatch.php', {action: 'analytics'}).then(resp => {
+        if (!resp) return;
+        setEl('prof-resolution-rate', (resp.rate ?? '—') + (typeof resp.rate === 'number' ? '%' : ''));
+        setEl('prof-on-time', '—');
+        setEl('prof-avg-rating', '—');
+        setEl('prof-efficiency', '—');
+    }).catch(() => {});
 }
 
 function renderOfficers() {
@@ -1193,7 +1202,7 @@ function renderOfficers() {
     grid.innerHTML = OFFICERS_DATA.map(o => `
       <div class="officer-full-card">
         <div class="officer-full-header">
-          <div class="officer-avatar-lg">${safeText(o.code.slice(-2) || o.name.split(' ').map(x => x[0]).join(''))}</div>
+          <div class="officer-avatar-lg">${safeText(String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase())}</div>
           <div style="flex:1">
             <div class="officer-full-name">${safeText(o.name)}</div>
             <div class="officer-full-brgy">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
@@ -1217,14 +1226,14 @@ function renderOfficers() {
         ${perfBar('Workload', Math.min(100, (o.cases_closed ?? 0) * 12))}
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn-secondary btn-sm" style="flex:1" onclick="showToast('Viewing cases for ${safeText(o.name)}')">View Cases</button>
-          <button id="contact-btn-${safeText(_chatPartnerKey(_chatReceiverRole(o), o.id))}" class="${officerChatAlertMap[_chatPartnerKey(_chatReceiverRole(o), o.id)] ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Contact</button>
+          <button id="contact-btn-${safeText(_chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id))}" class="${officerChatAlertMap[_chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id)] ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
         </div>
       </div>`).join('');
 }
 
     function refreshOfficerContactButtonStyles() {
       OFFICERS_DATA.forEach(o => {
-        const key = _chatPartnerKey(_chatReceiverRole(o), o.id);
+        const key = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
         const btn = document.getElementById(`contact-btn-${key}`);
         if (!btn) return;
         btn.classList.remove('btn-secondary', 'btn-danger');
@@ -1238,7 +1247,7 @@ function renderOfficers() {
 
       const checks = OFFICERS_DATA.map(async o => {
         const receiverRole = _chatReceiverRole(o);
-        const receiverId = String(o.id ?? '');
+        const receiverId = String(o.user_id || o.id || '');
         if (!receiverId) return;
 
         const chatKey = _chatPartnerKey(receiverRole, receiverId);
@@ -1281,36 +1290,68 @@ function renderOfficers() {
       }, 5000);
     }
 
-function renderAnalytics() {
-    const catData = [
-        ['Traffic Obstruction', 15, 32],
-        ['Illegal Parking', 12, 26],
-        ['Road Damage', 9, 19],
-        ['Accident', 6, 13],
-        ['Signal Malfunction', 3, 6],
-        ['Traffic Violation', 2, 4],
-    ];
-    const catEl = document.getElementById('cat-bars');
-    if (catEl) catEl.innerHTML = catData.map(([name, count, pct]) => perfBar(`${name} (${count})`, pct)).join('');
+async function renderAnalytics() {
+    /* Load live analytics data from API */
+    let analyticsData = null;
+    try {
+        analyticsData = await apiFetch('dispatch.php', {action: 'analytics'});
+    } catch (_) {}
 
+    /* Summary stats */
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    if (analyticsData) {
+        setEl('analytics-total', analyticsData.total ?? '—');
+        const rateStr = String(analyticsData.rate ?? '—').replace('%','');
+        setEl('analytics-rate', rateStr !== '—' ? rateStr + '%' : '—');
+        setEl('analytics-avg', analyticsData.avg_hours != null ? parseFloat(analyticsData.avg_hours).toFixed(1) + 'h' : '—');
+        setEl('analytics-rejected', analyticsData.rejected ?? '—');
+    }
+
+    /* Category bars from live data (PHP returns {category, cnt}) */
+    const catEl = document.getElementById('cat-bars');
+    if (catEl) {
+        const cats = analyticsData?.categories || [];
+        if (cats.length) {
+            const maxCount = Math.max(...cats.map(c => Number(c.cnt || 0)), 1);
+            catEl.innerHTML = cats.map(c => {
+                const pct = Math.round((Number(c.cnt) / maxCount) * 100);
+                return perfBar(`${safeText(c.category)} (${c.cnt})`, pct);
+            }).join('');
+        } else {
+            catEl.innerHTML = '<div style="padding:12px;color:var(--mist);font-size:13px">No data available this month.</div>';
+        }
+    }
+
+    /* Officer performance from live officer data */
     const perfEl = document.getElementById('officer-perf-list');
     if (perfEl) {
-        perfEl.innerHTML = OFFICERS_DATA.map(o => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);margin-bottom:8px">
-            <div class="officer-initials" style="width:32px;height:32px;font-size:11px">${safeText(o.code.slice(-2) || o.name.split(' ').map(x => x[0]).join(''))}</div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
-              <div class="mono" style="font-size:11px;color:var(--mist)">${_officerRoleLabel(o)} score: ${safeText(o.rating ?? 0)}</div>
-            </div>
-            <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--green)">${safeText(o.rating ?? 0)}</div>
-          </div>`).join('');
+        const officers = FIELD_OFFICERS_DATA.length ? FIELD_OFFICERS_DATA : OFFICERS_DATA;
+        if (officers.length) {
+            perfEl.innerHTML = officers.map(o => {
+                const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
+                const rating = parseFloat(o.rating || 0).toFixed(1);
+                return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);margin-bottom:8px">
+                    <div class="officer-initials" style="width:32px;height:32px;font-size:11px">${safeText(initials)}</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
+                        <div class="mono" style="font-size:11px;color:var(--mist)">Brgy. ${safeText(o.brgy || '—')} &middot; ${safeText(o.status || 'offline')}</div>
+                    </div>
+                    <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--green)">${safeText(rating)}</div>
+                </div>`;
+            }).join('');
+        } else {
+            perfEl.innerHTML = '<div style="padding:12px;color:var(--mist);font-size:13px">No officers loaded.</div>';
+        }
     }
 
     const trendEl = document.getElementById('trend-chart');
     if (trendEl) {
-        const vals = [65,80,55,90,72,85,60,78,95,68,82,88,70,75,92,84];
-        trendEl.innerHTML = vals.map(v => `
-          <div class="bar-col"><div class="bar-fill" style="height:${v}%;"></div></div>`).join('');
+        const vals = analyticsData?.weekly_trend || [0,0,0,0];
+        const maxVal = Math.max(...vals, 1);
+        trendEl.innerHTML = vals.map(v => {
+            const h = Math.round((v / maxVal) * 100);
+            return `<div class="bar-col"><div class="bar-fill" style="height:${h}%;"></div></div>`;
+        }).join('');
     }
 }
 
@@ -1367,7 +1408,7 @@ async function submitProfileEdit() {
         DISPATCH_USER.phone = phone;
         renderProfile();
         closeModal();
-        showToast('✓ Profile updated successfully.');
+        showToast('Profile updated successfully.');
     } catch (error) {
         showToast(error.message);
     }
@@ -1473,34 +1514,38 @@ function openChatModal(officerId, officerName, receiverRole = 'field') {
         showToast('Officer ID is required for chat.');
         return;
     }
-  const chatKey = _chatPartnerKey(receiverRole, officerId);
-  officerChatAlertMap[chatKey] = false;
-  officerUnreadCountMap[chatKey] = 0;
-  refreshOfficerContactButtonStyles();
+    const chatKey = _chatPartnerKey(receiverRole, officerId);
+    officerChatAlertMap[chatKey] = false;
+    officerUnreadCountMap[chatKey] = 0;
+    refreshOfficerContactButtonStyles();
     activeChat = {receiverRole, receiverId: officerId, name: officerName};
     chatLastId = 0;
-    loadChatThread();
-    startChatPolling();
+
+    const theirInitials = String(officerName || 'F').split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
 
     openModal(`
-      <div class="modal-overlay" onclick="if(event.target===this) { closeModal(); stopChatPolling(); }">
-        <div class="modal" style="max-width:560px;min-height:560px;padding:0;overflow:hidden">
-          <div class="modal-head">
-            <div>
-              <div class="modal-title">Dispatch Messenger</div>
-              <div class="modal-subtitle">Chat with ${safeText(officerName)}</div>
+      <div class="modal-overlay" onclick="if(event.target===this){closeModal();stopChatPolling();}">
+        <div class="modal" style="max-width:580px;height:600px;padding:0;overflow:hidden;display:flex;flex-direction:column">
+          <div class="modal-head" style="flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:38px;height:38px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${safeText(theirInitials)}</div>
+              <div>
+                <div class="modal-title" style="font-size:15px">${safeText(officerName)}</div>
+                <div class="modal-subtitle">Field Officer &mdash; Command Chat</div>
+              </div>
             </div>
-            <button class="modal-close" onclick="closeModal(); stopChatPolling();">✕</button>
+            <button class="modal-close" onclick="closeModal();stopChatPolling();">&#x2715;</button>
           </div>
-          <div class="msg-shell">
-            <div class="msg-body" id="chat-body"></div>
-            <div class="msg-composer">
-              <input id="chat-input" class="form-input msg-input" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendChatMessage();" />
-              <button class="btn-primary" onclick="sendChatMessage()">Send</button>
-            </div>
+          <div id="chat-body" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:6px;background:#f2f4f8"></div>
+          <div style="display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid var(--border);flex-shrink:0">
+            <input id="chat-input" class="form-input" style="flex:1;border-radius:999px;padding:10px 16px" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}" />
+            <button class="btn-primary" style="border-radius:999px;padding:10px 20px;flex-shrink:0" onclick="sendChatMessage()">Send</button>
           </div>
         </div>
       </div>`);
+
+    loadChatThread();
+    startChatPolling();
 }
 
 async function loadChatThread() {
@@ -1508,14 +1553,14 @@ async function loadChatThread() {
     try {
         const resp = await apiFetch('messages.php', {action: 'thread', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId});
         const messages = resp.messages || [];
-    const chatKey = _chatPartnerKey(activeChat.receiverRole, activeChat.receiverId);
-    const incoming = messages.filter(m => String(m.senderRole || '') !== 'dispatch');
-    const lastIncomingId = incoming.length ? Number(incoming[incoming.length - 1].id || 0) : 0;
-    officerLastIncomingMap[chatKey] = Math.max(Number(officerLastIncomingMap[chatKey] || 0), lastIncomingId);
-    officerChatAlertMap[chatKey] = false;
-    officerUnreadCountMap[chatKey] = 0;
-    refreshOfficerContactButtonStyles();
-        chatLastId = messages.length ? messages[messages.length - 1].id : 0;
+        const chatKey = _chatPartnerKey(activeChat.receiverRole, activeChat.receiverId);
+        const incoming = messages.filter(m => String(m.senderRole || '') !== 'dispatch');
+        const lastIncomingId = incoming.length ? Number(incoming[incoming.length - 1].id || 0) : 0;
+        officerLastIncomingMap[chatKey] = Math.max(Number(officerLastIncomingMap[chatKey] || 0), lastIncomingId);
+        officerChatAlertMap[chatKey] = false;
+        officerUnreadCountMap[chatKey] = 0;
+        refreshOfficerContactButtonStyles();
+        chatLastId = messages.length ? Number(messages[messages.length - 1].id) : 0;
         renderChatMessages(messages);
     } catch (error) {
         showToast(error.message);
@@ -1525,9 +1570,38 @@ async function loadChatThread() {
 function renderChatMessages(messages) {
     const body = document.getElementById('chat-body');
     if (!body) return;
+    const myName = (DISPATCH_USER && (DISPATCH_USER.name || DISPATCH_USER.username)) || 'Dispatch';
+    const theirName = (activeChat && activeChat.name) || 'Field Officer';
+    const myInitials = myName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+    const theirInitials = theirName.split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
+
+    if (!messages.length) {
+        body.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--mist);padding:24px">No messages yet.</div>';
+        return;
+    }
+
+    let lastDate = '';
     body.innerHTML = messages.map(msg => {
-        const isSent = msg.senderRole === 'dispatch';
-    return `<div class="chat-row ${isSent ? 'mine' : 'theirs'}"><div class="chat-bubble ${isSent ? 'chat-sent' : 'chat-received'}"><div>${safeText(msg.message)}</div><div class="chat-meta">${formatDateTime(msg.sentAt)}</div></div></div>`;
+        const isMine = String(msg.senderRole || '') === 'dispatch';
+        const senderName = isMine ? myName : theirName;
+        const initials = isMine ? myInitials : theirInitials;
+        const sentAt = new Date(msg.sentAt);
+        const dateStr = sentAt.toLocaleDateString();
+        let dateDivider = '';
+        if (dateStr !== lastDate) {
+            lastDate = dateStr;
+            dateDivider = `<div style="text-align:center;font-size:11px;color:var(--mist);padding:8px 0;font-family:var(--font-mono)">${dateStr}</div>`;
+        }
+        const timeStr = sentAt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const avatarColor = isMine ? 'var(--accent)' : '#444';
+        return `${dateDivider}<div style="display:flex;align-items:flex-end;gap:8px;${isMine ? 'flex-direction:row-reverse' : ''}">
+            <div style="width:30px;height:30px;border-radius:50%;background:${avatarColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${safeText(initials)}</div>
+            <div style="max-width:72%;display:flex;flex-direction:column;${isMine ? 'align-items:flex-end' : ''}">
+                <div style="font-size:10px;font-weight:600;color:var(--mist);margin-bottom:3px;padding:0 4px">${safeText(senderName)}</div>
+                <div style="padding:10px 14px;border-radius:18px;font-size:13px;line-height:1.5;word-break:break-word;${isMine ? 'background:var(--accent);color:#fff;border-bottom-right-radius:4px' : 'background:#fff;color:var(--ink);border:1px solid #e0e5f0;border-bottom-left-radius:4px'}">${safeText(msg.message)}</div>
+                <div style="font-size:10px;color:var(--mist);margin-top:3px;padding:0 4px">${timeStr}</div>
+            </div>
+        </div>`;
     }).join('');
     body.scrollTop = body.scrollHeight;
 }
@@ -1537,6 +1611,7 @@ async function sendChatMessage() {
     if (!input || !activeChat) return;
     const message = input.value.trim();
     if (!message) return;
+    input.value = '';
     try {
         await apiFetch('messages.php', {
             action: 'send',
@@ -1544,7 +1619,6 @@ async function sendChatMessage() {
             receiver_id: activeChat.receiverId,
             message,
         }, 'POST');
-        input.value = '';
         await loadChatThread();
     } catch (error) {
         showToast(error.message);
@@ -1557,11 +1631,11 @@ function startChatPolling() {
         if (!activeChat) return;
         try {
             const resp = await apiFetch('messages.php', {action: 'poll', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId, last_id: chatLastId});
-            const messages = resp.messages || [];
-            if (messages.length) {
-                chatLastId = messages[messages.length - 1].id;
-                             showNotification('New message from ' + (activeChat.name || 'Field Officer'), 'You have a new message');
-              await loadChatThread();
+            const newMsgs = resp.messages || [];
+            if (newMsgs.length) {
+                chatLastId = Number(newMsgs[newMsgs.length - 1].id);
+                showNotification('New message from ' + (activeChat.name || 'Field Officer'), `${newMsgs.length} new message(s)`);
+                await loadChatThread();
             }
         } catch (error) {
             console.warn('Chat polling error:', error.message);
@@ -1574,6 +1648,54 @@ function stopChatPolling() {
         clearInterval(chatInterval);
         chatInterval = null;
     }
+}
+
+/* ── Profile edit helpers ──────────────────────────────────── */
+function showProfileEdit() {
+    document.getElementById('profile-static').style.display = 'none';
+    document.getElementById('profile-edit-form').style.display = '';
+}
+
+function cancelProfileEdit() {
+    document.getElementById('profile-edit-form').style.display = 'none';
+    document.getElementById('profile-static').style.display = '';
+}
+
+async function saveProfileEdit(event) {
+    event.preventDefault();
+    const name  = (document.getElementById('prof-name-input')?.value || '').trim();
+    const email = (document.getElementById('prof-email-input')?.value || '').trim();
+    const phone = (document.getElementById('prof-phone-input')?.value || '').trim();
+
+    if (!name || !email) {
+        showToast('Name and email are required.');
+        return;
+    }
+
+    try {
+        await apiFetch('user.php', {action: 'updateProfile', name, email, phone}, 'POST');
+        DISPATCH_USER.name  = name;
+        DISPATCH_USER.email = email;
+        DISPATCH_USER.phone = phone;
+        renderProfile();
+        cancelProfileEdit();
+        showToast('Profile updated successfully.');
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+function onProfileAvatarChange(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById('prof-avatar-img');
+        const initials = document.getElementById('prof-avatar-initials');
+        if (img) { img.src = e.target.result; img.style.display = ''; }
+        if (initials) initials.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
 }
 
 /* ── Page navigation hook: initialize/invalidate maps on page switch ── */
@@ -1591,6 +1713,9 @@ function stopChatPolling() {
         }
         if (pageId === 'dash' && _dashMap) {
             setTimeout(() => _dashMap.invalidateSize(), 50);
+        }
+        if (pageId === 'analytics') {
+            renderAnalytics();
         }
     };
 }());

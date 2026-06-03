@@ -355,4 +355,17 @@ if ($action === 'performance') {
     ]]);
 }
 
+if ($action === 'contacts') {
+    $stmt = $db->prepare(
+        'SELECT d.dispatch_id, d.user_id, u.full_name AS name, u.email,
+                d.assigned_barangay AS brgy, d.badge_number
+         FROM dispatch_officers d
+         JOIN users u ON u.user_id = d.user_id
+         WHERE u.is_active = 1
+         ORDER BY u.full_name ASC'
+    );
+    $stmt->execute();
+    successResponse(['contacts' => $stmt->fetchAll()]);
+}
+
 errorResponse('Unknown action.');

@@ -59,7 +59,7 @@ function setPinnedLocation(lat, lng, zoom = 17, prefix = 'Pinned') {
 
     complaintMap.setView(latlng, zoom);
     const label = document.getElementById('pin-coords-label');
-    if (label) label.textContent = `📍 ${prefix}: ${pinnedLat.toFixed(5)}, ${pinnedLng.toFixed(5)}`;
+    if (label) label.textContent = `Pinned ${prefix}: ${pinnedLat.toFixed(5)}, ${pinnedLng.toFixed(5)}`;
 }
 
 function buildAddressFromSearchResult(result, fallback = '') {
@@ -170,7 +170,7 @@ function renderBrgyGrid() {
     if (!grid) return;
     grid.innerHTML = ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'].map(b => `
       <div class="brgy-card">
-        <div class="brgy-card-icon">📍</div>
+        <div class="brgy-card-icon"></div>
         <div class="brgy-card-name">${safeText(b)}</div>
         <div class="brgy-card-label"><span class="brgy-card-dot"></span>Active</div>
       </div>`).join('');
@@ -201,7 +201,7 @@ function renderDashboard() {
         const tbody = document.getElementById('dash-recent-tbody');
         if (!tbody) return;
         if (!my.length) {
-                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">No complaints yet</div><div class="empty-sub">Click \"File a Complaint\" to get started.</div></div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-title">No complaints yet</div><div class="empty-sub">Click "File a Complaint" to get started.</div></div></td></tr>`;
                 return;
         }
         tbody.innerHTML = my.slice(0, 5).map(c => `
@@ -233,7 +233,7 @@ function renderComplaintsTable() {
         tbody.innerHTML = `
           <tr><td colspan="7">
             <div class="empty-state">
-              <div class="empty-icon">📭</div>
+              <div class="empty-icon"></div>
               <div class="empty-title">No complaints found</div>
               <div class="empty-sub">Try adjusting your search or filter.</div>
             </div>
@@ -560,7 +560,7 @@ function togglePasswordVisibility(inputId, button) {
     const isVisible = input.type === 'text';
     input.type = isVisible ? 'password' : 'text';
     button.classList.toggle('is-visible', !isVisible);
-    button.textContent = isVisible ? '👁' : '🙈';
+    button.textContent = isVisible ? 'Show' : 'Hide';
     button.setAttribute('title', isVisible ? 'Show password' : 'Hide password');
 }
 
@@ -908,7 +908,7 @@ async function uploadEvidence(file) {
                         statusEl.textContent = `✓ ${file.name} uploaded successfully. (${uploadedFiles.length}/${MAX_EVIDENCE_FILES}) Incident date/time auto-set from evidence metadata.`;
                         filesContainer.innerHTML = uploadedFiles.map((f, i) => `
                             <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--surface);border-radius:4px;font-size:12px;margin-bottom:6px">
-                                <span>${f.type.includes('video') ? '🎬' : '📷'}</span>
+                                <span>${f.type.includes('video') ? 'Video' : 'Photo'}</span>
                                 <span>${f.filename}</span>
                                 <button class="btn-danger btn-sm" style="margin-left:auto" onclick="removeUploadedFile(${i})">Remove</button>
                             </div>`).join('');
@@ -1024,7 +1024,7 @@ async function searchIncidentLocation() {
         setPinnedLocation(lat, lng, 17, 'Pinned');
         const addrInput = document.getElementById('f-address');
         if (addrInput) addrInput.value = buildAddressFromSearchResult(found, raw);
-        showToast('📍 Location found and pinned!');
+        showToast('Location found and pinned!');
     } catch (_) {
         showToast('Search failed. Please try again.');
     }
@@ -1048,7 +1048,7 @@ function clearPinnedLocation() {
         complaintMapMarker = null;
     }
     const label = document.getElementById('pin-coords-label');
-    if (label) label.textContent = '📍 Pinned: —';
+    if (label) label.textContent = 'Pinned: —';
 }
 
 function useGpsLocation() {
