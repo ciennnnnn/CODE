@@ -494,6 +494,7 @@ async function submitComplaint() {
             anonymous,
             lat: pinnedLat,
             lng: pinnedLng,
+            utc_offset: -(new Date().getTimezoneOffset()), // e.g. 480 for PHT (UTC+8)
             media: uploadedFiles.map(f => ({
                 filename: f.filename,
                 url: f.url,

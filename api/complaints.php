@@ -93,11 +93,14 @@ if ($action === 'submit') {
             errorResponse('Time is required.');
         }
 
-        /* Date validation: cannot be future; cannot be more than 7 days in the past */
-        $incidentTimestamp = strtotime($date . ' ' . ($time ?: '00:00'));
+        /* Date validation — client sends local time; utc_offset (minutes east of UTC)
+           converts it to actual UTC before comparing with the server clock.
+           Example: Philippines (UTC+8) sends 14:00 local + utc_offset=480 → 06:00 UTC. */
+        $utcOffset         = (int)($data['utc_offset'] ?? 0);
         $nowTimestamp      = time();
+        $rawTs             = ($date !== '') ? strtotime($date . ' ' . ($time ?: '00:00')) : false;
+        $incidentTimestamp = ($rawTs !== false) ? ($rawTs - $utcOffset * 60) : false;
         if ($incidentTimestamp === false || $incidentTimestamp > $nowTimestamp + 300) {
-            /* Allow 5-min buffer for time zone drift */
             errorResponse('The incident date and time cannot be in the future.');
         }
         $sevenDaysAgo = $nowTimestamp - (7 * 24 * 3600);
