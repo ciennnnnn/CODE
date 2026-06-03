@@ -29,7 +29,7 @@ if ($action === 'list') {
              ORDER BY submitted_at DESC'
         );
         $stmt->execute([':uid' => $userId]);
-        successResponse(['complaints' => $stmt->fetchAll()]);
+        successResponse(['complaints' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     }
     errorResponse('Only regular users may query their own complaints.', 403);
 }

@@ -37,6 +37,8 @@ const roleConfig = {
 const selectedRole = document.body?.dataset?.role || 'dispatch';
 const activeConfig = roleConfig[selectedRole] || roleConfig.dispatch;
 
+const REMEMBER_KEY = 'trapico_remember_' + selectedRole;
+
 document.addEventListener('DOMContentLoaded', () => {
   const kicker = document.querySelector('.login-kicker');
   const userLabel = document.querySelector('label[for="login-user"]');
@@ -44,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const forgotLabel = document.querySelector('label[for="forgot-identifier"]');
   const forgotInput = document.getElementById('forgot-identifier');
   const errEl = document.getElementById('login-error');
+  const rememberBox = document.getElementById('remember-me');
 
   if (kicker) kicker.textContent = activeConfig.kicker;
   if (userLabel) userLabel.textContent = activeConfig.idLabel;
@@ -51,6 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (forgotLabel) forgotLabel.textContent = activeConfig.forgotLabel;
   if (forgotInput) forgotInput.placeholder = activeConfig.forgotPlaceholder;
   if (errEl) errEl.textContent = activeConfig.requiredMessage;
+
+  /* Restore remembered identifier */
+  try {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved && userInput && rememberBox) {
+      userInput.value = saved;
+      rememberBox.checked = true;
+    }
+  } catch (_) {}
 });
 
 function togglePasswordVisibility() {
@@ -97,6 +109,7 @@ async function doLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
   const errEl = document.getElementById('login-error');
+  const rememberBox = document.getElementById('remember-me');
 
   if (!user || !pass) {
     errEl.textContent = activeConfig.requiredMessage;
@@ -111,6 +124,15 @@ async function doLogin() {
       password: pass,
       role: selectedRole,
     }, 'POST');
+
+    /* Save or clear remembered identifier */
+    try {
+      if (rememberBox?.checked) {
+        localStorage.setItem(REMEMBER_KEY, user);
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (_) {}
 
     const routes = {
       regular: '/CITIZEN/civilian.html',

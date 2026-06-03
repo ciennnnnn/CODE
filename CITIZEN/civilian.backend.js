@@ -295,8 +295,9 @@ function renderDashboard() {
                 return;
         }
         tbody.innerHTML = my.slice(0, 5).map(c => {
-            const submittedStatuses = ['submitted', 'pending', 'unknown'];
-            const canCancel = submittedStatuses.includes((c?.status || '').toLowerCase());
+            const doneStatuses = ['closed', 'resolved', 'validated', 'cancelled', 'rejected'];
+            const rawStatus = (c?.status || '').toLowerCase().trim();
+            const canCancel = !doneStatuses.includes(rawStatus);
             return `<tr>
                 <td class="track-id">${safeText(c?.id || '')}</td>
                 <td>${safeText(c?.cat || '')}</td>
@@ -371,9 +372,10 @@ function renderComplaintsTable() {
     }
 
     tbody.innerHTML = my.map(c => {
-        /* Show Cancel for submitted/pending/unknown status — backend enforces 30-min window */
-        const submittedStatuses = ['submitted', 'pending', 'unknown'];
-        const canCancel = submittedStatuses.includes((c.status || '').toLowerCase());
+        /* Show Cancel for anything not definitively finished — backend validates status + 30-min rule */
+        const doneStatuses = ['closed', 'resolved', 'validated', 'cancelled', 'rejected'];
+        const rawStatus = (c.status || '').toLowerCase().trim();
+        const canCancel = !doneStatuses.includes(rawStatus);
         return `<tr>
           <td class="track-id">${safeText(c.id)}</td>
           <td>${safeText(c.cat)}</td>
