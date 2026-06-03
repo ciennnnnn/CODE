@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/base.css" />
-  <link rel="stylesheet" href="dispatch.css?v=20260604c" />
+  <link rel="stylesheet" href="dispatch.css?v=20260604d" />
 </head>
 <body>
 
@@ -184,29 +184,52 @@
 
       <!-- PAGE: ANALYTICS -->
       <section id="page-analytics" class="page-section hidden">
+
+        <!-- Row 1: Summary KPIs -->
         <div class="stats-row">
-          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val" id="analytics-total">—</div></div>
-          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val" id="analytics-rate">—</div></div>
-          <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val" id="analytics-avg">—</div></div>
-          <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val" id="analytics-rejected">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val" id="analytics-total">—</div><div class="stat-card-sub">Complaints submitted</div></div>
+          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val" id="analytics-rate">—</div><div class="stat-card-sub">Resolved / Total</div></div>
+          <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val" id="analytics-avg">—</div><div class="stat-card-sub">Hours per case</div></div>
+          <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val" id="analytics-rejected">—</div><div class="stat-card-sub">This month</div></div>
+          <div class="stat-card"><div class="stat-card-label">Active in Field</div><div class="stat-card-val" id="analytics-active">—</div><div class="stat-card-sub">Currently deployed</div></div>
         </div>
 
+        <!-- Row 2: Category bars + Status donut -->
         <div class="analytics-grid">
           <div class="card">
-            <div class="card-head"><span class="card-title">Complaints by Category</span></div>
-            <div id="cat-bars"></div>
+            <div class="card-head"><span class="card-title">Complaints by Category</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div id="cat-bars" style="max-height:280px;overflow-y:auto;padding:16px 20px"></div>
           </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">Officer Performance</span></div>
-            <div id="officer-perf-list"></div>
+            <div class="card-head"><span class="card-title">Status Distribution</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time</span></div>
+            <div id="status-pie" style="padding:16px 20px"></div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-head"><span class="card-title">Resolution Time Trend — Last 4 Weeks</span></div>
-          <div class="bar-chart" id="trend-chart"></div>
-          <div class="chart-weeks"><span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span></div>
+        <!-- Row 3: Priority + Barangay -->
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Priority Breakdown</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div id="priority-bars" style="padding:16px 20px"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Complaints by Barangay</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div id="barangay-bars" style="padding:16px 20px"></div>
+          </div>
         </div>
+
+        <!-- Row 4: 6-month trend bar chart -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">Monthly Complaint Volume — Last 6 Months</span></div>
+          <div id="monthly-trend-chart" style="padding:16px 20px 8px"></div>
+        </div>
+
+        <!-- Row 5: Officer performance table -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">Officer Performance</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time · Live data</span></div>
+          <div id="officer-perf-list" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+
       </section>
 
       <!-- PAGE: DISPATCH PROFILE -->
@@ -323,10 +346,10 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../data.js?v=20260604c"></script>
-<script src="../api.js?v=20260604c"></script>
-<script src="dispatch.js?v=20260604c"></script>
-<script src="dispatch.backend.js?v=20260604c"></script>
+<script src="../data.js?v=20260604d"></script>
+<script src="../api.js?v=20260604d"></script>
+<script src="dispatch.js?v=20260604d"></script>
+<script src="dispatch.backend.js?v=20260604d"></script>
 <script>
 function toggleSidebar() {
   var sidebar = document.querySelector('.sidebar');

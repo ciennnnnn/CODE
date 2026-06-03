@@ -36,41 +36,86 @@ if ($action === 'dashboard') {
 
 if ($action === 'analytics') {
     $monthStart = date('Y-m-01 00:00:00');
-    $q = function(string $sql) use ($db, $monthStart) {
+
+    $qm = function(string $sql) use ($db, $monthStart) {
         $st = $db->prepare($sql);
         $st->execute([':m' => $monthStart]);
         return (int)$st->fetchColumn();
     };
-    $total    = $q("SELECT COUNT(*) FROM complaints WHERE submitted_at >= :m");
-    $resolved = $q("SELECT COUNT(*) FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
-    $rejected = $q("SELECT COUNT(*) FROM complaints WHERE status = 'rejected' AND submitted_at >= :m");
+
+    /* ── This-month summary ── */
+    $total    = $qm("SELECT COUNT(*) FROM complaints WHERE submitted_at >= :m");
+    $resolved = $qm("SELECT COUNT(*) FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
+    $rejected = $qm("SELECT COUNT(*) FROM complaints WHERE status = 'rejected' AND submitted_at >= :m");
+    $active   = (int)$db->query("SELECT COUNT(*) FROM complaints WHERE status IN ('assigned','in_progress')")->fetchColumn();
     $rate     = $total > 0 ? round($resolved / $total * 100) : 0;
 
-    $avgSt = $db->prepare("SELECT AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
+    $avgSt = $db->prepare("SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)),0) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
     $avgSt->execute([':m' => $monthStart]);
     $avgHours = round((float)$avgSt->fetchColumn(), 1);
 
+    /* ── Category breakdown (this month) ── */
     $catSt = $db->prepare("SELECT category, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY category ORDER BY cnt DESC");
     $catSt->execute([':m' => $monthStart]);
     $categories = $catSt->fetchAll(PDO::FETCH_ASSOC);
 
-    $weeklyTrend = [];
-    for ($w = 3; $w >= 0; $w--) {
-        $wStart = date('Y-m-d H:i:s', strtotime("-{$w} weeks monday this week"));
-        $wEnd   = date('Y-m-d H:i:s', strtotime("-{$w} weeks sunday this week 23:59:59"));
-        $wSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE submitted_at BETWEEN :ws AND :we");
-        $wSt->execute([':ws' => $wStart, ':we' => $wEnd]);
-        $weeklyTrend[] = (int)$wSt->fetchColumn();
+    /* ── All-time status distribution ── */
+    $statusSt = $db->query("SELECT status, COUNT(*) AS cnt FROM complaints GROUP BY status ORDER BY cnt DESC");
+    $statusDist = $statusSt->fetchAll(PDO::FETCH_ASSOC);
+
+    /* ── Barangay breakdown (this month) ── */
+    $brgySt = $db->prepare("SELECT asset_town AS brgy, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY asset_town ORDER BY cnt DESC");
+    $brgySt->execute([':m' => $monthStart]);
+    $barangayStats = $brgySt->fetchAll(PDO::FETCH_ASSOC);
+
+    /* ── Priority distribution (this month) ── */
+    $prioSt = $db->prepare("SELECT priority, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY priority ORDER BY FIELD(priority,'urgent','high','medium','low')");
+    $prioSt->execute([':m' => $monthStart]);
+    $priorityStats = $prioSt->fetchAll(PDO::FETCH_ASSOC);
+
+    /* ── Monthly trend — last 6 months ── */
+    $monthlyTrend = [];
+    for ($mo = 5; $mo >= 0; $mo--) {
+        $mStart = date('Y-m-01 00:00:00', strtotime("-{$mo} months"));
+        $mEnd   = date('Y-m-t 23:59:59',  strtotime("-{$mo} months"));
+        $mLabel = date('M Y',              strtotime("-{$mo} months"));
+        $mSt    = $db->prepare("SELECT COUNT(*) FROM complaints WHERE submitted_at BETWEEN :ms AND :me");
+        $mSt->execute([':ms' => $mStart, ':me' => $mEnd]);
+        $monthlyTrend[] = ['label' => $mLabel, 'count' => (int)$mSt->fetchColumn()];
     }
 
+    /* ── Officer performance (from assignments + ratings) ── */
+    $ofcSt = $db->query(
+        "SELECT u.full_name AS name, fo.assigned_barangay AS brgy,
+                CASE
+                    WHEN EXISTS (SELECT 1 FROM assignments ax WHERE ax.field_officer_id = fo.officer_id AND ax.assignment_status IN ('pending','in_progress'))
+                    THEN 'busy'
+                    WHEN fo.is_available = 1 THEN 'available'
+                    ELSE 'offline'
+                END AS status,
+                COALESCE((SELECT COUNT(*) FROM assignments a WHERE a.field_officer_id = fo.officer_id AND a.assignment_status = 'completed'), 0) AS resolved,
+                COALESCE((SELECT COUNT(*) FROM assignments a WHERE a.field_officer_id = fo.officer_id AND a.assignment_status IN ('pending','in_progress')), 0) AS active_count,
+                COALESCE((SELECT AVG(r.score) FROM ratings r WHERE r.field_officer_id = fo.officer_id), 0.00) AS avg_rating
+         FROM field_officers fo
+         JOIN users u ON u.user_id = fo.user_id
+         WHERE u.is_active = 1
+         ORDER BY resolved DESC, avg_rating DESC"
+    );
+    $officerPerf = $ofcSt->fetchAll(PDO::FETCH_ASSOC);
+
     successResponse([
-        'total'        => $total,
-        'resolved'     => $resolved,
-        'rejected'     => $rejected,
-        'rate'         => $rate,
-        'avg_hours'    => $avgHours ?: 0,
-        'categories'   => $categories,
-        'weekly_trend' => $weeklyTrend,
+        'total'          => $total,
+        'resolved'       => $resolved,
+        'rejected'       => $rejected,
+        'active'         => $active,
+        'rate'           => $rate,
+        'avg_hours'      => $avgHours ?: 0,
+        'categories'     => $categories,
+        'status_dist'    => $statusDist,
+        'barangay_stats' => $barangayStats,
+        'priority_stats' => $priorityStats,
+        'monthly_trend'  => $monthlyTrend,
+        'officer_perf'   => $officerPerf,
     ]);
 }
 

@@ -1578,71 +1578,201 @@ async function openOfficerCasesModal(officerId, officerName) {
       }, 5000);
     }
 
-async function renderAnalytics() {
-    /* Load live analytics data from API */
-    let analyticsData = null;
-    try {
-        analyticsData = await apiFetch('dispatch.php', {action: 'analytics'});
-    } catch (_) {}
+/* ── SVG donut chart for status distribution ── */
+function _buildDonutChart(statusData) {
+    const STATUS_COLORS = {
+        submitted: '#4F46E5', verified: '#10b981', assigned: '#f59e0b',
+        in_progress: '#f97316', resolved: '#059669', closed: '#6b7280',
+        rejected: '#ef4444', cancelled: '#9ca3af',
+    };
+    const data = (statusData || []).map(s => ({
+        label: s.status, value: Number(s.cnt || 0), color: STATUS_COLORS[s.status] || '#aaa',
+    })).filter(d => d.value > 0);
+    if (!data.length) return '<div style="color:var(--mist);font-size:13px;padding:12px">No complaint data yet.</div>';
 
-    /* Summary stats */
+    const total = data.reduce((s, d) => s + d.value, 0);
+    const cx = 90, cy = 90, r = 72, inner = 44;
+    const toXY = (angle) => {
+        const rad = (angle - 90) * Math.PI / 180;
+        return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+    };
+
+    let paths = '', angle = 0;
+    data.forEach(d => {
+        const sweep = (d.value / total) * 360;
+        const [x1, y1] = toXY(angle);
+        const [x2, y2] = toXY(angle + sweep);
+        paths += `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${sweep > 180 ? 1 : 0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${d.color}" opacity=".9"><title>${d.label}: ${d.value} (${Math.round(d.value/total*100)}%)</title></path>`;
+        angle += sweep;
+    });
+
+    const legend = data.map(d => `
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+            <div style="width:10px;height:10px;border-radius:2px;background:${d.color};flex-shrink:0"></div>
+            <div style="flex:1;font-size:12px;text-transform:capitalize">${safeText(d.label)}</div>
+            <div style="font-family:var(--font-mono);font-size:12px;font-weight:700">${d.value}</div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--mist);min-width:32px;text-align:right">${Math.round(d.value/total*100)}%</div>
+        </div>`).join('');
+
+    return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="flex-shrink:0">
+            <svg viewBox="0 0 180 180" width="170" height="170">
+                ${paths}
+                <circle cx="${cx}" cy="${cy}" r="${inner}" fill="white"/>
+                <text x="${cx}" y="${cy - 7}" text-anchor="middle" font-size="24" font-weight="800" fill="#111">${total}</text>
+                <text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="10" fill="#888" letter-spacing="1">TOTAL</text>
+            </svg>
+        </div>
+        <div style="flex:1;min-width:150px">${legend}</div>
+    </div>`;
+}
+
+/* ── SVG bar chart for monthly trend ── */
+function _buildMonthlyBarChart(monthlyData) {
+    if (!monthlyData || !monthlyData.length) {
+        return '<div style="color:var(--mist);font-size:13px">No trend data available.</div>';
+    }
+    const maxVal = Math.max(...monthlyData.map(m => Number(m.count || 0)), 1);
+    const bw = 56, gap = 18, chartH = 140, paddingL = 10;
+    const svgW = monthlyData.length * (bw + gap) - gap + paddingL * 2;
+
+    const bars = monthlyData.map((m, i) => {
+        const val = Number(m.count || 0);
+        const barH = Math.max(2, Math.round((val / maxVal) * chartH));
+        const x = paddingL + i * (bw + gap);
+        const y = chartH - barH;
+        return `
+            <rect x="${x}" y="${y}" width="${bw}" height="${barH}" fill="#111" rx="4" opacity="${val ? 0.85 : 0.15}"/>
+            ${val ? `<text x="${x + bw/2}" y="${y - 5}" text-anchor="middle" font-size="11" font-weight="700" fill="#111">${val}</text>` : ''}
+            <text x="${x + bw/2}" y="${chartH + 18}" text-anchor="middle" font-size="10" fill="#888">${safeText(m.label)}</text>`;
+    }).join('');
+
+    return `<div style="overflow-x:auto">
+        <svg viewBox="0 0 ${svgW} ${chartH + 28}" style="min-width:${svgW}px;width:100%;height:${chartH + 28}px">${bars}</svg>
+    </div>`;
+}
+
+async function renderAnalytics() {
+    let d = null;
+    try { d = await apiFetch('dispatch.php', {action: 'analytics'}); } catch (_) {}
+
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    if (analyticsData) {
-        window.dispatchAnalytics = analyticsData;  /* cache for dashboard */
-        setEl('analytics-total', analyticsData.total ?? '—');
-        const rate = analyticsData.rate;
-        const rateDisplay = rate != null ? String(rate).replace('%','') + '%' : '—';
-        setEl('analytics-rate', rateDisplay);
-        setEl('stat-resolution-rate', rateDisplay);  /* update command center stat too */
-        setEl('analytics-avg', analyticsData.avg_hours != null ? parseFloat(analyticsData.avg_hours).toFixed(1) + 'h' : '—');
-        setEl('analytics-rejected', analyticsData.rejected ?? '—');
+
+    /* ── KPI cards ── */
+    if (d) {
+        window.dispatchAnalytics = d;
+        setEl('analytics-total',    d.total    ?? '—');
+        setEl('analytics-rejected', d.rejected ?? '—');
+        setEl('analytics-active',   d.active   ?? '—');
+        const rateDisplay = d.rate != null ? d.rate + '%' : '—';
+        setEl('analytics-rate',       rateDisplay);
+        setEl('stat-resolution-rate', rateDisplay);
+        setEl('analytics-avg', d.avg_hours != null ? parseFloat(d.avg_hours).toFixed(1) + 'h' : '—');
     }
 
-    /* Category bars from live data (PHP returns {category, cnt}) */
+    /* ── Complaints by Category ── */
     const catEl = document.getElementById('cat-bars');
     if (catEl) {
-        const cats = analyticsData?.categories || [];
+        const cats = d?.categories || [];
         if (cats.length) {
-            const maxCount = Math.max(...cats.map(c => Number(c.cnt || 0)), 1);
-            catEl.innerHTML = cats.map(c => {
-                const pct = Math.round((Number(c.cnt) / maxCount) * 100);
-                return perfBar(`${safeText(c.category)} (${c.cnt})`, pct);
-            }).join('');
+            const maxC = Math.max(...cats.map(c => Number(c.cnt || 0)), 1);
+            catEl.innerHTML = cats.map(c => perfBar(`${safeText(c.category)} (${c.cnt})`, Math.round(Number(c.cnt) / maxC * 100))).join('');
         } else {
-            catEl.innerHTML = '<div style="padding:12px;color:var(--mist);font-size:13px">No data available this month.</div>';
+            catEl.innerHTML = '<div style="color:var(--mist);font-size:13px">No category data this month.</div>';
         }
     }
 
-    /* Officer performance from live officer data */
-    const perfEl = document.getElementById('officer-perf-list');
-    if (perfEl) {
-        const officers = FIELD_OFFICERS_DATA.length ? FIELD_OFFICERS_DATA : OFFICERS_DATA;
-        if (officers.length) {
-            perfEl.innerHTML = officers.map(o => {
-                const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
-                const rating = parseFloat(o.rating || 0).toFixed(1);
-                return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);margin-bottom:8px">
-                    <div class="officer-initials" style="width:32px;height:32px;font-size:11px">${safeText(initials)}</div>
-                    <div style="flex:1">
-                        <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
-                        <div class="mono" style="font-size:11px;color:var(--mist)">Brgy. ${safeText(o.brgy || '—')} &middot; ${safeText(o.status || 'offline')}</div>
+    /* ── Status Donut Chart ── */
+    const pieEl = document.getElementById('status-pie');
+    if (pieEl) pieEl.innerHTML = _buildDonutChart(d?.status_dist || []);
+
+    /* ── Priority Breakdown ── */
+    const prioEl = document.getElementById('priority-bars');
+    if (prioEl) {
+        const PRIO_COLORS = { urgent: '#dc2626', high: '#f59e0b', medium: '#3b82f6', low: '#10b981' };
+        const prios = d?.priority_stats || [];
+        const totalP = prios.reduce((s, p) => s + Number(p.cnt || 0), 0) || 1;
+        if (prios.length) {
+            prioEl.innerHTML = prios.map(p => {
+                const pct = Math.round(Number(p.cnt) / totalP * 100);
+                const color = PRIO_COLORS[p.priority] || '#888';
+                return `<div style="margin-bottom:14px">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+                        <span style="text-transform:capitalize;font-weight:600">${safeText(p.priority)}</span>
+                        <span style="font-family:var(--font-mono);color:var(--mist)">${p.cnt} cases · ${pct}%</span>
                     </div>
-                    <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--green)">${safeText(rating)}</div>
+                    <div style="height:9px;background:#f0f0f0;border-radius:5px;overflow:hidden">
+                        <div style="height:100%;width:${pct}%;background:${color};border-radius:5px;transition:width .5s"></div>
+                    </div>
                 </div>`;
             }).join('');
         } else {
-            perfEl.innerHTML = '<div style="padding:12px;color:var(--mist);font-size:13px">No officers loaded.</div>';
+            prioEl.innerHTML = '<div style="color:var(--mist);font-size:13px">No priority data this month.</div>';
         }
     }
 
-    const trendEl = document.getElementById('trend-chart');
-    if (trendEl) {
-        const vals = analyticsData?.weekly_trend || [0,0,0,0];
-        const maxVal = Math.max(...vals, 1);
-        trendEl.innerHTML = vals.map(v => {
-            const h = Math.round((v / maxVal) * 100);
-            return `<div class="bar-col"><div class="bar-fill" style="height:${h}%;"></div></div>`;
-        }).join('');
+    /* ── Barangay Bars ── */
+    const brgyEl = document.getElementById('barangay-bars');
+    if (brgyEl) {
+        const brgys = d?.barangay_stats || [];
+        if (brgys.length) {
+            const maxB = Math.max(...brgys.map(b => Number(b.cnt || 0)), 1);
+            brgyEl.innerHTML = brgys.map(b => perfBar(`${safeText(b.brgy || 'Unknown')} (${b.cnt})`, Math.round(Number(b.cnt) / maxB * 100))).join('');
+        } else {
+            brgyEl.innerHTML = '<div style="color:var(--mist);font-size:13px">No barangay data this month.</div>';
+        }
+    }
+
+    /* ── Monthly Trend ── */
+    const trendEl = document.getElementById('monthly-trend-chart');
+    if (trendEl) trendEl.innerHTML = _buildMonthlyBarChart(d?.monthly_trend || []);
+
+    /* ── Officer Performance Table ── */
+    const perfEl = document.getElementById('officer-perf-list');
+    if (perfEl) {
+        const officers = d?.officer_perf || [];
+        if (officers.length) {
+            const STATUS_CLS = { available: 'badge-verified', busy: 'badge-assigned', offline: 'badge-closed' };
+            const rows = officers.map(o => {
+                const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+                const rating   = parseFloat(o.avg_rating || 0);
+                const stars    = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+                const sCls     = STATUS_CLS[o.status] || 'badge-closed';
+                const sLabel   = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE';
+                return `<tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div class="officer-initials" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials}</div>
+                            <div>
+                                <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
+                                <div style="font-size:11px;color:var(--mist);font-family:var(--font-mono)">Brgy. ${safeText(o.brgy || '—')}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge ${sCls}">${sLabel}</span></td>
+                    <td style="text-align:center;font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--ink)">${Number(o.resolved) || 0}</td>
+                    <td style="text-align:center;font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--amber)">${Number(o.active_count) || 0}</td>
+                    <td>
+                        <div style="font-size:13px;font-weight:700;color:var(--green)">${rating > 0 ? rating.toFixed(2) : '—'}</div>
+                        <div style="font-size:11px;color:#f59e0b;letter-spacing:1px">${rating > 0 ? stars : 'No ratings yet'}</div>
+                    </td>
+                </tr>`;
+            }).join('');
+            perfEl.innerHTML = `
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th>Officer</th><th>Status</th>
+                        <th style="text-align:center">Resolved</th>
+                        <th style="text-align:center">Active</th>
+                        <th>Citizen Rating</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+        } else {
+            perfEl.innerHTML = '<div style="padding:16px;color:var(--mist);font-size:13px">No officer data available.</div>';
+        }
     }
 }
 
