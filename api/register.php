@@ -67,8 +67,10 @@ addColumnIfMissing($db, 'users', 'city',         'VARCHAR(100) DEFAULT NULL');
 addColumnIfMissing($db, 'users', 'province',     'VARCHAR(100) DEFAULT NULL');
 addColumnIfMissing($db, 'users', 'zip_code',     'VARCHAR(10) DEFAULT NULL');
 addColumnIfMissing($db, 'users', 'valid_id_url', 'VARCHAR(512) DEFAULT NULL');
-addColumnIfMissing($db, 'users', 'failed_login_attempts', 'INT DEFAULT 0');
-addColumnIfMissing($db, 'users', 'locked_until', 'DATETIME DEFAULT NULL');
+addColumnIfMissing($db, 'users', 'failed_login_attempts',    'INT DEFAULT 0');
+addColumnIfMissing($db, 'users', 'locked_until',            'DATETIME DEFAULT NULL');
+addColumnIfMissing($db, 'users', 'emergency_contact_name',  'VARCHAR(200) DEFAULT NULL');
+addColumnIfMissing($db, 'users', 'emergency_contact_phone', 'VARCHAR(30) DEFAULT NULL');
 
 function fullName(string $first, string $last, string $middle, string $fallback): string
 {

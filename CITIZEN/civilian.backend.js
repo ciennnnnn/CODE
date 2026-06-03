@@ -200,6 +200,60 @@ document.addEventListener('click', e => {
     }
 });
 
+function formatTimeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    if (diff < 60000)    return 'Just now';
+    if (diff < 3600000)  return Math.floor(diff / 60000) + ' min ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' hr ago';
+    return Math.floor(diff / 86400000) + ' day(s) ago';
+}
+
+function renderNotifications() {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    const my = MY_COMPLAINTS || [];
+
+    const statusMsg = {
+        submitted:   c => `Complaint ${c.id} submitted — awaiting review.`,
+        verified:    c => `Complaint ${c.id} has been verified by dispatch.`,
+        assigned:    c => `Complaint ${c.id} has been assigned to a field officer.`,
+        in_progress: c => `Complaint ${c.id} is now being addressed.`,
+        en_route:    c => `Field officer is en route for complaint ${c.id}.`,
+        resolved:    c => `Complaint ${c.id} has been resolved.`,
+        validated:   c => `Complaint ${c.id} has been validated.`,
+        closed:      c => `Complaint ${c.id} has been closed.`,
+        rejected:    c => `Complaint ${c.id} was rejected by dispatch.`,
+        cancelled:   c => `Complaint ${c.id} was cancelled.`,
+    };
+
+    const items = my
+        .filter(c => c && c.id && c.date)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5)
+        .map(c => ({
+            msg:  (statusMsg[c.status] || (x => `Complaint ${x.id} — ${x.status}.`))(c),
+            time: c.date,
+        }));
+
+    const hasNew = items.some(n => (Date.now() - new Date(n.time).getTime()) < 24 * 3600000);
+    const dot = document.getElementById('notif-dot');
+    if (dot) dot.style.display = hasNew ? '' : 'none';
+
+    if (!items.length) {
+        panel.innerHTML = '<div class="notif-head">Notifications</div><div style="padding:16px;color:var(--mist);font-size:13px;text-align:center">No notifications yet.</div>';
+        return;
+    }
+    panel.innerHTML = '<div class="notif-head">Notifications</div>' + items.map(n => `
+        <div class="notif-item">
+            <div class="notif-dot-inline"></div>
+            <div>
+                <div class="notif-msg">${safeText(n.msg)}</div>
+                <div class="notif-time">${formatTimeAgo(n.time)}</div>
+            </div>
+        </div>`).join('');
+}
+
 function renderBrgyGrid() {
     const grid = document.getElementById('brgy-grid');
     if (!grid) return;
@@ -225,7 +279,8 @@ function renderDashboard() {
         if (document.getElementById('stat-total')) document.getElementById('stat-total').textContent = my.length;
         if (document.getElementById('stat-active')) document.getElementById('stat-active').textContent = active;
         if (document.getElementById('stat-resolved')) document.getElementById('stat-resolved').textContent = resolved;
-        if (document.getElementById('badge-complaints')) document.getElementById('badge-complaints').textContent = active || '';
+        if (document.getElementById('badge-complaints')) document.getElementById('badge-complaints').textContent = my.length || '';
+        renderNotifications();
 
         /* update barangay label */
         const brgyEl = document.getElementById('user-brgy-label');
@@ -239,15 +294,22 @@ function renderDashboard() {
                 tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-title">No complaints yet</div><div class="empty-sub">Click "File a Complaint" to get started.</div></div></td></tr>`;
                 return;
         }
-        tbody.innerHTML = my.slice(0, 5).map(c => `
-            <tr>
+        tbody.innerHTML = my.slice(0, 5).map(c => {
+            const canCancel = c?.status === 'submitted' && c?.date &&
+                (Date.now() - new Date(c.date).getTime() < 30 * 60 * 1000);
+            const minsLeft = canCancel ? (30 - Math.floor((Date.now() - new Date(c.date).getTime()) / 60000)) : 0;
+            return `<tr>
                 <td class="track-id">${safeText(c?.id || '')}</td>
                 <td>${safeText(c?.cat || '')}</td>
                 <td>${priorityBadge(c?.priority || 'medium')}</td>
                 <td>${statusBadge(c?.status || '')}</td>
                 <td class="mono" style="font-size:12px">${formatDateTime(c?.date || '')}</td>
-                <td><button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c?.id || '')}')">Track</button></td>
-            </tr>`).join('');
+                <td style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c?.id || '')}')">Track</button>
+                    ${canCancel ? `<button class="btn-danger btn-sm" title="Cancel (${minsLeft} min remaining)" onclick="cancelComplaint('${safeText(c?.id || '')}')">Cancel</button>` : ''}
+                </td>
+            </tr>`;
+        }).join('');
 }
 
 function renderComplaintsTable() {
@@ -549,23 +611,53 @@ function renderProfilePage() {
     const tbAvatar = document.getElementById('topbar-avatar');
     if (sbName) sbName.textContent = displayName;
     if (tbUsername) tbUsername.textContent = displayName;
-    if (tbAvatar) tbAvatar.textContent = avatarText;
+    if (tbAvatar) {
+        if (CIVILIAN_USER.profile_picture_url) {
+            tbAvatar.innerHTML = `<img src="${CIVILIAN_USER.profile_picture_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        } else {
+            tbAvatar.textContent = avatarText;
+        }
+    }
 
     // Profile card header
     document.getElementById('prof-display-name').textContent = displayName;
 
-    // Personal info view
-    document.getElementById('prof-name').textContent = CIVILIAN_USER.name || '—';
-    document.getElementById('prof-username').textContent = CIVILIAN_USER.username || '—';
-    document.getElementById('prof-email').textContent = CIVILIAN_USER.email || '—';
-    document.getElementById('prof-phone').textContent = CIVILIAN_USER.phone || '—';
-    document.getElementById('prof-brgy').textContent = CIVILIAN_USER.home_barangay || '—';
+    // Helper: set text content safely
+    const setField = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+
+    // Personal info — all signup fields
+    setField('prof-name',         CIVILIAN_USER.name);
+    setField('prof-middle-name',  CIVILIAN_USER.middle_name);
+    setField('prof-username',     CIVILIAN_USER.username);
+    setField('prof-sex',          CIVILIAN_USER.sex);
+    setField('prof-email',        CIVILIAN_USER.email);
+    setField('prof-phone',        CIVILIAN_USER.phone);
+    setField('prof-street',       CIVILIAN_USER.street);
+    setField('prof-brgy',         CIVILIAN_USER.home_barangay);
+    setField('prof-city',         CIVILIAN_USER.city || 'Quezon City');
+    setField('prof-province',     CIVILIAN_USER.province || 'Metro Manila');
+    setField('prof-zip',          CIVILIAN_USER.zip_code);
+
+    // Birthdate — format as human-readable
+    if (CIVILIAN_USER.birthdate) {
+        const bd = new Date(CIVILIAN_USER.birthdate + 'T00:00:00');
+        setField('prof-birthdate', bd.toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}));
+    } else {
+        setField('prof-birthdate', '');
+    }
+
+    // Emergency contact
+    setField('prof-emergency-name',  CIVILIAN_USER.emergency_contact_name);
+    setField('prof-emergency-phone', CIVILIAN_USER.emergency_contact_phone);
 
     // Edit form pre-fill
-    document.getElementById('edit-profile-name').value = CIVILIAN_USER.name || '';
-    document.getElementById('edit-profile-username').value = CIVILIAN_USER.username || '';
-    document.getElementById('edit-profile-email').value = CIVILIAN_USER.email || '';
-    document.getElementById('edit-profile-phone').value = CIVILIAN_USER.phone || '';
+    const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setInput('edit-profile-name',     CIVILIAN_USER.name);
+    setInput('edit-profile-username', CIVILIAN_USER.username);
+    setInput('edit-profile-email',    CIVILIAN_USER.email);
+    setInput('edit-profile-phone',    CIVILIAN_USER.phone);
+    setInput('edit-emergency-name',   CIVILIAN_USER.emergency_contact_name);
+    setInput('edit-emergency-phone',  CIVILIAN_USER.emergency_contact_phone);
 
     // Pre-select barangay in dropdown
     const brgySelect = document.getElementById('edit-profile-brgy');
@@ -686,6 +778,8 @@ async function saveProfilePictureUrl(url, statusEl) {
             ? (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
             : parts[0].charAt(0).toUpperCase();
         renderProfileAvatar(avatarText, url);
+        const tbAv = document.getElementById('topbar-avatar');
+        if (tbAv) tbAv.innerHTML = `<img src="${url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
         statusEl.textContent = '✓ Picture uploaded successfully!';
         setTimeout(() => { statusEl.textContent = ''; }, 3000);
     } catch (error) {
@@ -694,10 +788,12 @@ async function saveProfilePictureUrl(url, statusEl) {
 }
 
 async function saveProfile() {
-    const name  = document.getElementById('edit-profile-name')?.value.trim() || '';
-    const email = document.getElementById('edit-profile-email')?.value.trim() || '';
-    const phone = document.getElementById('edit-profile-phone')?.value.trim() || '';
-    const brgy  = document.getElementById('edit-profile-brgy')?.value || '';
+    const name           = document.getElementById('edit-profile-name')?.value.trim() || '';
+    const email          = document.getElementById('edit-profile-email')?.value.trim() || '';
+    const phone          = document.getElementById('edit-profile-phone')?.value.trim() || '';
+    const brgy           = document.getElementById('edit-profile-brgy')?.value || '';
+    const emergencyName  = document.getElementById('edit-emergency-name')?.value.trim() || '';
+    const emergencyPhone = document.getElementById('edit-emergency-phone')?.value.trim() || '';
 
     if (!name) { showToast('Full name is required.'); return; }
     if (!email) { showToast('Email is required.'); return; }
@@ -707,11 +803,16 @@ async function saveProfile() {
     if (!brgy) { showToast('Please select a barangay.'); return; }
 
     try {
-        await apiFetch('user.php', {action: 'updateProfile', name, email, phone, brgy}, 'POST');
-        CIVILIAN_USER.name = name;
-        CIVILIAN_USER.email = email;
-        CIVILIAN_USER.phone = phone;
-        CIVILIAN_USER.home_barangay = brgy;
+        await apiFetch('user.php', {
+            action: 'updateProfile', name, email, phone, brgy,
+            emergency_name: emergencyName, emergency_phone: emergencyPhone,
+        }, 'POST');
+        CIVILIAN_USER.name                    = name;
+        CIVILIAN_USER.email                   = email;
+        CIVILIAN_USER.phone                   = phone;
+        CIVILIAN_USER.home_barangay           = brgy;
+        CIVILIAN_USER.emergency_contact_name  = emergencyName;
+        CIVILIAN_USER.emergency_contact_phone = emergencyPhone;
         renderProfilePage();
         toggleProfileEdit();
         showToast('Profile updated successfully.');

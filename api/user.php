@@ -5,6 +5,20 @@ $data        = getJsonPayload();
 $action      = trim((string)($_REQUEST['action'] ?? $data['action'] ?? 'profile'));
 $user        = requireLogin();
 $db          = getDb();
+
+/* Ensure extended profile columns exist for all environments */
+foreach ([
+    'emergency_contact_name'  => "VARCHAR(200) DEFAULT NULL",
+    'emergency_contact_phone' => "VARCHAR(30) DEFAULT NULL",
+] as $_col => $_def) {
+    try {
+        $_chk = $db->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=:t AND COLUMN_NAME=:c');
+        $_chk->execute([':t' => 'users', ':c' => $_col]);
+        if ((int)$_chk->fetchColumn() === 0) {
+            $db->exec("ALTER TABLE `users` ADD COLUMN `{$_col}` {$_def}");
+        }
+    } catch (PDOException $e) { /* non-fatal */ }
+}
 $currentRole = $user['role'] ?? '';
 $currentId   = (int)($user['officer_id'] ?? $user['id'] ?? 0); // extension PK (dispatch_id / officer_id); falls back to user_id for regular
 $currentUid  = (int)($user['user_id'] ?? $currentId);  // always users.user_id
@@ -21,18 +35,30 @@ if ($action === 'profile') {
 
     if ($currentRole === 'regular') {
         $stmt = $db->prepare(
-            'SELECT username, full_name AS name, email, phone_number, barangay AS home_barangay, profile_picture_url
+            'SELECT username, full_name AS name, email, phone_number, barangay AS home_barangay,
+                    profile_picture_url, middle_name, birthdate, sex, street, city, province,
+                    zip_code, valid_id_url, emergency_contact_name, emergency_contact_phone
              FROM users WHERE user_id = :uid'
         );
         $stmt->execute([':uid' => $currentUid]);
         $row = $stmt->fetch();
         if ($row) {
-            $profile['username']      = $row['username'];
-            $profile['name']          = $row['name'];
-            $profile['email']         = $row['email'];
-            $profile['phone']         = $row['phone_number'];
-            $profile['home_barangay'] = $row['home_barangay'];
-            $profile['profile_picture_url'] = $row['profile_picture_url'];
+            $profile['username']                = $row['username'];
+            $profile['name']                    = $row['name'];
+            $profile['email']                   = $row['email'];
+            $profile['phone']                   = $row['phone_number'];
+            $profile['home_barangay']           = $row['home_barangay'];
+            $profile['profile_picture_url']     = $row['profile_picture_url'];
+            $profile['middle_name']             = $row['middle_name'] ?? '';
+            $profile['birthdate']               = $row['birthdate'] ?? '';
+            $profile['sex']                     = $row['sex'] ?? '';
+            $profile['street']                  = $row['street'] ?? '';
+            $profile['city']                    = $row['city'] ?? 'Quezon City';
+            $profile['province']                = $row['province'] ?? 'Metro Manila';
+            $profile['zip_code']                = $row['zip_code'] ?? '';
+            $profile['valid_id_url']            = $row['valid_id_url'] ?? '';
+            $profile['emergency_contact_name']  = $row['emergency_contact_name'] ?? '';
+            $profile['emergency_contact_phone'] = $row['emergency_contact_phone'] ?? '';
         }
 
     } elseif ($currentRole === 'dispatch') {
@@ -112,10 +138,17 @@ if ($action === 'updateProfile') {
         if ($phone === '' || $brgy === '') {
             errorResponse('Phone and barangay are required for civilian profile updates.');
         }
+        $emergencyName  = trim((string)($data['emergency_name'] ?? ''));
+        $emergencyPhone = trim((string)($data['emergency_phone'] ?? ''));
         $stmt = $db->prepare(
-            'UPDATE users SET full_name = :name, email = :email, phone_number = :phone, barangay = :brgy WHERE user_id = :uid'
+            'UPDATE users SET full_name = :name, email = :email, phone_number = :phone, barangay = :brgy,
+             emergency_contact_name = :ename, emergency_contact_phone = :ephone
+             WHERE user_id = :uid'
         );
-        $stmt->execute([':name' => $name, ':email' => $email, ':phone' => $phone, ':brgy' => $brgy, ':uid' => $currentUid]);
+        $stmt->execute([
+            ':name' => $name, ':email' => $email, ':phone' => $phone, ':brgy' => $brgy,
+            ':ename' => $emergencyName, ':ephone' => $emergencyPhone, ':uid' => $currentUid,
+        ]);
 
     } elseif ($currentRole === 'dispatch') {
         $stmt = $db->prepare('UPDATE users SET full_name = :name, email = :email WHERE user_id = :uid');

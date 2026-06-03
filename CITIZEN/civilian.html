@@ -58,15 +58,12 @@
       <div class="topbar-right">
         <div class="notif-btn" id="notif-btn" onclick="toggleNotif()">
           &#128276;
-          <div class="notif-dot"></div>
+          <div class="notif-dot" id="notif-dot"></div>
           <div class="notif-panel hidden" id="notif-panel">
             <div class="notif-head">Notifications</div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">Complaint #000012 has been resolved.</div><div class="notif-time">5 min ago</div></div></div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">Complaint #000016 received. Under review.</div><div class="notif-time">18 min ago</div></div></div>
-            <div class="notif-item"><div class="notif-dot-inline"></div><div><div class="notif-msg">System maintenance: Mar 26, 2AM&ndash;4AM.</div><div class="notif-time">2 hrs ago</div></div></div>
           </div>
         </div>
-        <div class="user-chip">
+        <div class="user-chip" onclick="setActivePage('profile')" style="cursor:pointer" title="My Profile">
           <div class="user-avatar" id="topbar-avatar">JD</div>
           <span class="user-chip-name" id="topbar-username">Juan D. Oe</span>
         </div>
@@ -322,11 +319,17 @@
               <div class="prof-panel-body" id="profile-view">
                 <div class="prof-info-grid">
                   <div class="prof-info-item"><div class="prof-info-label">FULL NAME</div><div class="prof-info-val" id="prof-name">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">MIDDLE NAME</div><div class="prof-info-val" id="prof-middle-name">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">USERNAME</div><div class="prof-info-val" id="prof-username">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">SEX</div><div class="prof-info-val" id="prof-sex">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">DATE OF BIRTH</div><div class="prof-info-val" id="prof-birthdate">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">EMAIL</div><div class="prof-info-val" id="prof-email">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">PHONE</div><div class="prof-info-val" id="prof-phone">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">STREET / HOUSE NO.</div><div class="prof-info-val" id="prof-street">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">BARANGAY</div><div class="prof-info-val" id="prof-brgy">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">CITY</div><div class="prof-info-val" id="prof-city">Quezon City</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">PROVINCE</div><div class="prof-info-val" id="prof-province">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">ZIP CODE</div><div class="prof-info-val" id="prof-zip">&mdash;</div></div>
                 </div>
               </div>
               <div id="profile-edit" class="prof-panel-body hidden">
@@ -388,10 +391,28 @@
                   </div>
                   <div class="form-group"><label>City</label><input id="edit-profile-city" class="form-input" value="Quezon City" readonly /></div>
                 </div>
+                <div class="form-row">
+                  <div class="form-group"><label>Emergency Contact Name</label><input id="edit-emergency-name" class="form-input" placeholder="Full name of emergency contact" /></div>
+                  <div class="form-group"><label>Emergency Contact Phone</label><input id="edit-emergency-phone" class="form-input" placeholder="+63 9XX XXX XXXX" /></div>
+                </div>
                 <div class="btn-row">
                   <button class="btn-secondary" onclick="toggleProfileEdit()">Cancel</button>
                   <button class="btn-primary" style="padding:10px 24px;font-size:15px" onclick="saveProfile()">Save Changes</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="card prof-panel-card">
+              <div class="card-head">
+                <span class="card-title">In Case of Emergency</span>
+              </div>
+              <div class="prof-panel-body">
+                <div class="prof-info-grid">
+                  <div class="prof-info-item"><div class="prof-info-label">CONTACT NAME</div><div class="prof-info-val" id="prof-emergency-name">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">CONTACT PHONE</div><div class="prof-info-val" id="prof-emergency-phone">&mdash;</div></div>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:var(--mist)">Edit your emergency contact via the Personal Information section above.</div>
               </div>
             </div>
 
