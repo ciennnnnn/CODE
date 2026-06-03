@@ -268,17 +268,15 @@ function isFormReady() {
   // Detect which form is present: citizen or officer/dispatch
   const citizenForm = document.getElementById('citizen-signup');
   if (citizenForm) {
-    // Citizen form fields
     const firstName = getVal('cit-firstname');
     const lastName = getVal('cit-lastname');
-    const username = getVal('cit-username');
     const email = getVal('cit-email');
     const phone = getVal('cit-phone');
     const password = getVal('cit-password');
     const confirm = getVal('cit-confirm');
     const terms = document.getElementById('cit-terms') ? document.getElementById('cit-terms').checked : false;
     const privacy = document.getElementById('cit-privacy') ? document.getElementById('cit-privacy').checked : false;
-    return !!(firstName && lastName && username && email && phone && password && confirm && terms && privacy);
+    return !!(firstName && lastName && email && phone && password && confirm && terms && privacy);
   }
   // Officer/dispatch form (default)
   const enhancedOfficer = hasEnhancedOfficerFields();

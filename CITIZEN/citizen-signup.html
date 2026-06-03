@@ -7,77 +7,151 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/base.css?v=20260603b" />
-  <link rel="stylesheet" href="/login.css?v=20260603b" />
-  <link rel="stylesheet" href="/signup.css?v=20260603b" />
+  <link rel="stylesheet" href="/base.css?v=20260604a" />
+  <link rel="stylesheet" href="/login.css?v=20260604a" />
+  <link rel="stylesheet" href="/signup.css?v=20260604a" />
   <style>
-    .su-section-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--mist);
-      font-weight: 700;
-      padding: 14px 0 6px;
-      grid-column: 1 / -1;
-      border-top: 1px solid var(--border);
-      margin-top: 4px;
-    }
-    .su-section-label:first-child { border-top: none; margin-top: 0; }
-    .id-upload-box {
-      border: 2px dashed var(--border);
-      border-radius: 8px;
-      padding: 18px;
-      text-align: center;
-      cursor: pointer;
-      background: var(--surface);
-      transition: border-color 0.2s;
-    }
-    .id-upload-box:hover { border-color: var(--accent); }
-    .id-upload-box.has-file { border-color: var(--green); background: var(--green-light); }
-    .id-upload-label { font-size: 13px; color: var(--steel); margin-top: 4px; }
-    .id-upload-sub { font-size: 11px; color: var(--mist); margin-top: 2px; }
-    .id-upload-name { font-size: 12px; font-weight: 600; color: var(--green); margin-top: 6px; }
-    .age-display {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: var(--mist);
-      margin-top: 4px;
-    }
-    .age-display strong { color: var(--ink); font-family: var(--font-mono); }
-    .su-step-indicator {
-      display: flex;
+    /* ── Signup — match login aesthetics ─────────────────── */
+    .su-page { grid-template-columns: minmax(0, 1.4fr) minmax(440px, 0.9fr); }
+    .su-right { padding: 48px 56px; align-items: center; background: #f8f9fa; }
+    .su-wrap  { width: min(100%, 440px); }
+    .su-title { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; }
+
+    /* Step tabs */
+    .su-step-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 0;
       margin-bottom: 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
-      border: 1px solid var(--border);
+      border: 1px solid #d6d9de;
     }
-    .su-step {
-      flex: 1;
-      padding: 8px 4px;
+    .su-step-tab {
+      padding: 10px 4px;
       text-align: center;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--mist);
-      background: var(--surface);
+      color: #9aa0ab;
+      background: #eeeeee;
       cursor: pointer;
-      transition: all 0.15s;
-      border-right: 1px solid var(--border);
+      border-right: 1px solid #d6d9de;
+      font-family: var(--font-mono);
+      transition: all 0.12s;
+      user-select: none;
     }
-    .su-step:last-child { border-right: none; }
-    .su-step.active { background: var(--ink); color: #fff; }
-    .su-step.done { background: var(--green); color: #fff; }
+    .su-step-tab:last-child { border-right: none; }
+    .su-step-tab.active { background: #111111; color: #fff; }
+    .su-step-tab.done   { background: #1a7f37; color: #fff; }
+
+    /* Section label */
+    .su-section-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+      font-weight: 600;
+      grid-column: 1 / -1;
+      padding-top: 6px;
+      border-top: 1px solid #e4e6ea;
+      margin-top: 4px;
+    }
+    .su-section-label:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+    /* Page sections (steps) */
     .su-page-section { display: none; }
-    .su-page-section.active { display: contents; }
+    .su-page-section.visible { display: contents; }
+
+    /* Inputs — match login style */
+    .su-input {
+      height: 46px !important;
+      font-size: 13px !important;
+      border-radius: 8px !important;
+      background: #ededed !important;
+      border: 1px solid #d6d9de !important;
+    }
+    .su-input:focus {
+      border-color: #111111 !important;
+      background: #ffffff !important;
+      box-shadow: 0 0 0 3px rgba(17,17,17,0.07) !important;
+      outline: none !important;
+    }
+    .su-input[readonly] { background: #e4e4e4 !important; color: #888 !important; cursor: default; }
+    .su-grid { gap: 10px 14px; margin-bottom: 10px; }
+    .su-label { font-size: 10px; margin-bottom: 5px; letter-spacing: 0.15em; color: #8a8a8a; }
+
+    /* Age display */
+    .age-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; color: #555; margin-top: 3px;
+    }
+    .age-pill strong { font-family: var(--font-mono); color: #111; }
+
+    /* Valid ID upload box */
+    .id-upload-zone {
+      border: 2px dashed #d6d9de;
+      border-radius: 8px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #f5f5f5;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .id-upload-zone:hover { border-color: #111; background: #efefef; }
+    .id-upload-zone.uploaded { border-color: #1a7f37; background: #f0fdf4; }
+    .id-upload-icon { font-size: 28px; color: #bbb; margin-bottom: 6px; }
+    .id-upload-title { font-size: 12px; font-weight: 600; color: #555; }
+    .id-upload-sub { font-size: 10px; color: #999; margin-top: 3px; }
+    .id-upload-filename { font-size: 11px; font-weight: 600; color: #1a7f37; margin-top: 6px; word-break: break-all; }
+
+    /* Navigation row */
+    .su-nav-row {
+      display: flex; gap: 10px; justify-content: space-between;
+      align-items: center; margin-top: 16px;
+    }
+    .btn-su-back {
+      background: transparent;
+      color: #666;
+      border: 1.5px solid #d6d9de;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 11px 22px;
+      cursor: pointer; transition: border-color 0.12s, color 0.12s;
+    }
+    .btn-su-back:hover { border-color: #111; color: #111; }
+    .btn-su-next, .btn-su-submit {
+      background: #111111;
+      color: #fff; border: none; border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 11px 28px;
+      cursor: pointer; transition: background 0.12s, transform 0.12s, box-shadow 0.12s;
+    }
+    .btn-su-next:hover, .btn-su-submit:hover {
+      background: #000;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    }
+    .btn-su-submit { padding: 12px 32px; font-size: 12px; }
+    .btn-su-submit:disabled { background: #d4d4d4; color: #fff; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Error box */
+    .su-error-box {
+      background: #fff1f1; border-left: 3px solid #c00; color: #8e1d1d;
+      padding: 10px 14px; font-size: 12px;
+      border-radius: 0 6px 6px 0; margin-top: 8px; line-height: 1.45;
+    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body data-role="regular">
 <div class="login-page su-page">
+
+  <!-- Left panel — same as sign-in -->
   <section class="login-left" aria-label="TRAPICO overview">
     <div class="login-left-inner">
       <div class="login-badge">TTMD &bull; QUEZON CITY</div>
@@ -100,22 +174,23 @@
     </div>
   </section>
 
-  <section class="su-right" aria-label="Create account" style="overflow-y:auto">
+  <!-- Right panel — signup form -->
+  <section class="su-right" aria-label="Create account">
     <div class="su-wrap">
       <h2 class="su-title">CREATE ACCOUNT</h2>
 
-      <!-- Step indicator -->
-      <div class="su-step-indicator">
-        <div class="su-step active" id="step-tab-1" onclick="goSignupStep(1)">1. Personal</div>
-        <div class="su-step" id="step-tab-2" onclick="goSignupStep(2)">2. Address</div>
-        <div class="su-step" id="step-tab-3" onclick="goSignupStep(3)">3. Account</div>
-        <div class="su-step" id="step-tab-4" onclick="goSignupStep(4)">4. Verify</div>
+      <!-- Step tabs -->
+      <div class="su-step-tabs" role="tablist">
+        <div class="su-step-tab active" id="step-tab-1">1. Personal</div>
+        <div class="su-step-tab" id="step-tab-2">2. Address</div>
+        <div class="su-step-tab" id="step-tab-3">3. Account</div>
+        <div class="su-step-tab" id="step-tab-4">4. Verify</div>
       </div>
 
       <form id="citizen-signup" class="su-form" autocomplete="off" onsubmit="return false" novalidate>
 
-        <!-- ── STEP 1: Personal Info ── -->
-        <div class="su-page-section active" id="signup-step-1">
+        <!-- ── STEP 1: Personal Information ── -->
+        <div class="su-page-section visible" id="signup-step-1">
           <div class="su-grid">
             <div class="su-section-label">Personal Information</div>
             <div class="su-field">
@@ -128,25 +203,26 @@
             </div>
             <div class="su-field su-col-full">
               <label class="su-label" for="cit-midname">MIDDLE NAME</label>
-              <input id="cit-midname" class="su-input" type="text" placeholder="Santos (optional)" autocomplete="additional-name" />
+              <input id="cit-midname" class="su-input" type="text" placeholder="Santos (leave blank if none)" autocomplete="additional-name" />
             </div>
             <div class="su-field">
               <label class="su-label" for="cit-birthdate">BIRTHDATE *</label>
-              <input id="cit-birthdate" class="su-input" type="date" max="" onchange="calcAge()" />
-              <div class="age-display" id="age-display" style="display:none">Age: <strong id="computed-age">—</strong></div>
+              <input id="cit-birthdate" class="su-input" type="date" onchange="calcAge()" />
+              <div class="age-pill hidden" id="age-display">Age: <strong id="computed-age">—</strong></div>
             </div>
             <div class="su-field">
               <label class="su-label" for="cit-sex">SEX *</label>
-              <select id="cit-sex" class="su-input" style="height:44px">
+              <select id="cit-sex" class="su-input">
                 <option value="">— Select —</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Prefer not to say">Prefer not to say</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Prefer not to say</option>
               </select>
             </div>
           </div>
-          <div style="margin-top:18px;display:flex;justify-content:flex-end">
-            <button type="button" class="su-submit" style="width:auto;padding:10px 28px" onclick="nextSignupStep(1)">Next &rarr;</button>
+          <div id="err-step-1" class="su-error-box hidden"></div>
+          <div class="su-nav-row" style="justify-content:flex-end">
+            <button type="button" class="btn-su-next" onclick="nextSignupStep(1)">Next &rarr;</button>
           </div>
         </div>
 
@@ -155,12 +231,12 @@
           <div class="su-grid">
             <div class="su-section-label">Home Address</div>
             <div class="su-field su-col-full">
-              <label class="su-label" for="cit-street">STREET / HOUSE NO. *</label>
-              <input id="cit-street" class="su-input" type="text" placeholder="e.g. 123 Sampaguita St." />
+              <label class="su-label" for="cit-street">STREET / HOUSE NUMBER *</label>
+              <input id="cit-street" class="su-input" type="text" placeholder="e.g. 123 Sampaguita Street" />
             </div>
-            <div class="su-field">
+            <div class="su-field su-col-full">
               <label class="su-label" for="cit-brgy-select">BARANGAY *</label>
-              <select id="cit-brgy-select" class="su-input" style="height:44px">
+              <select id="cit-brgy-select" class="su-input">
                 <option value="">— Select Barangay —</option>
                 <option>Commonwealth</option>
                 <option>Batasan Hills</option>
@@ -169,105 +245,105 @@
               </select>
             </div>
             <div class="su-field">
-              <label class="su-label" for="cit-city">CITY *</label>
-              <input id="cit-city" class="su-input" type="text" value="Quezon City" readonly />
+              <label class="su-label" for="cit-city">CITY</label>
+              <input id="cit-city" class="su-input" type="text" value="Quezon City" readonly style="background:#f2f3f5;color:#888" />
             </div>
             <div class="su-field">
-              <label class="su-label" for="cit-province">PROVINCE *</label>
-              <input id="cit-province" class="su-input" type="text" value="Metro Manila" readonly />
+              <label class="su-label" for="cit-province">PROVINCE</label>
+              <input id="cit-province" class="su-input" type="text" value="Metro Manila" readonly style="background:#f2f3f5;color:#888" />
             </div>
-            <div class="su-field">
+            <div class="su-field su-col-full">
               <label class="su-label" for="cit-zip">ZIP CODE *</label>
-              <input id="cit-zip" class="su-input" type="text" placeholder="e.g. 1126" maxlength="4" />
+              <input id="cit-zip" class="su-input" type="text" placeholder="e.g. 1126" maxlength="4" pattern="[0-9]{4}" />
             </div>
           </div>
-          <div style="margin-top:18px;display:flex;justify-content:space-between">
-            <button type="button" class="su-submit su-submit-disabled" style="width:auto;padding:10px 28px;background:var(--border);color:var(--ink)" onclick="goSignupStep(1)">&larr; Back</button>
-            <button type="button" class="su-submit" style="width:auto;padding:10px 28px" onclick="nextSignupStep(2)">Next &rarr;</button>
+          <div id="err-step-2" class="su-error-box hidden"></div>
+          <div class="su-nav-row">
+            <button type="button" class="btn-su-back" onclick="goSignupStep(1)">&larr; Back</button>
+            <button type="button" class="btn-su-next" onclick="nextSignupStep(2)">Next &rarr;</button>
           </div>
         </div>
 
-        <!-- ── STEP 3: Account Info ── -->
+        <!-- ── STEP 3: Account Information ── -->
         <div class="su-page-section" id="signup-step-3">
           <div class="su-grid">
             <div class="su-section-label">Account Information</div>
             <div class="su-field su-col-full">
-              <label class="su-label" for="cit-email">EMAIL ADDRESS * <span style="font-weight:400;font-family:var(--font-body)">(used to sign in)</span></label>
+              <label class="su-label" for="cit-email">EMAIL ADDRESS * <span style="font-weight:400;font-family:var(--font-body);text-transform:none">&mdash; used to sign in</span></label>
               <input id="cit-email" class="su-input" type="email" placeholder="juan@email.com" autocomplete="email" />
-              <div id="email-check-msg" style="font-size:11px;margin-top:4px;color:var(--mist)"></div>
             </div>
             <div class="su-field su-col-full">
               <label class="su-label" for="cit-phone">CONTACT NUMBER *</label>
               <input id="cit-phone" class="su-input" type="tel" placeholder="+63 9xx xxx xxxx" autocomplete="tel" />
-              <div id="phone-check-msg" style="font-size:11px;margin-top:4px;color:var(--mist)"></div>
             </div>
             <div class="su-field su-col-full">
               <label class="su-label" for="cit-password">PASSWORD *</label>
               <div class="su-pw-wrap">
-                <input id="cit-password" class="su-input su-pw-input" type="password" placeholder="At least 8 characters, 1 uppercase, 1 number" autocomplete="new-password" />
-                <button class="su-pw-toggle" type="button" onclick="toggleSuPassword('cit-password','cit-pw-toggle')" id="cit-pw-toggle" aria-label="Show password">
-                  <span class="su-eye-icon" aria-hidden="true"></span>
-                </button>
+                <input id="cit-password" class="su-input su-pw-input" type="password" placeholder="Min. 8 chars, 1 uppercase, 1 number" autocomplete="new-password" />
+                <button class="su-pw-toggle" type="button" onclick="toggleSuPassword('cit-password','cit-pw-toggle')" id="cit-pw-toggle" aria-label="Show password"><span class="su-eye-icon"></span></button>
               </div>
             </div>
             <div class="su-field su-col-full">
               <label class="su-label" for="cit-confirm">CONFIRM PASSWORD *</label>
               <div class="su-pw-wrap">
                 <input id="cit-confirm" class="su-input su-pw-input" type="password" placeholder="Repeat your password" autocomplete="new-password" />
-                <button class="su-pw-toggle" type="button" onclick="toggleSuPassword('cit-confirm','cit-confirm-toggle')" id="cit-confirm-toggle" aria-label="Show confirm">
-                  <span class="su-eye-icon" aria-hidden="true"></span>
-                </button>
+                <button class="su-pw-toggle" type="button" onclick="toggleSuPassword('cit-confirm','cit-confirm-toggle')" id="cit-confirm-toggle" aria-label="Show confirm"><span class="su-eye-icon"></span></button>
               </div>
             </div>
           </div>
-          <div style="margin-top:18px;display:flex;justify-content:space-between">
-            <button type="button" class="su-submit su-submit-disabled" style="width:auto;padding:10px 28px;background:var(--border);color:var(--ink)" onclick="goSignupStep(2)">&larr; Back</button>
-            <button type="button" class="su-submit" style="width:auto;padding:10px 28px" onclick="nextSignupStep(3)">Next &rarr;</button>
+          <div id="err-step-3" class="su-error-box hidden"></div>
+          <div class="su-nav-row">
+            <button type="button" class="btn-su-back" onclick="goSignupStep(2)">&larr; Back</button>
+            <button type="button" class="btn-su-next" onclick="nextSignupStep(3)">Next &rarr;</button>
           </div>
         </div>
 
-        <!-- ── STEP 4: ID Verification & Submit ── -->
+        <!-- ── STEP 4: Verify & Submit ── -->
         <div class="su-page-section" id="signup-step-4">
           <div class="su-grid">
             <div class="su-section-label">Valid ID Verification</div>
             <div class="su-field su-col-full">
-              <label class="su-label">UPLOAD VALID ID * <span style="font-weight:400;font-family:var(--font-body)">(max 50MB &bull; JPG, PNG, PDF)</span></label>
-              <p style="font-size:12px;color:var(--mist);margin:0 0 8px">Upload your government-issued ID or Barangay ID. The barangay on your ID must match the barangay you selected. Accepted: PhilSys, UMID, Passport, Driver&rsquo;s License, Voter&rsquo;s ID, Barangay ID.</p>
-              <div class="id-upload-box" id="id-upload-box" onclick="document.getElementById('cit-id-file').click()">
+              <label class="su-label" for="cit-id-file">UPLOAD VALID ID * <span style="font-weight:400;font-family:var(--font-body);text-transform:none">(max 50MB)</span></label>
+              <p style="font-size:11px;color:#777;margin:0 0 8px;line-height:1.5">
+                The barangay on your ID must match your selected barangay.<br>
+                Accepted: PhilSys, UMID, Passport, Driver&rsquo;s License, Voter&rsquo;s ID, <strong>QC ID</strong>, Barangay ID.
+              </p>
+              <div class="id-upload-zone" id="id-upload-zone" onclick="document.getElementById('cit-id-file').click()" role="button" tabindex="0">
                 <input type="file" id="cit-id-file" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none" onchange="handleIdUpload(event)" />
-                <div style="font-size:22px;color:var(--mist)">&#128100;</div>
-                <div class="id-upload-label">Click to upload your Valid ID</div>
+                <div class="id-upload-icon">&#128100;</div>
+                <div class="id-upload-title" id="id-upload-title">Click to upload your Valid ID</div>
                 <div class="id-upload-sub">JPG, PNG, WebP, or PDF &bull; Max 50MB</div>
-                <div class="id-upload-name hidden" id="id-file-name"></div>
+                <div class="id-upload-filename hidden" id="id-file-name"></div>
               </div>
-              <div id="id-upload-msg" style="font-size:12px;margin-top:6px;color:var(--mist)"></div>
+              <div id="id-upload-status" style="font-size:11px;margin-top:5px;color:#555"></div>
             </div>
           </div>
 
-          <div class="su-legal su-legal-inline" style="margin-top:16px">
+          <div class="su-legal su-legal-inline" style="margin-top:12px">
             <label class="su-check-row">
               <input type="checkbox" id="cit-terms" class="su-checkbox" onchange="updateSubmitState()" />
-              <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('terms')">TERMS</button></span>
+              <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('terms')">TERMS AND CONDITIONS</button></span>
             </label>
             <label class="su-check-row">
               <input type="checkbox" id="cit-privacy" class="su-checkbox" onchange="updateSubmitState()" />
-              <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('privacy')">PRIVACY</button></span>
+              <span class="su-check-label"><button type="button" class="su-legal-link" onclick="openLegalModal('privacy')">PRIVACY POLICY</button></span>
             </label>
           </div>
 
-          <div id="cit-error" class="su-error hidden" role="alert" style="margin-top:12px"></div>
-          <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-            <button type="button" class="su-submit su-submit-disabled" style="width:auto;padding:10px 28px;background:var(--border);color:var(--ink)" onclick="goSignupStep(3)">&larr; Back</button>
-            <button type="button" class="su-submit" id="cit-submit" onclick="submitCitizenSignup()">CREATE ACCOUNT &rarr;</button>
+          <div id="err-step-4" class="su-error-box hidden"></div>
+          <div class="su-nav-row">
+            <button type="button" class="btn-su-back" onclick="goSignupStep(3)">&larr; Back</button>
+            <button type="button" class="btn-su-submit" id="cit-submit" onclick="submitCitizenSignup()">CREATE ACCOUNT &rarr;</button>
           </div>
         </div>
 
       </form>
-      <div class="su-footer-link">Already have an account? <a href="/citizen-login.html">Sign in</a></div>
+      <div class="su-footer-link" style="margin-top:14px">Already have an account? <a href="/citizen-login.html">Sign in</a></div>
     </div>
   </section>
 </div>
 
+<!-- Legal modal (same structure as login) -->
 <div class="legal-backdrop hidden" id="legal-backdrop" onclick="handleBackdropClick(event)" role="dialog" aria-modal="true" aria-labelledby="legal-modal-head">
   <div class="legal-modal" id="legal-modal">
     <div class="legal-modal-head" id="legal-modal-head">TERMS AND CONDITIONS</div>
@@ -277,19 +353,25 @@
   </div>
 </div>
 
-<script src="/data.js?v=20260603b"></script>
-<script src="/api.js?v=20260603b"></script>
-<script src="/signup.js?v=20260603b"></script>
+<script src="/data.js?v=20260604a"></script>
+<script src="/api.js?v=20260604a"></script>
+<script src="/signup.js?v=20260604a"></script>
 <script>
-/* ── Multi-step signup navigation ── */
-let currentSignupStep = 1;
-let idFileData = null;  /* { name, size, base64 } */
+'use strict';
 
+/* ── State ── */
+let currentSignupStep = 1;
+let signupIdFileData  = null;
+
+/* ── Step navigation ── */
 function goSignupStep(n) {
   for (let i = 1; i <= 4; i++) {
     const sec = document.getElementById('signup-step-' + i);
     const tab = document.getElementById('step-tab-' + i);
-    if (sec) sec.classList.toggle('active', i === n);
+    if (sec) {
+      sec.classList.remove('visible');
+      if (i === n) sec.classList.add('visible');
+    }
     if (tab) {
       tab.classList.remove('active', 'done');
       if (i < n) tab.classList.add('done');
@@ -297,190 +379,168 @@ function goSignupStep(n) {
     }
   }
   currentSignupStep = n;
+  /* Clear error on step change */
+  document.querySelectorAll('.su-error-box').forEach(e => e.classList.add('hidden'));
 }
 
-function nextSignupStep(current) {
-  const errEl = document.getElementById('cit-error');
-  if (errEl) errEl.classList.add('hidden');
-
-  if (current === 1) {
-    const fn = document.getElementById('cit-firstname').value.trim();
-    const ln = document.getElementById('cit-lastname').value.trim();
-    const bd = document.getElementById('cit-birthdate').value;
-    const sx = document.getElementById('cit-sex').value;
-    if (!fn) return showSignupError('Please enter your first name.');
-    if (!ln) return showSignupError('Please enter your surname.');
-    if (!bd) return showSignupError('Please enter your birthdate.');
-    const age = calcAge();
-    if (age < 13) return showSignupError('You must be at least 13 years old to create an account.');
-    if (age > 120) return showSignupError('Please enter a valid birthdate.');
-    if (!sx) return showSignupError('Please select your sex.');
-    goSignupStep(2);
-  } else if (current === 2) {
-    const street = document.getElementById('cit-street').value.trim();
-    const brgy = document.getElementById('cit-brgy-select').value;
-    const zip = document.getElementById('cit-zip').value.trim();
-    if (!street) return showSignupError('Please enter your street/house number.');
-    if (!brgy) return showSignupError('Please select your barangay.');
-    if (!zip || !/^\d{4}$/.test(zip)) return showSignupError('Please enter a valid 4-digit ZIP code.');
-    goSignupStep(3);
-  } else if (current === 3) {
-    const email = document.getElementById('cit-email').value.trim();
-    const phone = document.getElementById('cit-phone').value.trim();
-    const pw = document.getElementById('cit-password').value;
-    const cf = document.getElementById('cit-confirm').value;
-    if (!email || !isValidEmail(email)) return showSignupError('Please enter a valid email address.');
-    if (!phone || !isValidPhone(phone)) return showSignupError('Please enter a valid contact number (Philippine format).');
-    if (!isStrongPassword(pw)) return showSignupError('Password must be at least 8 characters with 1 uppercase and 1 number.');
-    if (pw !== cf) return showSignupError('Passwords do not match.');
-    goSignupStep(4);
-  }
-}
-
-function showSignupError(msg) {
-  const el = document.getElementById('cit-error');
+function showStepError(step, msg) {
+  const el = document.getElementById('err-step-' + step);
   if (el) { el.textContent = msg; el.classList.remove('hidden'); }
 }
 
+function nextSignupStep(current) {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  if (current === 1) {
+    if (!g('cit-firstname')) return showStepError(1, 'Please enter your first name.');
+    if (!g('cit-lastname'))  return showStepError(1, 'Please enter your surname.');
+    if (!g('cit-birthdate')) return showStepError(1, 'Please enter your birthdate.');
+    const age = calcAge();
+    if (age < 13)  return showStepError(1, 'You must be at least 13 years old to register.');
+    if (age > 120) return showStepError(1, 'Please enter a valid birthdate.');
+    if (!g('cit-sex')) return showStepError(1, 'Please select your sex.');
+  } else if (current === 2) {
+    if (!g('cit-street'))      return showStepError(2, 'Please enter your street / house number.');
+    if (!g('cit-brgy-select')) return showStepError(2, 'Please select your barangay.');
+    if (!g('cit-zip') || !/^\d{4}$/.test(g('cit-zip'))) return showStepError(2, 'Please enter a valid 4-digit ZIP code.');
+  } else if (current === 3) {
+    const email = g('cit-email');
+    const phone = g('cit-phone');
+    const pw    = document.getElementById('cit-password').value;
+    const cf    = document.getElementById('cit-confirm').value;
+    if (!email || !isValidEmail(email)) return showStepError(3, 'Please enter a valid email address.');
+    if (!phone || !isValidPhone(phone)) return showStepError(3, 'Please enter a valid Philippine contact number (e.g. 09xx xxx xxxx).');
+    if (!isStrongPassword(pw))          return showStepError(3, 'Password must be at least 8 characters with 1 uppercase letter and 1 number.');
+    if (pw !== cf)                       return showStepError(3, 'Passwords do not match.');
+  }
+  goSignupStep(current + 1);
+}
+
+/* ── Birthdate → age ── */
 function calcAge() {
   const bd = document.getElementById('cit-birthdate').value;
+  const input = document.getElementById('cit-birthdate');
+  if (input && !input.max) input.max = new Date().toISOString().slice(0, 10);
   if (!bd) return 0;
   const birth = new Date(bd);
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  const display = document.getElementById('age-display');
-  const ageEl = document.getElementById('computed-age');
-  if (display) display.style.display = age >= 0 ? 'flex' : 'none';
-  if (ageEl) ageEl.textContent = age >= 0 ? age : '—';
-
-  /* Set max date to today */
-  const input = document.getElementById('cit-birthdate');
-  if (input && !input.max) input.max = new Date().toISOString().slice(0, 10);
-  return age;
+  const displayEl = document.getElementById('age-display');
+  const ageEl     = document.getElementById('computed-age');
+  if (displayEl) displayEl.classList.toggle('hidden', age < 0);
+  if (ageEl && age >= 0) ageEl.textContent = age;
+  return age >= 0 ? age : 0;
 }
 
-/* Set max birthdate to today on load */
 window.addEventListener('DOMContentLoaded', function() {
   const bd = document.getElementById('cit-birthdate');
   if (bd) bd.max = new Date().toISOString().slice(0, 10);
 });
 
+/* ── Valid ID upload ── */
 function handleIdUpload(event) {
   const file = event.target.files && event.target.files[0];
-  const msg = document.getElementById('id-upload-msg');
-  const box = document.getElementById('id-upload-box');
-  const nameEl = document.getElementById('id-file-name');
-  idFileData = null;
+  const zone   = document.getElementById('id-upload-zone');
+  const title  = document.getElementById('id-upload-title');
+  const name   = document.getElementById('id-file-name');
+  const status = document.getElementById('id-upload-status');
+  signupIdFileData = null;
 
-  if (!file) { return; }
-
-  const maxSize = 50 * 1024 * 1024; /* 50MB */
-  if (file.size > maxSize) {
-    if (msg) msg.textContent = 'File too large. Maximum size is 50MB.';
-    if (msg) msg.style.color = '#c00';
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    if (status) { status.textContent = 'File exceeds 50MB limit. Please upload a smaller file.'; status.style.color = '#c00'; }
     event.target.value = '';
     return;
   }
-
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
   if (!allowed.includes(file.type)) {
-    if (msg) msg.textContent = 'Invalid file type. Please upload JPG, PNG, WebP, or PDF.';
-    if (msg) msg.style.color = '#c00';
+    if (status) { status.textContent = 'Invalid file type. Please upload JPG, PNG, WebP, or PDF.'; status.style.color = '#c00'; }
     event.target.value = '';
     return;
   }
 
-  /* Read as base64 for upload */
   const reader = new FileReader();
   reader.onload = function(e) {
-    idFileData = { name: file.name, size: file.size, type: file.type, base64: e.target.result };
-    if (box) box.classList.add('has-file');
-    if (nameEl) { nameEl.textContent = file.name; nameEl.classList.remove('hidden'); }
-    if (msg) { msg.textContent = 'ID uploaded. Ready to submit.'; msg.style.color = 'var(--green)'; }
+    signupIdFileData = { name: file.name, size: file.size, type: file.type, base64: e.target.result };
+    if (zone)   zone.classList.add('uploaded');
+    if (title)  title.textContent = 'ID ready to upload';
+    if (name)   { name.textContent = file.name; name.classList.remove('hidden'); }
+    if (status) { status.textContent = 'ID uploaded. Ready to submit.'; status.style.color = '#1a7f37'; }
   };
   reader.readAsDataURL(file);
 }
 
-function updateSubmitState() {
-  /* No-op: button is always enabled; validation happens on submit */
-}
-
-/* Override submitCitizenSignup from signup.js */
+/* ── Main submit ── */
 async function submitCitizenSignup() {
-  const errEl = document.getElementById('cit-error');
-  function showError(msg) { if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); } }
-  if (errEl) errEl.classList.add('hidden');
+  const errEl = document.getElementById('err-step-4');
+  const show  = msg => { if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); } };
 
-  const firstName = document.getElementById('cit-firstname').value.trim();
-  const lastName  = document.getElementById('cit-lastname').value.trim();
-  const midName   = document.getElementById('cit-midname').value.trim();
-  const birthdate = document.getElementById('cit-birthdate').value;
-  const sex       = document.getElementById('cit-sex').value;
-  const street    = document.getElementById('cit-street').value.trim();
-  const barangay  = document.getElementById('cit-brgy-select').value;
-  const city      = document.getElementById('cit-city').value.trim();
-  const province  = document.getElementById('cit-province').value.trim();
-  const zip       = document.getElementById('cit-zip').value.trim();
-  const email     = document.getElementById('cit-email').value.trim();
-  const phone     = document.getElementById('cit-phone').value.trim();
+  const terms   = document.getElementById('cit-terms')?.checked;
+  const privacy = document.getElementById('cit-privacy')?.checked;
+  if (!terms || !privacy) return show('Please accept the Terms and Privacy Policy to proceed.');
+  if (!signupIdFileData)  return show('Please upload a valid ID document before creating your account.');
+
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const firstName = g('cit-firstname');
+  const lastName  = g('cit-lastname');
+  const midName   = g('cit-midname');
+  const birthdate = g('cit-birthdate');
+  const sex       = g('cit-sex');
+  const street    = g('cit-street');
+  const barangay  = g('cit-brgy-select');
+  const city      = g('cit-city');
+  const province  = g('cit-province');
+  const zip       = g('cit-zip');
+  const email     = g('cit-email');
+  const phone     = g('cit-phone');
   const password  = document.getElementById('cit-password').value;
   const confirm   = document.getElementById('cit-confirm').value;
-  const terms     = document.getElementById('cit-terms')?.checked || false;
-  const privacy   = document.getElementById('cit-privacy')?.checked || false;
 
-  if (!terms || !privacy) return showError('Please accept the Terms and Privacy policy.');
-  if (!idFileData) return showError('Please upload a valid ID document before creating your account.');
-  if (password !== confirm) return showError('Passwords do not match.');
-
+  if (password !== confirm) return show('Passwords do not match. Please go back and fix them.');
   const age = calcAge();
-  if (age < 13) return showError('You must be at least 13 years old.');
+  if (age < 13) return show('You must be at least 13 years old to create an account.');
 
-  const submitBtn = document.getElementById('cit-submit');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'CREATING...'; }
+  const btn = document.getElementById('cit-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account…'; }
 
   try {
-    /* Upload ID first */
+    /* Upload ID image */
     let idUrl = '';
-    if (idFileData && idFileData.base64) {
-      const formData = new FormData();
-      const blob = await (await fetch(idFileData.base64)).blob();
-      formData.append('file', blob, idFileData.name);
-      formData.append('type', 'valid_id');
+    if (signupIdFileData?.base64) {
       try {
-        const uploadResp = await apiFetch('media.php?action=upload_evidence', formData, 'POST');
-        idUrl = uploadResp.url || uploadResp.file_url || '';
-      } catch (uploadErr) {
-        console.warn('ID upload failed, continuing without URL:', uploadErr.message);
+        const byteStr = atob(signupIdFileData.base64.split(',')[1]);
+        const ab = new ArrayBuffer(byteStr.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+        const blob = new Blob([ab], {type: signupIdFileData.type});
+        const fd = new FormData();
+        fd.append('action', 'upload_evidence');
+        fd.append('file', blob, signupIdFileData.name);
+        const up = await apiFetch('media.php', fd, 'POST');
+        idUrl = up?.url || up?.file_url || '';
+      } catch (upErr) {
+        console.warn('ID upload warning:', upErr.message);
       }
     }
 
-    const payload = {
+    await apiFetch('register.php', {
       role: 'regular',
-      email,
-      phone,
-      password,
-      first_name: firstName,
-      last_name:  lastName,
+      email, phone, password,
+      first_name:  firstName,
+      last_name:   lastName,
       middle_name: midName,
-      birthdate,
-      sex,
-      age: String(age),
-      street,
-      barangay,
-      city,
-      province,
-      zip_code: zip,
+      birthdate, sex, age: String(age),
+      street, barangay, city, province,
+      zip_code:     zip,
       valid_id_url: idUrl,
-    };
+    }, 'POST');
 
-    await apiFetch('register.php', payload, 'POST');
     sessionStorage.setItem('citizen_signup_notice', '1');
     window.location.href = '/citizen-login.html?registered=1';
   } catch (error) {
-    showError(error?.message || 'Unable to create account. Please try again.');
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CREATE ACCOUNT →'; }
+    show(error?.message || 'Unable to create account. Please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'CREATE ACCOUNT →'; }
   }
 }
 </script>

@@ -66,19 +66,21 @@ function buildTimeline(complaint) {
 /* ── HTML HELPERS ──────────────────────────────────────────── */
 
 function statusBadge(status) {
-  const statusStr = String(status || '').toLowerCase().trim();
+  const statusStr = String(status || 'submitted').toLowerCase().trim();
   const cssMap = {
     submitted:'submitted', verified:'verified', assigned:'assigned',
     in_progress:'progress', en_route:'assigned', resolved:'resolved',
     validated:'resolved', closed:'closed', rejected:'rejected', cancelled:'cancelled',
+    pending:'submitted', unknown:'submitted',
   };
   const labelMap = {
     submitted:'Submitted', verified:'Verified', assigned:'Assigned',
     in_progress:'In Progress', en_route:'En Route', resolved:'Resolved',
     validated:'Validated', closed:'Closed', rejected:'Rejected', cancelled:'Cancelled',
+    pending:'Pending', unknown:'Submitted',
   };
   const cssClass  = cssMap[statusStr]  || 'submitted';
-  const labelText = labelMap[statusStr] || (statusStr ? statusStr.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown');
+  const labelText = labelMap[statusStr] || statusStr.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Submitted';
   return `<span class="badge badge-${cssClass}">${labelText}</span>`;
 }
 

@@ -276,19 +276,25 @@ function renderComplaintsTable() {
         return;
     }
 
-    tbody.innerHTML = my.map(c => `
-      <tr>
-        <td class="track-id">${safeText(c.id)}</td>
-        <td>${safeText(c.cat)}</td>
-        <td style="font-size:12px">${safeText(c.brgy)}</td>
-        <td>${priorityBadge(c.priority)}</td>
-        <td>${statusBadge(c.status)}</td>
-        <td class="mono" style="font-size:12px">${formatDateTime(c.date)}</td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c.id)}')">Track</button>
-          ${c.status === 'submitted' ? `<button class="btn-danger btn-sm" onclick="cancelComplaint('${safeText(c.id)}')">Cancel</button>` : ''}
-        </td>
-      </tr>`).join('');
+    tbody.innerHTML = my.map(c => {
+        /* Show Cancel only for submitted complaints filed within the last 30 minutes */
+        const canCancel = c.status === 'submitted' && c.date &&
+            (Date.now() - new Date(c.date).getTime() < 30 * 60 * 1000);
+        const minutesAgo = c.date ? Math.floor((Date.now() - new Date(c.date).getTime()) / 60000) : 999;
+        const cancelTitle = canCancel ? `Cancel (${30 - minutesAgo} min remaining)` : '';
+        return `<tr>
+          <td class="track-id">${safeText(c.id)}</td>
+          <td>${safeText(c.cat)}</td>
+          <td style="font-size:12px">${safeText(c.brgy)}</td>
+          <td>${priorityBadge(c.priority)}</td>
+          <td>${statusBadge(c.status)}</td>
+          <td class="mono" style="font-size:12px">${formatDateTime(c.date)}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn-secondary btn-sm" onclick="showTimeline('${safeText(c.id)}')">Track</button>
+            ${canCancel ? `<button class="btn-danger btn-sm" title="${safeText(cancelTitle)}" onclick="cancelComplaint('${safeText(c.id)}')">Cancel</button>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
 }
 
 async function cancelComplaint(id) {
