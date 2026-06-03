@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/base.css" />
-  <link rel="stylesheet" href="dispatch.css?v=20260604d" />
+  <link rel="stylesheet" href="dispatch.css?v=20260604e" />
 </head>
 <body>
 
@@ -197,11 +197,23 @@
         <!-- Row 2: Category bars + Status donut -->
         <div class="analytics-grid">
           <div class="card">
-            <div class="card-head"><span class="card-title">Complaints by Category</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div class="card-head">
+              <span class="card-title">Complaints by Category</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)" id="cat-period-label">This month</span>
+                <button class="btn-secondary btn-sm" onclick="openPrintSectionModal('category','Complaints by Category')">&#128424; Print</button>
+              </div>
+            </div>
             <div id="cat-bars" style="max-height:280px;overflow-y:auto;padding:16px 20px"></div>
           </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">Status Distribution</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time</span></div>
+            <div class="card-head">
+              <span class="card-title">Status Distribution</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time</span>
+                <button class="btn-secondary btn-sm" onclick="openPrintSectionModal('status','Status Distribution')">&#128424; Print</button>
+              </div>
+            </div>
             <div id="status-pie" style="padding:16px 20px"></div>
           </div>
         </div>
@@ -209,24 +221,42 @@
         <!-- Row 3: Priority + Barangay -->
         <div class="analytics-grid">
           <div class="card">
-            <div class="card-head"><span class="card-title">Priority Breakdown</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div class="card-head">
+              <span class="card-title">Priority Breakdown</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)" id="prio-period-label">This month</span>
+                <button class="btn-secondary btn-sm" onclick="openPrintSectionModal('priority','Priority Breakdown')">&#128424; Print</button>
+              </div>
+            </div>
             <div id="priority-bars" style="padding:16px 20px"></div>
           </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">Complaints by Barangay</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">This month</span></div>
+            <div class="card-head">
+              <span class="card-title">Complaints by Barangay</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)" id="brgy-period-label">This month</span>
+                <button class="btn-secondary btn-sm" onclick="openPrintSectionModal('barangay','Complaints by Barangay')">&#128424; Print</button>
+              </div>
+            </div>
             <div id="barangay-bars" style="padding:16px 20px"></div>
           </div>
         </div>
 
         <!-- Row 4: 6-month trend bar chart -->
         <div class="card">
-          <div class="card-head"><span class="card-title">Monthly Complaint Volume — Last 6 Months</span></div>
+          <div class="card-head">
+            <span class="card-title">Monthly Complaint Volume — Last 6 Months</span>
+            <button class="btn-secondary btn-sm" onclick="openPrintSectionModal('trend','Monthly Complaint Volume')">&#128424; Print</button>
+          </div>
           <div id="monthly-trend-chart" style="padding:16px 20px 8px"></div>
         </div>
 
         <!-- Row 5: Officer performance table -->
         <div class="card">
-          <div class="card-head"><span class="card-title">Officer Performance</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time · Live data</span></div>
+          <div class="card-head">
+            <span class="card-title">Officer Performance</span>
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist)">All time · Live data</span>
+          </div>
           <div id="officer-perf-list" style="max-height:400px;overflow-y:auto"></div>
         </div>
 
@@ -346,10 +376,10 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../data.js?v=20260604d"></script>
-<script src="../api.js?v=20260604d"></script>
-<script src="dispatch.js?v=20260604d"></script>
-<script src="dispatch.backend.js?v=20260604d"></script>
+<script src="../data.js?v=20260604e"></script>
+<script src="../api.js?v=20260604e"></script>
+<script src="dispatch.js?v=20260604e"></script>
+<script src="dispatch.backend.js?v=20260604e"></script>
 <script>
 function toggleSidebar() {
   var sidebar = document.querySelector('.sidebar');

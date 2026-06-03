@@ -1585,9 +1585,10 @@ function _buildDonutChart(statusData) {
         in_progress: '#f97316', resolved: '#059669', closed: '#6b7280',
         rejected: '#ef4444', cancelled: '#9ca3af',
     };
-    const data = (statusData || []).map(s => ({
-        label: s.status, value: Number(s.cnt || 0), color: STATUS_COLORS[s.status] || '#aaa',
-    })).filter(d => d.value > 0);
+    const data = (statusData || []).map(s => {
+        const key = String(s.status || '').toLowerCase().trim();
+        return { label: key || 'unknown', value: Number(s.cnt || 0), color: STATUS_COLORS[key] || '#aaa' };
+    }).filter(d => d.value > 0);
     if (!data.length) return '<div style="color:var(--mist);font-size:13px;padding:12px">No complaint data yet.</div>';
 
     const total = data.reduce((s, d) => s + d.value, 0);
@@ -1739,13 +1740,14 @@ async function renderAnalytics() {
                 const stars    = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
                 const sCls     = STATUS_CLS[o.status] || 'badge-closed';
                 const sLabel   = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE';
+                const ratingCount = Number(o.rating_count) || 0;
                 return `<tr>
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
                             <div class="officer-initials" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${initials}</div>
                             <div>
                                 <div style="font-size:13px;font-weight:600">${safeText(o.name)}</div>
-                                <div style="font-size:11px;color:var(--mist);font-family:var(--font-mono)">Brgy. ${safeText(o.brgy || '—')}</div>
+                                <div style="font-size:11px;color:var(--mist);font-family:var(--font-mono)">Brgy. ${safeText(o.brgy || '—')} · Badge: ${safeText(o.code || '—')}</div>
                             </div>
                         </div>
                     </td>
@@ -1755,6 +1757,10 @@ async function renderAnalytics() {
                     <td>
                         <div style="font-size:13px;font-weight:700;color:var(--green)">${rating > 0 ? rating.toFixed(2) : '—'}</div>
                         <div style="font-size:11px;color:#f59e0b;letter-spacing:1px">${rating > 0 ? stars : 'No ratings yet'}</div>
+                        ${ratingCount > 0 ? `<div style="font-size:10px;color:var(--mist)">${ratingCount} rating(s)</div>` : ''}
+                    </td>
+                    <td style="text-align:center">
+                        <button class="btn-secondary btn-sm" onclick="printOfficerReport('${safeText(String(o.officer_id))}','${safeText(o.name)}')">&#128424; Print</button>
                     </td>
                 </tr>`;
             }).join('');
@@ -1766,6 +1772,7 @@ async function renderAnalytics() {
                         <th style="text-align:center">Resolved</th>
                         <th style="text-align:center">Active</th>
                         <th>Citizen Rating</th>
+                        <th style="text-align:center">Report</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
@@ -1774,6 +1781,204 @@ async function renderAnalytics() {
             perfEl.innerHTML = '<div style="padding:16px;color:var(--mist);font-size:13px">No officer data available.</div>';
         }
     }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRINT UTILITIES
+   ───────────────────────────────────────────────────────────── */
+
+const _PRINT_STYLES = `
+  body{font-family:Arial,sans-serif;margin:40px;color:#111;font-size:13px}
+  .logo{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+  .logo-sub{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.1em}
+  h2{font-size:17px;margin:0 0 4px}
+  .period-tag{display:inline-block;background:#111;color:#fff;font-size:11px;padding:2px 10px;border-radius:4px;margin-bottom:18px}
+  .meta{font-size:12px;color:#555;margin-bottom:3px}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #111;padding-bottom:5px;margin:20px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#111;color:#fff;padding:7px 10px;text-align:left}
+  td{border:1px solid #e5e5e5;padding:6px 10px}
+  tr:nth-child(even) td{background:#f9f9f9}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+  .stat-box{border:1px solid #e5e5e5;padding:14px;border-radius:6px;text-align:center}
+  .stat-val{font-size:26px;font-weight:900}
+  .stat-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+  .footer{margin-top:36px;padding-top:12px;border-top:1px solid #e5e5e5;font-size:10px;color:#aaa}
+  .avatar{width:56px;height:56px;background:#111;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;float:left;margin-right:16px}
+  .header-info{overflow:hidden;padding-top:4px}
+  @media print{body{margin:16px}}
+`;
+
+function _openPrintWindow(html) {
+    const win = window.open('', '_blank', 'width=960,height=720');
+    if (!win) { showToast('Please allow popups to print reports.'); return; }
+    win.document.write(html);
+    win.document.close();
+}
+
+function _printHeader(title, subtitle, dispatchName) {
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;border-bottom:2px solid #111;padding-bottom:14px">
+        <div>
+            <div class="logo">TRAPICO</div>
+            <div class="logo-sub">Traffic Complaint &amp; Case Management System</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#888">
+            Generated: ${new Date().toLocaleString()}<br>
+            Dispatch: ${safeText(dispatchName || '—')}
+        </div>
+    </div>
+    <h2>${safeText(title)}</h2>
+    ${subtitle ? `<div class="meta">${safeText(subtitle)}</div>` : ''}`;
+}
+
+/* ── Officer Performance PDF ── */
+async function printOfficerReport(officerId, officerName) {
+    showToast('Preparing officer report…');
+    const officer = [...FIELD_OFFICERS_DATA, ...OFFICERS_DATA].find(o => String(o.id) === String(officerId) || String(o.officer_id) === String(officerId));
+
+    let cases = [];
+    try {
+        const resp = await apiFetch('dispatch.php', {action: 'officerCases', officer_id: officerId});
+        cases = Array.isArray(resp.cases) ? resp.cases : [];
+    } catch (_) {}
+
+    const initials  = String(officerName || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+    const handled   = Number(officer?.cases_closed) || 0;
+    const active    = Number(officer?.active_count)  || 0;
+    const rating    = parseFloat(officer?.rating || 0);
+    const status    = officer?.status || 'offline';
+    const badge     = officer?.code   || '—';
+    const brgy      = officer?.brgy   || '—';
+
+    const caseRows = cases.map(c => `<tr>
+        <td style="font-size:11px;white-space:nowrap">${safeText(c.id)}</td>
+        <td>${safeText(c.cat)}</td>
+        <td>${safeText(c.brgy)}</td>
+        <td style="text-transform:capitalize">${safeText(c.priority)}</td>
+        <td style="text-transform:capitalize">${safeText(c.status)}</td>
+        <td style="text-transform:capitalize">${safeText(c.asgn_status || '—')}</td>
+        <td style="font-size:11px">${c.date ? new Date(c.date).toLocaleDateString('en-PH') : '—'}</td>
+    </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Officer Report — ${safeText(officerName)}</title>
+    <style>${_PRINT_STYLES}</style></head><body>
+    ${_printHeader('Field Officer Report', '', DISPATCH_USER?.name)}
+    <div style="overflow:hidden;margin-bottom:20px">
+        <div class="avatar">${initials}</div>
+        <div class="header-info">
+            <div style="font-size:18px;font-weight:800">${safeText(officerName)}</div>
+            <div class="meta">Badge: ${safeText(badge)} &nbsp;|&nbsp; Barangay: ${safeText(brgy)}</div>
+            <div class="meta">Status: <strong style="text-transform:uppercase">${safeText(status)}</strong></div>
+        </div>
+    </div>
+    <div class="stat-row">
+        <div class="stat-box"><div class="stat-val" style="color:#111">${handled}</div><div class="stat-label">Resolved Cases</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#f59e0b">${active}</div><div class="stat-label">Active Cases</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:#10b981">${rating > 0 ? rating.toFixed(2) : '—'}</div><div class="stat-label">Citizen Rating</div></div>
+    </div>
+    <div class="section-title">Case History (${cases.length} records)</div>
+    ${cases.length ? `<table><thead><tr>
+        <th>Tracking ID</th><th>Category</th><th>Barangay</th><th>Priority</th><th>Case Status</th><th>Assignment</th><th>Date</th>
+    </tr></thead><tbody>${caseRows}</tbody></table>`
+    : '<p style="color:#888">No case history on record for this officer.</p>'}
+    <div class="footer">TRAPICO — Computer-generated document. All data sourced from live database.</div>
+    <script>window.onload=()=>window.print();</script></body></html>`;
+
+    _openPrintWindow(html);
+}
+
+/* ── Section Print — period picker modal ── */
+function openPrintSectionModal(sectionKey, sectionTitle) {
+    openModal(`
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal" style="max-width:380px">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">&#128424; Print Report</div>
+              <div class="modal-subtitle">${safeText(sectionTitle)}</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="section-title" style="margin-bottom:14px">Select Time Period</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <button class="btn-secondary" onclick="printAnalyticsSection('${safeText(sectionKey)}','${safeText(sectionTitle)}','week');closeModal()">Weekly<br><span style="font-size:10px;color:var(--mist)">Last 7 days</span></button>
+              <button class="btn-secondary" onclick="printAnalyticsSection('${safeText(sectionKey)}','${safeText(sectionTitle)}','month');closeModal()">Monthly<br><span style="font-size:10px;color:var(--mist)">This month</span></button>
+              <button class="btn-secondary" onclick="printAnalyticsSection('${safeText(sectionKey)}','${safeText(sectionTitle)}','3month');closeModal()">3 Months<br><span style="font-size:10px;color:var(--mist)">Last 90 days</span></button>
+              <button class="btn-secondary" onclick="printAnalyticsSection('${safeText(sectionKey)}','${safeText(sectionTitle)}','6month');closeModal()">6 Months<br><span style="font-size:10px;color:var(--mist)">Last 180 days</span></button>
+              <button class="btn-secondary" style="grid-column:1/-1" onclick="printAnalyticsSection('${safeText(sectionKey)}','${safeText(sectionTitle)}','year');closeModal()">Yearly<br><span style="font-size:10px;color:var(--mist)">This calendar year</span></button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+          </div>
+        </div>
+      </div>`);
+}
+
+/* ── Section Print — fetch + generate print window ── */
+async function printAnalyticsSection(sectionKey, sectionTitle, period) {
+    showToast('Loading data…');
+    let d = null;
+    try { d = await apiFetch('dispatch.php', {action: 'analytics', period}); } catch (_) {
+        showToast('Could not load report data.');
+        return;
+    }
+
+    const PERIOD_LABELS = {
+        week: 'Last 7 Days', month: 'This Month',
+        '3month': 'Last 3 Months', '6month': 'Last 6 Months', year: 'This Year',
+    };
+    const periodLabel = PERIOD_LABELS[period] || d?.period_label || period;
+
+    let bodyHtml = '';
+    const total = (d?.categories || []).reduce((s, c) => s + Number(c.cnt || 0), 0) || 1;
+
+    if (sectionKey === 'category') {
+        const cats = d?.categories || [];
+        const maxC = Math.max(...cats.map(c => Number(c.cnt || 0)), 1);
+        bodyHtml = cats.length ? `<table><thead><tr><th>Category</th><th>Count</th><th>% of Total</th></tr></thead><tbody>
+            ${cats.map(c => `<tr><td>${safeText(c.category)}</td><td>${c.cnt}</td><td>${Math.round(Number(c.cnt)/maxC*100)}%</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:#888">No data for this period.</p>';
+
+    } else if (sectionKey === 'status') {
+        const stats = d?.status_dist || [];
+        const tot   = stats.reduce((s, x) => s + Number(x.cnt), 0) || 1;
+        bodyHtml = stats.length ? `<table><thead><tr><th>Status</th><th>Count</th><th>% of All</th></tr></thead><tbody>
+            ${stats.map(s => `<tr><td style="text-transform:capitalize">${safeText(s.status)}</td><td>${s.cnt}</td><td>${Math.round(Number(s.cnt)/tot*100)}%</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:#888">No status data.</p>';
+
+    } else if (sectionKey === 'priority') {
+        const prios = d?.priority_stats || [];
+        const tot   = prios.reduce((s, p) => s + Number(p.cnt), 0) || 1;
+        bodyHtml = prios.length ? `<table><thead><tr><th>Priority</th><th>Count</th><th>%</th></tr></thead><tbody>
+            ${prios.map(p => `<tr><td style="text-transform:capitalize">${safeText(p.priority)}</td><td>${p.cnt}</td><td>${Math.round(Number(p.cnt)/tot*100)}%</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:#888">No data for this period.</p>';
+
+    } else if (sectionKey === 'barangay') {
+        const brgys = d?.barangay_stats || [];
+        const maxB  = Math.max(...brgys.map(b => Number(b.cnt || 0)), 1);
+        bodyHtml = brgys.length ? `<table><thead><tr><th>Barangay</th><th>Count</th><th>Share</th></tr></thead><tbody>
+            ${brgys.map(b => `<tr><td>${safeText(b.brgy || 'Unknown')}</td><td>${b.cnt}</td><td>${Math.round(Number(b.cnt)/maxB*100)}%</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:#888">No data for this period.</p>';
+
+    } else if (sectionKey === 'trend') {
+        const trend = d?.monthly_trend || [];
+        bodyHtml = trend.length ? `<table><thead><tr><th>Month</th><th>Complaints</th></tr></thead><tbody>
+            ${trend.map(m => `<tr><td>${safeText(m.label)}</td><td>${m.count}</td></tr>`).join('')}
+        </tbody></table>` : '<p style="color:#888">No trend data.</p>';
+    }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TRAPICO Analytics — ${safeText(sectionTitle)}</title>
+    <style>${_PRINT_STYLES}</style></head><body>
+    ${_printHeader('Analytics Report', sectionTitle, DISPATCH_USER?.name)}
+    <div class="period-tag">Period: ${safeText(periodLabel)}</div>
+    <div class="section-title">${safeText(sectionTitle)}</div>
+    ${bodyHtml}
+    <div class="footer">TRAPICO — Computer-generated analytics report. All data sourced from live database.</div>
+    <script>window.onload=()=>window.print();</script></body></html>`;
+
+    _openPrintWindow(html);
 }
 
 function editProfile() {

@@ -35,42 +35,50 @@ if ($action === 'dashboard') {
 }
 
 if ($action === 'analytics') {
-    $monthStart = date('Y-m-01 00:00:00');
+    /* ── Period support: week / month (default) / 3month / 6month / year ── */
+    $period = trim((string)($_REQUEST['period'] ?? $data['period'] ?? 'month'));
+    switch ($period) {
+        case 'week':   $periodStart = date('Y-m-d 00:00:00', strtotime('-7 days'));   $periodLabel = 'Last 7 Days'; break;
+        case '3month': $periodStart = date('Y-m-d 00:00:00', strtotime('-3 months')); $periodLabel = 'Last 3 Months'; break;
+        case '6month': $periodStart = date('Y-m-d 00:00:00', strtotime('-6 months')); $periodLabel = 'Last 6 Months'; break;
+        case 'year':   $periodStart = date('Y-01-01 00:00:00');                        $periodLabel = 'This Year'; break;
+        default:       $periodStart = date('Y-m-01 00:00:00');                         $periodLabel = 'This Month'; break;
+    }
 
-    $qm = function(string $sql) use ($db, $monthStart) {
+    $qp = function(string $sql) use ($db, $periodStart) {
         $st = $db->prepare($sql);
-        $st->execute([':m' => $monthStart]);
+        $st->execute([':s' => $periodStart]);
         return (int)$st->fetchColumn();
     };
 
-    /* ── This-month summary ── */
-    $total    = $qm("SELECT COUNT(*) FROM complaints WHERE submitted_at >= :m");
-    $resolved = $qm("SELECT COUNT(*) FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
-    $rejected = $qm("SELECT COUNT(*) FROM complaints WHERE status = 'rejected' AND submitted_at >= :m");
+    /* ── Summary for selected period ── */
+    $total    = $qp("SELECT COUNT(*) FROM complaints WHERE submitted_at >= :s");
+    $resolved = $qp("SELECT COUNT(*) FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :s");
+    $rejected = $qp("SELECT COUNT(*) FROM complaints WHERE status = 'rejected' AND submitted_at >= :s");
     $active   = (int)$db->query("SELECT COUNT(*) FROM complaints WHERE status IN ('assigned','in_progress')")->fetchColumn();
     $rate     = $total > 0 ? round($resolved / $total * 100) : 0;
 
-    $avgSt = $db->prepare("SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)),0) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :m");
-    $avgSt->execute([':m' => $monthStart]);
+    $avgSt = $db->prepare("SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)),0) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :s");
+    $avgSt->execute([':s' => $periodStart]);
     $avgHours = round((float)$avgSt->fetchColumn(), 1);
 
-    /* ── Category breakdown (this month) ── */
-    $catSt = $db->prepare("SELECT category, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY category ORDER BY cnt DESC");
-    $catSt->execute([':m' => $monthStart]);
+    /* ── Category breakdown ── */
+    $catSt = $db->prepare("SELECT category, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY category ORDER BY cnt DESC");
+    $catSt->execute([':s' => $periodStart]);
     $categories = $catSt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ── All-time status distribution ── */
-    $statusSt = $db->query("SELECT status, COUNT(*) AS cnt FROM complaints GROUP BY status ORDER BY cnt DESC");
+    /* ── All-time status distribution (normalized to lowercase) ── */
+    $statusSt = $db->query("SELECT LOWER(COALESCE(status,'unknown')) AS status, COUNT(*) AS cnt FROM complaints WHERE status IS NOT NULL AND status != '' GROUP BY LOWER(status) ORDER BY cnt DESC");
     $statusDist = $statusSt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ── Barangay breakdown (this month) ── */
-    $brgySt = $db->prepare("SELECT asset_town AS brgy, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY asset_town ORDER BY cnt DESC");
-    $brgySt->execute([':m' => $monthStart]);
+    /* ── Barangay breakdown ── */
+    $brgySt = $db->prepare("SELECT asset_town AS brgy, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY asset_town ORDER BY cnt DESC");
+    $brgySt->execute([':s' => $periodStart]);
     $barangayStats = $brgySt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ── Priority distribution (this month) ── */
-    $prioSt = $db->prepare("SELECT priority, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :m GROUP BY priority ORDER BY FIELD(priority,'urgent','high','medium','low')");
-    $prioSt->execute([':m' => $monthStart]);
+    /* ── Priority distribution ── */
+    $prioSt = $db->prepare("SELECT priority, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY priority ORDER BY FIELD(priority,'urgent','high','medium','low')");
+    $prioSt->execute([':s' => $periodStart]);
     $priorityStats = $prioSt->fetchAll(PDO::FETCH_ASSOC);
 
     /* ── Monthly trend — last 6 months ── */
@@ -86,7 +94,8 @@ if ($action === 'analytics') {
 
     /* ── Officer performance (from assignments + ratings) ── */
     $ofcSt = $db->query(
-        "SELECT u.full_name AS name, fo.assigned_barangay AS brgy,
+        "SELECT fo.officer_id, u.full_name AS name, fo.assigned_barangay AS brgy,
+                fo.badge_number AS code,
                 CASE
                     WHEN EXISTS (SELECT 1 FROM assignments ax WHERE ax.field_officer_id = fo.officer_id AND ax.assignment_status IN ('pending','in_progress'))
                     THEN 'busy'
@@ -95,7 +104,9 @@ if ($action === 'analytics') {
                 END AS status,
                 COALESCE((SELECT COUNT(*) FROM assignments a WHERE a.field_officer_id = fo.officer_id AND a.assignment_status = 'completed'), 0) AS resolved,
                 COALESCE((SELECT COUNT(*) FROM assignments a WHERE a.field_officer_id = fo.officer_id AND a.assignment_status IN ('pending','in_progress')), 0) AS active_count,
-                COALESCE((SELECT AVG(r.score) FROM ratings r WHERE r.field_officer_id = fo.officer_id), 0.00) AS avg_rating
+                COALESCE((SELECT COUNT(*) FROM assignments a WHERE a.field_officer_id = fo.officer_id AND a.assignment_status = 'failed'), 0) AS failed_count,
+                COALESCE((SELECT AVG(r.score) FROM ratings r WHERE r.field_officer_id = fo.officer_id), 0.00) AS avg_rating,
+                COALESCE((SELECT COUNT(*) FROM ratings r WHERE r.field_officer_id = fo.officer_id), 0) AS rating_count
          FROM field_officers fo
          JOIN users u ON u.user_id = fo.user_id
          WHERE u.is_active = 1
@@ -110,6 +121,8 @@ if ($action === 'analytics') {
         'active'         => $active,
         'rate'           => $rate,
         'avg_hours'      => $avgHours ?: 0,
+        'period'         => $period,
+        'period_label'   => $periodLabel,
         'categories'     => $categories,
         'status_dist'    => $statusDist,
         'barangay_stats' => $barangayStats,
