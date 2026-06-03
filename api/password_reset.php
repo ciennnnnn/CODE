@@ -331,7 +331,8 @@ if ($action === 'requestReset') {
     $requestUrl = trim((string)($data['requestUrl'] ?? ''));
 
     if ($identifier === '') {
-        errorResponse('Please enter your username or email address.');
+        $idLabel = ($role === 'regular') ? 'email address' : 'username or email address';
+        errorResponse("Please enter your {$idLabel}.");
     }
 
     $roleUser = roleToUserRole($role);

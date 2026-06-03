@@ -49,8 +49,8 @@
         </div>
 
         <div class="form-group login-field-group">
-          <label class="login-label" for="login-user">USERNAME OR EMAIL ADDRESS</label>
-          <input id="login-user" class="login-input" type="text" placeholder="e.g. fae@trapico.gov" autocomplete="username" />
+          <label class="login-label" for="login-user">EMAIL ADDRESS</label>
+          <input id="login-user" class="login-input" type="email" placeholder="e.g. juan@email.com" autocomplete="email" />
         </div>
 
         <div class="form-group login-field-group">
@@ -65,7 +65,8 @@
           <a href="#" class="forgot-link" onclick="openForgotModal(event)">FORGOT PASSWORD?</a>
         </div>
 
-        <div id="login-error" class="login-error hidden">Username or email address and password are required.</div>
+        <div id="login-error" class="login-error hidden">Email address and password are required.</div>
+        <div id="lockout-notice" class="login-error hidden" style="background:#fff7e0;border-color:#e6a800;color:#7a5800"></div>
 
         <button class="login-submit" id="login-btn" onclick="doLogin()">ACCESS SYSTEM →</button>
 
@@ -80,10 +81,10 @@
   <div class="login-modal-card">
     <h3 id="forgot-title" class="login-modal-title">FORGOT PASSWORD</h3>
     <hr class="login-modal-divider" />
-    <p class="login-modal-body">Enter your username or email address. We will send a working reset link to your registered email.</p>
+    <p class="login-modal-body">Enter your email address. We will send a working reset link to your registered email.</p>
     <div class="form-group login-field-group" style="margin-bottom:12px;">
-      <label class="login-label" for="forgot-identifier">USERNAME OR EMAIL</label>
-      <input id="forgot-identifier" class="login-input" type="text" placeholder="e.g. rikka or rikka@gmail.com" />
+      <label class="login-label" for="forgot-identifier">EMAIL ADDRESS</label>
+      <input id="forgot-identifier" class="login-input" type="email" placeholder="e.g. juan@email.com" />
     </div>
     <div id="forgot-status" class="login-error hidden" style="margin-bottom:10px;"></div>
     <button type="button" class="login-modal-close" onclick="submitForgotPassword()">SEND RESET LINK</button>

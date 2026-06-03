@@ -25,12 +25,12 @@ const roleConfig = {
   },
   regular: {
     kicker: 'CITIZEN ACCESS',
-    idLabel: 'USERNAME OR EMAIL ADDRESS',
-    idPlaceholder: 'e.g. rikka',
-    requiredMessage: 'Username or email address and password are required.',
-    forgotLabel: 'USERNAME OR EMAIL',
-    forgotPlaceholder: 'e.g. rikka or rikka@gmail.com',
-    forgotRequiredMessage: 'Please enter your username or email.',
+    idLabel: 'EMAIL ADDRESS',
+    idPlaceholder: 'e.g. juan@email.com',
+    requiredMessage: 'Email address and password are required.',
+    forgotLabel: 'EMAIL ADDRESS',
+    forgotPlaceholder: 'e.g. juan@email.com',
+    forgotRequiredMessage: 'Please enter your registered email address.',
   },
 };
 
@@ -120,8 +120,18 @@ async function doLogin() {
 
     window.location.href = response.redirect || routes[selectedRole] || 'index.html';
   } catch (error) {
-    errEl.textContent = error.message || 'Login failed.';
-    errEl.classList.remove('hidden');
+    const message = error.message || 'Login failed.';
+    const lockoutEl = document.getElementById('lockout-notice');
+    const isLockout = message.toLowerCase().includes('locked') || message.toLowerCase().includes('wait');
+    if (lockoutEl && isLockout) {
+      lockoutEl.textContent = message;
+      lockoutEl.classList.remove('hidden');
+      errEl.classList.add('hidden');
+    } else {
+      errEl.textContent = message;
+      errEl.classList.remove('hidden');
+      if (lockoutEl) lockoutEl.classList.add('hidden');
+    }
   }
 }
 

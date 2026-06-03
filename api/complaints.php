@@ -92,6 +92,18 @@ if ($action === 'submit') {
         if ($time === '') {
             errorResponse('Time is required.');
         }
+
+        /* Date validation: cannot be future; cannot be more than 7 days in the past */
+        $incidentTimestamp = strtotime($date . ' ' . ($time ?: '00:00'));
+        $nowTimestamp      = time();
+        if ($incidentTimestamp === false || $incidentTimestamp > $nowTimestamp + 300) {
+            /* Allow 5-min buffer for time zone drift */
+            errorResponse('The incident date and time cannot be in the future.');
+        }
+        $sevenDaysAgo = $nowTimestamp - (7 * 24 * 3600);
+        if ($incidentTimestamp < $sevenDaysAgo) {
+            errorResponse('Incidents can only be reported within 7 days of occurrence. Please contact the Barangay office for older incidents.');
+        }
         if (strlen($description) < 50) {
             errorResponse('Description must be at least 50 characters.');
         }

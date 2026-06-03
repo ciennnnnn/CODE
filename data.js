@@ -66,16 +66,20 @@ function buildTimeline(complaint) {
 /* ── HTML HELPERS ──────────────────────────────────────────── */
 
 function statusBadge(status) {
-  const map = {
+  const statusStr = String(status || '').toLowerCase().trim();
+  const cssMap = {
     submitted:'submitted', verified:'verified', assigned:'assigned',
-    in_progress:'progress', resolved:'resolved', closed:'closed',
-    rejected:'rejected', cancelled:'cancelled',
+    in_progress:'progress', en_route:'assigned', resolved:'resolved',
+    validated:'resolved', closed:'closed', rejected:'rejected', cancelled:'cancelled',
   };
-  const lbl = {
-    in_progress:'In Progress', resolved:'Resolved', closed:'Closed',
-    rejected:'Rejected', cancelled:'Cancelled',
+  const labelMap = {
+    submitted:'Submitted', verified:'Verified', assigned:'Assigned',
+    in_progress:'In Progress', en_route:'En Route', resolved:'Resolved',
+    validated:'Validated', closed:'Closed', rejected:'Rejected', cancelled:'Cancelled',
   };
-  return `<span class="badge badge-${map[status] || 'submitted'}">${lbl[status] || status}</span>`;
+  const cssClass  = cssMap[statusStr]  || 'submitted';
+  const labelText = labelMap[statusStr] || (statusStr ? statusStr.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown');
+  return `<span class="badge badge-${cssClass}">${labelText}</span>`;
 }
 
 function priorityBadge(priority) {

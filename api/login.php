@@ -1,7 +1,7 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/init.php';
 
-$data = getJsonPayload();
+$data     = getJsonPayload();
 $username = trim((string)($data['username'] ?? ''));
 $password = trim((string)($data['password'] ?? ''));
 $role     = trim((string)($data['role'] ?? ''));
@@ -14,21 +14,35 @@ $db   = getDb();
 $user = null;
 $redirect = 'index.html';
 
+/* Ensure rate-limiting columns exist (MySQL 5.7+ compatible) */
+try {
+    foreach (['failed_login_attempts' => 'INT DEFAULT 0', 'locked_until' => 'DATETIME DEFAULT NULL'] as $col => $def) {
+        $chk = $db->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=:t AND COLUMN_NAME=:c');
+        $chk->execute([':t' => 'users', ':c' => $col]);
+        if ((int)$chk->fetchColumn() === 0) {
+            $db->exec("ALTER TABLE `users` ADD COLUMN `{$col}` {$def}");
+        }
+    }
+} catch (PDOException $e) { /* non-fatal */ }
+
 try {
     if ($role === 'regular') {
+        /* Citizens log in with EMAIL only */
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
-                    u.full_name AS name, u.email, u.phone_number, u.barangay AS home_barangay
+                    u.full_name AS name, u.email, u.phone_number, u.barangay AS home_barangay,
+                    u.failed_login_attempts, u.locked_until
              FROM users u
-             WHERE (u.username = :u1 OR u.email = :u2) AND u.role = :role AND u.is_active = 1'
+             WHERE u.email = :email AND u.role = :role AND u.is_active = 1'
         );
-        $stmt->execute([':u1' => $username, ':u2' => $username, ':role' => 'citizen']);
+        $stmt->execute([':email' => $username, ':role' => 'citizen']);
         $user = $stmt->fetch();
         $redirect = 'CITIZEN/civilian.html';
     } elseif ($role === 'dispatch') {
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
-                    u.full_name AS name, u.email
+                    u.full_name AS name, u.email,
+                    u.failed_login_attempts, u.locked_until
              FROM users u
              WHERE (u.username = :u1 OR u.email = :u2) AND u.role = :role AND u.is_active = 1'
         );
@@ -38,7 +52,8 @@ try {
     } elseif ($role === 'field') {
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
-                    u.full_name AS name, u.email
+                    u.full_name AS name, u.email,
+                    u.failed_login_attempts, u.locked_until
              FROM users u
              WHERE (u.username = :u1 OR u.email = :u2) AND u.role = :role AND u.is_active = 1'
         );
@@ -53,20 +68,58 @@ try {
 }
 
 if (!$user) {
-    errorResponse('Invalid credentials.');
+    errorResponse('Invalid credentials. Please check your email and password.');
 }
 
+/* ── RATE LIMITING: check lockout ─────────────────────────── */
+$lockedUntil  = $user['locked_until'] ?? null;
+$failedAttempts = (int)($user['failed_login_attempts'] ?? 0);
+
+if ($lockedUntil !== null) {
+    $lockTime = strtotime($lockedUntil);
+    $now      = time();
+    if ($lockTime > $now) {
+        $remaining = ceil(($lockTime - $now) / 60);
+        errorResponse("Account temporarily locked. Too many failed attempts. Please wait {$remaining} minute(s) before trying again.");
+    } else {
+        /* Lock expired — reset counter */
+        try {
+            $db->prepare('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE user_id = :uid')
+               ->execute([':uid' => $user['user_id']]);
+        } catch (PDOException $e) { /* non-fatal */ }
+        $failedAttempts = 0;
+    }
+}
+
+/* ── VERIFY PASSWORD ───────────────────────────────────────── */
 if (!verifyPassword($password, $user['password_hash'] ?? '')) {
-    errorResponse('Invalid credentials.');
+    /* Increment failed attempts */
+    $newAttempts = $failedAttempts + 1;
+    try {
+        if ($newAttempts >= 3) {
+            /* Lock for 3 minutes */
+            $lockUntil = date('Y-m-d H:i:s', time() + 180);
+            $db->prepare('UPDATE users SET failed_login_attempts = :attempts, locked_until = :lock WHERE user_id = :uid')
+               ->execute([':attempts' => $newAttempts, ':lock' => $lockUntil, ':uid' => $user['user_id']]);
+            errorResponse('Account locked for 3 minutes due to too many failed login attempts. Please try again later.');
+        } else {
+            $remaining = 3 - $newAttempts;
+            $db->prepare('UPDATE users SET failed_login_attempts = :attempts WHERE user_id = :uid')
+               ->execute([':attempts' => $newAttempts, ':uid' => $user['user_id']]);
+            errorResponse("Invalid credentials. {$remaining} attempt(s) remaining before account is temporarily locked.");
+        }
+    } catch (PDOException $e) {
+        errorResponse('Invalid credentials.');
+    }
 }
 
-/* Update last login */
+/* ── SUCCESS: reset failed attempts ───────────────────────── */
 try {
-    $db->prepare('UPDATE users SET updated_at = NOW() WHERE user_id = :uid')
+    $db->prepare('UPDATE users SET failed_login_attempts = 0, locked_until = NULL, updated_at = NOW() WHERE user_id = :uid')
        ->execute([':uid' => $user['user_id']]);
 } catch (PDOException $e) { /* non-fatal */ }
 
-/* Look up extension table PK so dispatch/field queries use the correct FK */
+/* ── LOOK UP EXTENSION TABLE PK ───────────────────────────── */
 $officerId = null;
 try {
     if ($role === 'dispatch') {

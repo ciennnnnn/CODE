@@ -123,7 +123,42 @@ async function initCivilian() {
         const sbi = document.getElementById('sb-initials');
         if (sbi) sbi.textContent = initials;
 
-        autoFillIncidentDateTime(new Date(), 'Auto-updated: current time');
+        autoFillIncidentDateTime(new Date(), 'Defaults to now — update if different.');
+
+        /* Set date constraints: max = today, min = 7 days ago */
+        const _dateInput = document.getElementById('f-date');
+        if (_dateInput) {
+            const _now = new Date();
+            const _sevenDaysAgo = new Date(_now);
+            _sevenDaysAgo.setDate(_now.getDate() - 7);
+            _dateInput.max = _now.toISOString().slice(0, 10);
+            _dateInput.min = _sevenDaysAgo.toISOString().slice(0, 10);
+            _dateInput.addEventListener('change', function() {
+                const today = new Date().toISOString().slice(0, 10);
+                if (this.value > today) {
+                    this.value = today;
+                    showToast('Incident date cannot be in the future.');
+                }
+                if (this.value < _sevenDaysAgo.toISOString().slice(0, 10)) {
+                    this.value = _sevenDaysAgo.toISOString().slice(0, 10);
+                    showToast('Incidents must be reported within 7 days of occurrence.');
+                }
+            });
+        }
+        const _timeInput = document.getElementById('f-time');
+        if (_timeInput) {
+            _timeInput.addEventListener('change', function() {
+                const dateVal = document.getElementById('f-date')?.value;
+                const today = new Date().toISOString().slice(0, 10);
+                if (dateVal === today) {
+                    const nowTime = new Date().toTimeString().slice(0, 5);
+                    if (this.value > nowTime) {
+                        this.value = nowTime;
+                        showToast('Incident time cannot be in the future.');
+                    }
+                }
+            });
+        }
 
         /* wrap setActivePage to trigger map init when report page opens */
         const _base = window.setActivePage;
@@ -303,6 +338,17 @@ function goToStep(step) {
             showToast('Please fill in the incident date and time.');
             return;
         }
+        /* Frontend date validation */
+        const incidentTs = new Date(date + 'T' + (time || '00:00')).getTime();
+        const nowTs = Date.now();
+        if (incidentTs > nowTs + 5 * 60 * 1000) {
+            showToast('Incident date and time cannot be in the future.');
+            return;
+        }
+        if (incidentTs < nowTs - 7 * 24 * 60 * 60 * 1000) {
+            showToast('Incidents can only be reported within the last 7 days.');
+            return;
+        }
         if (desc.length < 50) {
             showToast('Description must be at least 50 characters (' + desc.length + ' so far).');
             return;
@@ -380,6 +426,12 @@ async function submitComplaint() {
     const time = document.getElementById('f-time')?.value || '';
     const desc = document.getElementById('f-desc')?.value.trim() || '';
     const anonymous = document.getElementById('anon-toggle')?.checked || false;
+
+    /* Guard: only regular citizens can submit complaints */
+    if (CIVILIAN_USER && CIVILIAN_USER.role && CIVILIAN_USER.role !== 'regular') {
+        showToast('Only citizen accounts can submit complaints. Please sign in with a citizen account.');
+        return;
+    }
 
     if (!category || !barangay || !address || !date || !time) {
         showToast('Please complete all complaint fields before submitting.');
@@ -859,6 +911,18 @@ async function handleFileUpload(event) {
 
         if (!isSupportedEvidenceFile(file)) {
             showToast(`"${file.name}" is not supported. Use JPG, PNG, GIF, WebP, MP4, MOV, M4V, WEBM, or 3GP.`);
+            continue;
+        }
+
+        /* Duplicate file detection: check name + size + lastModified */
+        const isDuplicate = uploadedFiles.some(existing =>
+            existing._file &&
+            existing._file.name === file.name &&
+            existing._file.size === file.size &&
+            existing._file.lastModified === file.lastModified
+        );
+        if (isDuplicate) {
+            showToast(`"${file.name}" has already been uploaded. Please select a different file.`);
             continue;
         }
 
