@@ -1324,24 +1324,21 @@ function renderProfileCard() {
     /* profile-mini-card was removed; no-op */
 }
 
-function renderProfile() {
+async function renderProfile() {
     const user = DISPATCH_USER;
     if (!user) return;
 
     const initial = (user.name || 'D').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const setEl   = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
 
-    /* Topbar */
-    const topbarName = document.getElementById('topbar-user-name');
-    if (topbarName) topbarName.textContent = user.name || 'Dispatch';
+    /* ── Topbar & Sidebar ── */
+    setEl('topbar-user-name', user.name || 'Dispatch');
     const topbarAvatar = document.getElementById('topbar-user-avatar');
     if (topbarAvatar) topbarAvatar.textContent = initial;
+    setEl('dispatch-sb-name', user.name || 'Dispatch Officer');
 
-    /* Sidebar */
-    const sbName = document.getElementById('dispatch-sb-name');
-    if (sbName) sbName.textContent = user.name || 'Dispatch Officer';
-
-    /* Static view */
-    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    /* ── Personal info ── */
     setEl('prof-name-static', user.name || '—');
     setEl('prof-position-static', 'Dispatch Officer');
     setEl('prof-email-static', user.email || '—');
@@ -1350,12 +1347,10 @@ function renderProfile() {
     setEl('prof-brgy-static', user.home_barangay || user.brgy || user.assigned_barangay || 'QC Command');
     setEl('prof-rank-static', 'Dispatch Officer');
     setEl('prof-dept-static', 'Traffic Management Division');
-
     const initialsEl = document.getElementById('prof-avatar-initials-static');
     if (initialsEl) initialsEl.textContent = initial;
 
-    /* Pre-fill edit form */
-    const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    /* ── Edit form pre-fill ── */
     setInput('prof-name-input', user.name);
     setInput('prof-position-input', 'Dispatch Officer');
     setInput('prof-email-input', user.email);
@@ -1367,22 +1362,27 @@ function renderProfile() {
     const editInitials = document.getElementById('prof-avatar-initials');
     if (editInitials) editInitials.textContent = initial;
 
-    /* Stats */
-    setEl('prof-cases', String(window.dispatchCounts?.active_cases ?? ACTIVE_CASES.length));
-    setEl('prof-closed', String(window.dispatchCounts?.closed_cases ?? 0));
-    setEl('prof-avgtime', '—');
-    setEl('prof-caseload', String(ACTIVE_CASES.length));
-    setEl('prof-officers-count', String(FIELD_OFFICERS_DATA.length));
-    setEl('prof-active-brgy', '4');
+    /* ── Fetch real profile stats from DB ── */
+    try {
+        const stats = await apiFetch('dispatch.php', {action: 'dispatchProfile'});
 
-    /* Load live analytics for profile performance boxes */
-    apiFetch('dispatch.php', {action: 'analytics'}).then(resp => {
-        if (!resp) return;
-        setEl('prof-resolution-rate', (resp.rate ?? '—') + (typeof resp.rate === 'number' ? '%' : ''));
-        setEl('prof-on-time', '—');
-        setEl('prof-avg-rating', '—');
-        setEl('prof-efficiency', '—');
-    }).catch(() => {});
+        setEl('prof-cases',         String(stats.processed        ?? '—'));
+        setEl('prof-closed',        String(stats.closed           ?? '—'));
+        setEl('prof-avgtime',       stats.avg_hours != null ? parseFloat(stats.avg_hours).toFixed(1) + 'h' : '—');
+        setEl('prof-caseload',      String(stats.caseload         ?? '—'));
+        setEl('prof-officers-count',String(stats.officers_managed ?? '—'));
+        setEl('prof-active-brgy',   String(stats.active_brgy      ?? '—'));
+        setEl('prof-resolution-rate', stats.rate != null          ? stats.rate          + '%' : '—');
+        setEl('prof-on-time',         stats.on_time_rate != null  ? stats.on_time_rate  + '%' : '—');
+        setEl('prof-efficiency',      stats.efficiency   != null  ? stats.efficiency    + '%' : '—');
+        setEl('prof-avg-rating',    '—');
+    } catch (_) {
+        /* Fallback to counts already in memory */
+        setEl('prof-cases',     String(ACTIVE_CASES.length));
+        setEl('prof-closed',    String(window.dispatchCounts?.closed_cases ?? 0));
+        setEl('prof-caseload',  String(ACTIVE_CASES.length));
+        setEl('prof-officers-count', String(FIELD_OFFICERS_DATA.length));
+    }
 }
 
 function renderOfficers() {

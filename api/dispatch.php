@@ -76,8 +76,14 @@ if ($action === 'analytics') {
     $brgySt->execute([':s' => $periodStart]);
     $barangayStats = $brgySt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ── Priority distribution ── */
-    $prioSt = $db->prepare("SELECT priority, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY priority ORDER BY FIELD(priority,'urgent','high','medium','low')");
+    /* ── Priority distribution — always show all 4 levels ── */
+    $prioSt = $db->prepare(
+        "SELECT p.priority, COALESCE(c.cnt, 0) AS cnt
+         FROM (SELECT 'urgent' AS priority UNION ALL SELECT 'high' UNION ALL SELECT 'medium' UNION ALL SELECT 'low') p
+         LEFT JOIN (SELECT priority, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY priority) c
+           ON LOWER(c.priority) = p.priority
+         ORDER BY FIELD(p.priority,'urgent','high','medium','low')"
+    );
     $prioSt->execute([':s' => $periodStart]);
     $priorityStats = $prioSt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -578,6 +584,89 @@ if ($action === 'closeCase') {
        ->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'closed', ':notes' => 'Dispatch officer validated and closed the case.']);
 
     successResponse(['message' => 'Case closed successfully.']);
+}
+
+if ($action === 'dispatchProfile') {
+    $monthStart = date('Y-m-01 00:00:00');
+
+    /* Cases this dispatch officer has ever processed (verified/assigned) */
+    $procSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status NOT IN ('submitted')");
+    $procSt->execute([':did' => $dispatchId]);
+    $processed = (int)$procSt->fetchColumn();
+
+    /* Cases this dispatch officer has closed */
+    $closedSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status = 'closed'");
+    $closedSt->execute([':did' => $dispatchId]);
+    $closed = (int)$closedSt->fetchColumn();
+
+    /* Current active caseload for this dispatch */
+    $caseloadSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status IN ('assigned','in_progress')");
+    $caseloadSt->execute([':did' => $dispatchId]);
+    $caseload = (int)$caseloadSt->fetchColumn();
+
+    /* Field officers ever assigned cases by this dispatch */
+    $ofcSt = $db->prepare("SELECT COUNT(DISTINCT field_officer_id) FROM assignments WHERE dispatch_id = :did");
+    $ofcSt->execute([':did' => $dispatchId]);
+    $officersManaged = (int)$ofcSt->fetchColumn();
+
+    /* Active barangays covered by this dispatch */
+    $brgySt = $db->prepare("SELECT COUNT(DISTINCT asset_town) FROM complaints WHERE dispatch_id = :did");
+    $brgySt->execute([':did' => $dispatchId]);
+    $activeBrgy = (int)$brgySt->fetchColumn();
+
+    /* Average resolution time (hours) for cases this dispatch handled */
+    $avgSt = $db->prepare(
+        "SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)), 0) / 60
+         FROM complaints WHERE dispatch_id = :did AND status IN ('resolved','closed')"
+    );
+    $avgSt->execute([':did' => $dispatchId]);
+    $avgHours = round((float)$avgSt->fetchColumn(), 1);
+
+    /* This-month resolution rate for this dispatch */
+    $mTotalSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND submitted_at >= :m");
+    $mTotalSt->execute([':did' => $dispatchId, ':m' => $monthStart]);
+    $mTotal = (int)$mTotalSt->fetchColumn();
+
+    $mClosedSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status IN ('resolved','closed') AND submitted_at >= :m");
+    $mClosedSt->execute([':did' => $dispatchId, ':m' => $monthStart]);
+    $mClosed = (int)$mClosedSt->fetchColumn();
+    $rate = $mTotal > 0 ? round($mClosed / $mTotal * 100) : 0;
+
+    /* On-time rate: assignments by this dispatch completed before deadline */
+    $onTimeSt = $db->prepare(
+        "SELECT COUNT(*) FROM assignments a
+         JOIN complaints c ON c.complaint_id = a.complaint_id
+         WHERE a.dispatch_id = :did AND a.assignment_status = 'completed'
+           AND c.updated_at <= a.response_deadline"
+    );
+    $onTimeSt->execute([':did' => $dispatchId]);
+    $onTime = (int)$onTimeSt->fetchColumn();
+
+    $totalCompSt = $db->prepare("SELECT COUNT(*) FROM assignments WHERE dispatch_id = :did AND assignment_status = 'completed'");
+    $totalCompSt->execute([':did' => $dispatchId]);
+    $totalComp = (int)$totalCompSt->fetchColumn();
+    $onTimeRate = $totalComp > 0 ? round($onTime / $totalComp * 100) : 0;
+
+    /* Efficiency: weighted average of resolution rate + on-time rate */
+    $efficiency = round(($rate * 0.6 + $onTimeRate * 0.4));
+
+    /* Rejected complaints this month */
+    $rejSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status = 'rejected' AND submitted_at >= :m");
+    $rejSt->execute([':did' => $dispatchId, ':m' => $monthStart]);
+    $rejected = (int)$rejSt->fetchColumn();
+
+    successResponse([
+        'processed'        => $processed,
+        'closed'           => $closed,
+        'caseload'         => $caseload,
+        'officers_managed' => $officersManaged,
+        'active_brgy'      => $activeBrgy,
+        'avg_hours'        => $avgHours,
+        'rate'             => $rate,
+        'on_time_rate'     => $onTimeRate,
+        'efficiency'       => $efficiency,
+        'rejected'         => $rejected,
+    ]);
 }
 
 if ($action === 'officerCases') {

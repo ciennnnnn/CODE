@@ -875,9 +875,111 @@
   border-radius: 999px;
 }
 
-/* ── RESPONSIVE ────────────────────────────────────────────── */
+/* ── RESPONSIVE — TABLET (≤ 900px) ─────────────────────────── */
 @media (max-width: 900px) {
-  .dash-grid       { grid-template-columns: 1fr; }
-  .analytics-grid  { grid-template-columns: 1fr; }
+  .dash-grid        { grid-template-columns: 1fr; }
+  .analytics-grid   { grid-template-columns: 1fr; }
   .active-case-body { grid-template-columns: 1fr; }
+  .active-case-map  { height: 200px; }
+
+  /* Stats row: 2-column on tablet */
+  .stats-row { grid-template-columns: 1fr 1fr; }
+
+  /* Profile grid stacks */
+  #profile-main-row { grid-template-columns: 1fr !important; }
+  #page-profile .performance-row { grid-template-columns: 1fr 1fr; }
+
+  /* Queue filters wrap */
+  .queue-filters { flex-direction: column; gap: 8px; }
+  .queue-filters .form-input,
+  .queue-filters .form-select { max-width: 100% !important; width: 100% !important; }
+
+  /* Officer grid: 2 columns on tablet */
+  #officers-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; }
+
+  /* Active case header wraps */
+  .active-case-header { flex-direction: column; gap: 10px; }
+  .active-case-header > div:last-child { width: 100%; justify-content: flex-end; }
+
+  /* Table wrap */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Print buttons in card-head wrap */
+  .card-head { flex-wrap: wrap; gap: 8px; }
+}
+
+/* ── RESPONSIVE — MOBILE (≤ 640px) ─────────────────────────── */
+@media (max-width: 640px) {
+  /* Stats row: 2-column on mobile */
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 14px 12px; }
+  .stat-card-val { font-size: 26px; }
+
+  /* Profile */
+  #profile-main-row { grid-template-columns: 1fr !important; }
+  #page-profile .performance-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #page-profile .stat-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #page-profile .quick-actions { gap: 8px; }
+  #page-profile .quick-actions button { flex: 1 1 calc(50% - 4px); min-width: 0; }
+
+  /* Active case map consistent small size */
+  .active-case-map  { height: 160px; }
+  .active-case-body { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Timerbadge wraps cleanly */
+  .active-case-title-row { flex-wrap: wrap; gap: 6px; }
+  .active-case-header > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; }
+  .active-case-header > div:last-child button { flex: 1 1 auto; }
+
+  /* Officer grid: 1 column on small mobile */
+  #officers-grid { grid-template-columns: 1fr !important; }
+
+  /* Tabs scroll horizontally */
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .tab  { white-space: nowrap; }
+
+  /* Modals: full width */
+  .modal { max-width: 98vw !important; border-radius: 8px; }
+  .modal-head, .modal-body, .modal-footer { padding: 14px 12px; }
+  .officer-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Reassign modal officer cards 1-col */
+  .officer-grid.reassign-grid { grid-template-columns: 1fr; }
+
+  /* Dashboard queue/officer section */
+  #dash-queue-list  { max-height: 200px; }
+  #dash-officer-list { max-height: 200px; }
+
+  /* Queue table actions wrap */
+  .table-wrap table td:last-child > div { flex-wrap: wrap; gap: 4px; }
+  .table-wrap table th:nth-child(3),
+  .table-wrap table td:nth-child(3) { display: none; } /* hide Reporter on tiny screens */
+
+  /* Analytics sections */
+  #page-analytics .card-head { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 6px; }
+  #page-analytics .card-head .btn-secondary { padding: 5px 10px; font-size: 11px; }
+}
+
+/* ── RESPONSIVE — SMALL PHONE (≤ 420px) ────────────────────── */
+@media (max-width: 420px) {
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat-card-val { font-size: 22px; }
+  .stat-card-label { font-size: 10px; }
+
+  #page-profile .performance-row { grid-template-columns: 1fr; }
+  #page-profile .quick-actions button { flex: 1 1 100%; }
+
+  /* Officer full card: tighten */
+  .officer-full-card { padding: 14px 12px; }
+  .officer-stats-row { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .officer-stat-val { font-size: 15px; }
+
+  /* Map legend wraps */
+  .map-legend { flex-wrap: wrap; gap: 8px 12px; }
+
+  /* Print buttons smaller */
+  #page-analytics .btn-secondary.btn-sm { font-size: 10px; padding: 4px 8px; }
+
+  /* Topbar: hide user name on very small */
+  .user-chip-name { display: none; }
 }
