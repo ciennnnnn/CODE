@@ -115,11 +115,25 @@ try {
             errorResponse('Please enter a valid Philippine contact number.');
         }
 
-        /* Email uniqueness */
-        $emailCheck = $db->prepare('SELECT 1 FROM users WHERE email = :e LIMIT 1');
+        /* Email uniqueness — incomplete/stale registrations (missing street or barangay)
+           are treated as failed attempts and are replaced, not blocked. */
+        $emailCheck = $db->prepare(
+            'SELECT id, role, barangay, street FROM users WHERE email = :e LIMIT 1'
+        );
         $emailCheck->execute([':e' => $emailIn]);
-        if ($emailCheck->fetchColumn()) {
-            errorResponse('This email address is already registered. Please sign in or use a different email.');
+        $existingUser = $emailCheck->fetch(PDO::FETCH_ASSOC);
+        if ($existingUser) {
+            $exRole    = (string)($existingUser['role'] ?? '');
+            $exBarangay = trim((string)($existingUser['barangay'] ?? ''));
+            $exStreet   = trim((string)($existingUser['street'] ?? ''));
+            $isComplete = ($exBarangay !== '' && $exStreet !== '');
+            $isOther    = !in_array($exRole, ['citizen', ''], true);
+            if ($isComplete || $isOther) {
+                errorResponse('This email address is already registered. Please sign in or use a different email.');
+            }
+            /* Remove the stale incomplete record so we can re-register cleanly */
+            $db->prepare('DELETE FROM users WHERE id = :id')
+               ->execute([':id' => (int)$existingUser['id']]);
         }
 
         /* Phone uniqueness */
