@@ -56,7 +56,7 @@ function addColumnIfMissing(PDO $db, string $table, string $col, string $colDef)
         if ((int)$check->fetchColumn() === 0) {
             $db->exec("ALTER TABLE `{$table}` ADD COLUMN `{$col}` {$colDef}");
         }
-    } catch (PDOException $e) { /* ignore */ }
+    } catch (PDOException) { /* ignore */ }
 }
 
 addColumnIfMissing($db, 'users', 'middle_name',  'VARCHAR(100) DEFAULT NULL');
@@ -89,10 +89,7 @@ function sendSignupEmail(string $email, string $name): bool
              . "— TRAPICO System\n"
              . "  Traffic Complaint Information System\n"
              . "  Quezon City, Metro Manila";
-    $headers = "From: no-reply@trapico.online\r\n"
-             . "Reply-To: no-reply@trapico.online\r\n"
-             . "Content-Type: text/plain; charset=UTF-8\r\n"
-             . "X-Mailer: PHP/" . phpversion();
+    $headers = "From: no-reply@trapico.online\r\nReply-To: no-reply@trapico.online\r\nContent-Type: text/plain; charset=UTF-8\r\nX-Mailer: PHP/" . phpversion();
     return @mail($email, $subject, $body, $headers);
 }
 
@@ -115,25 +112,23 @@ try {
             errorResponse('Please enter a valid Philippine contact number.');
         }
 
-        /* Email uniqueness — incomplete/stale registrations (missing street or barangay)
-           are treated as failed attempts and are replaced, not blocked. */
+        /* Email uniqueness — citizen rows with an empty barangay are stale partial
+           registrations from an older form version; delete and allow re-registration. */
         $emailCheck = $db->prepare(
-            'SELECT id, role, barangay, street FROM users WHERE email = :e LIMIT 1'
+            'SELECT user_id, role, barangay FROM users WHERE email = :e LIMIT 1'
         );
         $emailCheck->execute([':e' => $emailIn]);
         $existingUser = $emailCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingUser) {
-            $exRole    = (string)($existingUser['role'] ?? '');
+            $exRole     = (string)($existingUser['role'] ?? '');
             $exBarangay = trim((string)($existingUser['barangay'] ?? ''));
-            $exStreet   = trim((string)($existingUser['street'] ?? ''));
-            $isComplete = ($exBarangay !== '' && $exStreet !== '');
-            $isOther    = !in_array($exRole, ['citizen', ''], true);
-            if ($isComplete || $isOther) {
+            /* Block if: barangay is set (complete account) OR the email belongs to a non-citizen */
+            if ($exBarangay !== '' || $exRole !== 'citizen') {
                 errorResponse('This email address is already registered. Please sign in or use a different email.');
             }
-            /* Remove the stale incomplete record so we can re-register cleanly */
-            $db->prepare('DELETE FROM users WHERE id = :id')
-               ->execute([':id' => (int)$existingUser['id']]);
+            /* Remove the stale incomplete citizen record so registration can proceed */
+            $db->prepare('DELETE FROM users WHERE user_id = :uid')
+               ->execute([':uid' => (int)$existingUser['user_id']]);
         }
 
         /* Phone uniqueness */
@@ -282,7 +277,7 @@ try {
     if (strpos($msg, 'Duplicate entry') !== false && strpos($msg, 'phone') !== false) {
         errorResponse('This contact number is already registered. Please use a different number.');
     }
-    errorResponse('Registration failed: ' . $msg, 500);
+    errorResponse("Registration failed: {$msg}", 500);
 }
 
 successResponse([
