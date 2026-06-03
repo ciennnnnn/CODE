@@ -613,4 +613,12 @@ body[data-role="regular"] .signup-link {
   .login-stats { gap: 24px; }
   .login-form-title { font-size: 34px; }
   .login-modal-title { font-size: 24px; }
+  /* Remember Me row: wrap on small phones */
+  .login-actions-row { flex-wrap: wrap; gap: 8px 12px; }
+}
+
+@media (max-width: 400px) {
+  .login-input { font-size: 16px !important; } /* prevent iOS zoom on focus */
+  .login-submit { min-height: 50px; font-size: 14px; }
+  .login-form-title { font-size: 30px; }
 }

@@ -146,6 +146,26 @@
       border-radius: 0 6px 6px 0; margin-top: 8px; line-height: 1.45;
     }
     .hidden { display: none !important; }
+
+    /* ── Mobile: inline overrides must include media queries
+       because they win over external signup.css @media rules ── */
+    @media (max-width: 920px) {
+      .su-page  { grid-template-columns: 1fr !important; grid-template-rows: auto 1fr; height: auto !important; min-height: 100vh; overflow: visible !important; }
+      .su-right { padding: 28px 24px 44px !important; align-items: flex-start !important; min-height: auto !important; }
+      .su-wrap  { width: min(100%, 480px) !important; margin: 0 auto !important; }
+      .su-title { font-size: 28px !important; }
+    }
+    @media (max-width: 560px) {
+      .su-right { padding: 20px 16px 36px !important; }
+      .su-wrap  { width: 100% !important; }
+      .su-title { font-size: 22px !important; }
+      .su-step-tabs { font-size: 8px !important; }
+      .su-step-tab  { padding: 8px 2px !important; }
+      .btn-su-next, .btn-su-back, .btn-su-submit { padding: 12px 18px !important; width: 100%; text-align: center; }
+    }
+    @media (max-width: 400px) {
+      .su-title { font-size: 20px !important; }
+    }
   </style>
 </head>
 <body data-role="regular">

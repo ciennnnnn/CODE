@@ -245,9 +245,9 @@
 
       <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PAGE: MY COMPLAINTS â•â•â•â•â•â•â•â•â•â•â•â• -->
       <section id="page-complaints" class="page-section hidden">
-        <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-          <input class="form-input" style="max-width:280px" id="complaints-search" placeholder="Search by ID or category&hellip;" oninput="renderComplaintsTable()" />
-          <select class="form-select" style="width:auto" id="complaints-filter-status" onchange="renderComplaintsTable()">
+        <div id="complaints-filter-row" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+          <input class="form-input" style="max-width:280px;flex:1;min-width:140px" id="complaints-search" placeholder="Search by ID or category&hellip;" oninput="renderComplaintsTable()" />
+          <select class="form-select" style="width:auto;min-width:130px;flex:1" id="complaints-filter-status" onchange="renderComplaintsTable()">
             <option value="">All Statuses</option>
             <option value="submitted">Submitted</option>
             <option value="verified">Verified</option>
@@ -258,7 +258,7 @@
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <select class="form-select" style="width:auto" id="complaints-filter-brgy" onchange="renderComplaintsTable()">
+          <select class="form-select" style="width:auto;min-width:130px;flex:1" id="complaints-filter-brgy" onchange="renderComplaintsTable()">
             <option value="">All Barangays</option>
             <option value="Commonwealth">Commonwealth</option>
             <option value="Batasan Hills">Batasan Hills</option>

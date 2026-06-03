@@ -814,3 +814,173 @@
   .about-metrics-grid { grid-template-columns: 1fr; }
   .stat-card-val { font-size: 22px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVE — filling every gap
+   768px tablet · 480px phone · 360px small phone
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 768px: The missing tablet breakpoint ───────────────────── */
+@media (max-width: 768px) {
+
+  /* Profile layout: single column */
+  .profile-layout { grid-template-columns: 1fr; gap: 14px; }
+  .prof-right-col { gap: 12px; }
+
+  /* Profile info grid: 1-col — don't wait until 540px */
+  .prof-info-grid { grid-template-columns: 1fr; gap: 12px; }
+  .prof-panel-body { padding: 14px; }
+  .prof-avatar-block { padding: 28px 20px 18px; }
+
+  /* About page: proper 2-col tablet layout */
+  .about-metrics-grid  { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .about-pillars-grid  { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .about-features-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .about-team-grid     { grid-template-columns: 1fr 1fr; gap: 8px;  }
+  .about-contact-grid  { grid-template-columns: 1fr;     gap: 12px; }
+  .about-hero-card     { padding: 16px; }
+  .about-title         { font-size: 22px; }
+
+  /* Barangay coverage grid: 2-col */
+  .brgy-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Map: comfortable height */
+  .complaint-map { height: 230px; }
+
+  /* Priority pills: wrap so they don't overflow */
+  .priority-pills { flex-wrap: wrap; gap: 8px; }
+
+  /* My Complaints filter row: full-width search on wrap */
+  #complaints-search { max-width: 100% !important; flex: 1 1 100%; }
+  #complaints-filter-status,
+  #complaints-filter-brgy { flex: 1; min-width: 130px; }
+
+  /* Action column in tables: allow wrap */
+  td > [style*="display:flex"] { flex-wrap: wrap !important; gap: 6px !important; }
+}
+
+/* ── 600px: Small tablet / large phone ─────────────────────── */
+@media (max-width: 600px) {
+
+  /* Avatar: 80px */
+  .prof-avatar-circle  { width: 80px; height: 80px; font-size: 28px; }
+  .prof-avatar-block   { padding: 20px 16px 16px; min-height: auto; }
+  .prof-display-name   { font-size: 16px; margin-top: 10px; }
+  .prof-avatar-upload  { width: 24px; height: 24px; font-size: 16px; }
+
+  /* About: narrow 2-col → 1-col for pillar/feature cards */
+  .about-pillars-grid,
+  .about-features-grid { grid-template-columns: 1fr; }
+  .about-title         { font-size: 20px; }
+
+  /* Profile upload section: stack vertically */
+  #prof-valid-id + label,
+  [style*="Upload / Replace"] { width: 100%; }
+}
+
+/* ── 480px: Phone — all single column, touch-optimised ─────── */
+@media (max-width: 480px) {
+
+  /* Stats: 1-col (base.css uses !important at 540px → must match) */
+  .stats-row { grid-template-columns: 1fr !important; gap: 8px !important; }
+  .stat-card-val { font-size: 26px !important; }
+
+  /* About: all 1-col */
+  .about-metrics-grid,
+  .about-pillars-grid,
+  .about-features-grid,
+  .about-team-grid     { grid-template-columns: 1fr; }
+  .about-title         { font-size: 20px; }
+  .about-metric-value  { font-size: 26px; }
+  .about-contact-grid  { grid-template-columns: 1fr; }
+
+  /* Profile info: lock to 1-col with !important */
+  .prof-info-grid { grid-template-columns: 1fr !important; gap: 10px; }
+
+  /* Brgy: 2-col (small cards still usable) */
+  .brgy-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Avatar: 72px */
+  .prof-avatar-circle { width: 72px; height: 72px; font-size: 24px; }
+  .prof-display-name  { font-size: 15px; }
+
+  /* Touch targets: 44px min height for all interactive buttons */
+  .btn-primary, .btn-secondary, .btn-danger {
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+  }
+  .btn-sm { min-height: 40px; padding: 8px 14px; font-size: 12px; }
+
+  /* Form inputs: 16px prevents iOS auto-zoom on focus */
+  .form-input, .form-select {
+    font-size: 16px !important;
+    min-height: 46px;
+  }
+
+  /* Priority pills: vertical stack for easy tapping */
+  .priority-pills  { flex-direction: column; gap: 8px; }
+  .priority-pill   { text-align: center; padding: 10px 14px; font-size: 13px; }
+
+  /* Map: compact but usable */
+  .complaint-map { height: 200px; }
+
+  /* Upload box: generous touch area */
+  .upload-box { min-height: 100px; padding: 20px 14px; }
+
+  /* Review summary */
+  .review-label { width: 80px; min-width: 70px; font-size: 12px; }
+  .review-value { font-size: 12px; }
+
+  /* Profile edit + emergency contact btn-row: full-width stack */
+  #profile-edit .btn-row,
+  #emergency-edit .btn-row {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  #profile-edit .btn-row > *,
+  #emergency-edit .btn-row > * { width: 100%; text-align: center; }
+
+  /* Map controls: ensure SEARCH stays compact on phones */
+  .map-search-btn { min-width: 70px !important; padding: 0 10px !important; }
+
+  /* My Complaints: filter selects full width */
+  #complaints-filter-status,
+  #complaints-filter-brgy { flex: 1 1 45%; }
+  #complaints-search { max-width: 100% !important; }
+
+  /* Toast: full width on phone */
+  .toast { bottom: 12px; right: 6px; left: 6px; max-width: 100%; font-size: 13px; padding: 12px 14px; }
+
+  /* Profile quick stats: larger tap rows */
+  .prof-stat-row { padding: 12px 0; min-height: 44px; }
+
+  /* Valid ID upload area: full width label */
+  #page-profile [style*="Upload / Replace"] { min-height: 44px; }
+
+  /* Panel body: tight on phones */
+  .prof-panel-body { padding: 12px; }
+  .prof-stats-block { padding: 10px 14px 12px; }
+
+  /* Card head: ensure it doesn't crush */
+  .card-head { flex-wrap: wrap; gap: 8px; align-items: center; }
+}
+
+/* ── 360px: Small phones (Galaxy A-series, iPhone SE) ────── */
+@media (max-width: 380px) {
+  .prof-avatar-circle { width: 64px; height: 64px; font-size: 20px; }
+  .prof-display-name  { font-size: 14px; }
+  .about-metric-value { font-size: 24px; }
+  .stat-card-val      { font-size: 22px !important; }
+  .brgy-grid          { grid-template-columns: 1fr; } /* 1-col on tiny phones */
+  .prof-stats-block   { padding: 8px 10px; }
+  .prof-stat-row      { padding: 10px 0; font-size: 13px; }
+  .prof-info-label    { font-size: 9px; }
+  .prof-info-val      { font-size: 13px; }
+  .about-title        { font-size: 18px; }
+
+  /* Stepper: 3-col grid at tiniest width */
+  .stepper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; overflow: visible; }
+  .step     { flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  .step-label { font-size: 9px; white-space: normal; text-align: center; }
+}
