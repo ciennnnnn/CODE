@@ -28,6 +28,10 @@ let _officersMap = null;
 let _officersMarkers = {};
 let _mapRefreshInterval = null;
 
+/* ── Active Case Maps state ── */
+let _activeCaseMaps = {};
+let _countdownTimers = {};
+
 const BRGY_CENTERS = {
     'Commonwealth':  [14.6760, 121.0437],
     'Batasan Hills': [14.6915, 121.0507],
@@ -162,15 +166,36 @@ function initOfficersPageMap() {
 
 async function refreshOfficerMap() {
     try {
-        const resp = await apiFetch('dispatch.php', {action: 'officers'});
-    _normalizeOfficerSets(resp);
-    _syncMarkersToMap(_dashMap, _dashMarkers, FIELD_OFFICERS_DATA);
-    _syncMarkersToMap(_officersMap, _officersMarkers, FIELD_OFFICERS_DATA);
+        const [officersResp, activeResp, dashResp] = await Promise.allSettled([
+            apiFetch('dispatch.php', {action: 'officers'}),
+            apiFetch('dispatch.php', {action: 'activeCases'}),
+            apiFetch('dispatch.php', {action: 'dashboard'}),
+        ]);
+
+        if (officersResp.status === 'fulfilled') {
+            _normalizeOfficerSets(officersResp.value);
+            _syncMarkersToMap(_dashMap, _dashMarkers, FIELD_OFFICERS_DATA);
+            _syncMarkersToMap(_officersMap, _officersMarkers, FIELD_OFFICERS_DATA);
+            renderOfficers();
+        }
+
+        if (activeResp.status === 'fulfilled') {
+            const newCases = activeResp.value.activeCases || [];
+            const oldIds = ACTIVE_CASES.map(c => c.id + c.asgn_status).join(',');
+            const newIds = newCases.map(c => c.id + c.asgn_status).join(',');
+            ACTIVE_CASES = newCases;
+            if (oldIds !== newIds) renderActiveCases();
+        }
+
+        if (dashResp.status === 'fulfilled') {
+            window.dispatchCounts = dashResp.value.counts || window.dispatchCounts;
+            renderDashboard();
+        }
+
         const el = document.getElementById('map-last-updated');
         if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString();
-        renderOfficers();
     } catch (e) {
-        console.warn('Officer map refresh failed:', e.message);
+        console.warn('Dispatch refresh failed:', e.message);
     }
 }
 
@@ -282,7 +307,8 @@ function renderDashboard() {
 
     const queueList = document.getElementById('dash-queue-list');
     if (queueList) {
-        queueList.innerHTML = QUEUE_DATA.slice(0, 4).map(c => `
+        const submitted = QUEUE_DATA.filter(c => c.status === 'submitted');
+        queueList.innerHTML = submitted.map(c => `
           <div class="queue-preview-item">
             <div class="queue-preview-body">
               <div class="queue-preview-id">${safeText(c.id)}</div>
@@ -436,55 +462,152 @@ async function submitCloseCase(id) {
     }
 }
 
+function _cleanupActiveCaseMaps() {
+    Object.values(_activeCaseMaps).forEach(m => { try { m.remove(); } catch (_) {} });
+    _activeCaseMaps = {};
+    Object.values(_countdownTimers).forEach(t => clearInterval(t));
+    _countdownTimers = {};
+}
+
+function initActiveCaseMaps() {
+    if (!window.L) return;
+    ACTIVE_CASES.forEach(c => {
+        const lat = Number.parseFloat(c.lat);
+        const lng = Number.parseFloat(c.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const mapId = `case-map-${String(c.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+        const el = document.getElementById(mapId);
+        if (!el || _activeCaseMaps[c.id]) return;
+        try {
+            const map = L.map(mapId, {zoomControl: true, scrollWheelZoom: false}).setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19,
+            }).addTo(map);
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup(`${safeText(c.id)}<br>${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            setTimeout(() => { try { map.invalidateSize(); } catch (_) {} }, 120);
+            _activeCaseMaps[c.id] = map;
+        } catch (_) {}
+    });
+}
+
+function startAllCountdowns() {
+    Object.values(_countdownTimers).forEach(t => clearInterval(t));
+    _countdownTimers = {};
+
+    ACTIVE_CASES.forEach(c => {
+        if (!c.response_deadline) return;
+        const deadline = new Date(c.response_deadline).getTime();
+        if (isNaN(deadline)) return;
+
+        const tick = () => {
+            const el = document.getElementById(`timer-${c.id}`);
+            if (!el) { clearInterval(_countdownTimers[c.id]); delete _countdownTimers[c.id]; return; }
+            const remaining = deadline - Date.now();
+            if (remaining <= 0) {
+                el.className = 'timer-badge failed';
+                el.textContent = '⚠ TIME EXCEEDED';
+                clearInterval(_countdownTimers[c.id]);
+                delete _countdownTimers[c.id];
+                const footerEl = document.getElementById(`case-footer-status-${String(c.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`);
+                if (footerEl) { footerEl.className = 'officer-failed-label'; footerEl.textContent = '⚠ Assignment Failed — Time Exceeded'; }
+                return;
+            }
+            const mins = Math.floor(remaining / 60000);
+            const secs = Math.floor((remaining % 60000) / 1000);
+            el.textContent = `⏱ ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            el.className = remaining < 300000 ? 'timer-badge urgent' : 'timer-badge';
+        };
+        tick();
+        _countdownTimers[c.id] = setInterval(tick, 1000);
+    });
+}
+
 function renderActiveCases() {
     const activeCasesList = document.getElementById('active-cases-list');
     if (!activeCasesList) return;
+
+    _cleanupActiveCaseMaps();
 
     if (!ACTIVE_CASES.length) {
         activeCasesList.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">No active cases</div><div class="empty-sub">All cases are pending dispatch or completed.</div></div>`;
         return;
     }
 
-    activeCasesList.innerHTML = ACTIVE_CASES.map(c => {
-      const lat = Number.parseFloat(c.lat);
-      const lng = Number.parseFloat(c.lng);
-      const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
-      const coordLabel = hasCoords ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : 'Location unavailable';
+    const now = Date.now();
 
-      return `
-      <div class="active-case-card">
-        <div class="active-case-header">
-          <div>
-            <div class="active-case-title-row">
-              <span class="track-id">${safeText(c.id)}</span>
-              ${statusBadge(c.status)}
-              ${priorityBadge(c.priority)}
-              ${c.status === 'assigned' ? `<span class="timer-badge" id="timer-${safeText(c.id)}">⏱ 18:42</span>` : ''}
+    activeCasesList.innerHTML = ACTIVE_CASES.map(c => {
+        const lat = Number.parseFloat(c.lat);
+        const lng = Number.parseFloat(c.lng);
+        const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+        const mapId = `case-map-${String(c.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+        const footerStatusId = `case-footer-status-${String(c.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+
+        let timerHtml = '';
+        let isTimerFailed = false;
+        if (c.response_deadline) {
+            const deadline = new Date(c.response_deadline).getTime();
+            if (!isNaN(deadline)) {
+                const remaining = deadline - now;
+                if (remaining <= 0 || c.asgn_status === 'failed') {
+                    isTimerFailed = true;
+                    timerHtml = `<span class="timer-badge failed">⚠ TIME EXCEEDED</span>`;
+                } else {
+                    const mins = Math.floor(remaining / 60000);
+                    const secs = Math.floor((remaining % 60000) / 1000);
+                    timerHtml = `<span class="timer-badge" id="timer-${safeText(c.id)}">⏱ ${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}</span>`;
+                }
+            }
+        } else if (c.asgn_status === 'failed') {
+            isTimerFailed = true;
+            timerHtml = `<span class="timer-badge failed">⚠ TIME EXCEEDED</span>`;
+        }
+
+        const officerName = safeText(c.officer_name || 'Field Officer');
+        const officerBadge = c.officer_badge ? ` (${safeText(c.officer_badge)})` : '';
+        const footerStatusClass = isTimerFailed ? 'officer-failed-label' : 'officer-en-route';
+        const footerStatusText = isTimerFailed ? '⚠ Assignment Failed — Time Exceeded' : '● En route';
+        const cardBorder = isTimerFailed ? 'border-left-color:#dc2626;' : '';
+
+        return `
+        <div class="active-case-card" style="${cardBorder}">
+          <div class="active-case-header">
+            <div>
+              <div class="active-case-title-row">
+                <span class="track-id">${safeText(c.id)}</span>
+                ${statusBadge(c.status)}
+                ${priorityBadge(c.priority)}
+                ${timerHtml}
+              </div>
+              <div class="active-case-meta">${safeText(c.cat)} · Brgy. ${safeText(c.brgy)} · ${formatDateTime(c.date)}</div>
             </div>
-            <div class="active-case-meta">${safeText(c.cat)} · Brgy. ${safeText(c.brgy)} · ${formatDateTime(c.date)}</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-secondary btn-sm" onclick="openCaseTimelineModal('${safeText(c.id)}')">CASE TIMELINE</button>
+              <button class="btn-danger btn-sm" onclick="reassignCase('${safeText(c.id)}')">Reassign</button>
+            </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn-secondary btn-sm" onclick="openCaseTimelineModal('${safeText(c.id)}')">CASE TIMELINE</button>
-            ${c.status === 'assigned' ? `<button class="btn-danger btn-sm" onclick="openReviewModal('${safeText(c.id)}')">Reassign</button>` : ''}
+          <div class="active-case-body">
+            <div>
+              <div class="active-case-desc-label">Description</div>
+              <div class="active-case-desc">${safeText(c.desc || c.description || '')}</div>
+            </div>
+            <div class="active-case-map" id="${safeText(mapId)}">
+              ${!hasCoords ? `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--mist);font-size:12px;font-family:var(--font-mono)">Location unavailable</div>` : ''}
+            </div>
           </div>
-        </div>
-        <div class="active-case-body">
-          <div>
-            <div class="active-case-desc-label">Description</div>
-            <div class="active-case-desc">${safeText(c.desc || c.description || '')}</div>
+          <div class="active-case-footer">
+            <span class="officer-assigned-label">Assigned to:</span>
+            <span class="officer-assigned-name">${officerName}${officerBadge}</span>
+            <span class="${footerStatusClass}" id="${safeText(footerStatusId)}">${footerStatusText}</span>
           </div>
-          <div class="map-placeholder" style="height:120px">
-            <div class="map-icon"></div>
-            <div class="map-label">${safeText(coordLabel)}</div>
-          </div>
-        </div>
-        <div class="active-case-footer">
-          <span class="officer-assigned-label">Assigned to:</span>
-          <span class="officer-assigned-name">Field Officer</span>
-          <span class="officer-en-route">● En route</span>
-        </div>
-      </div>`;
+        </div>`;
     }).join('');
+
+    requestAnimationFrame(() => {
+        initActiveCaseMaps();
+        startAllCountdowns();
+    });
 }
 
 function buildCaseTimelineItems(currentStatus, timelineMap) {
@@ -862,9 +985,9 @@ async function openReviewModalAsync(id) {
   const evidenceHtml = renderEvidenceSection(detailMedia);
 
     const officerCards = FIELD_OFFICERS_DATA.map(o => {
-        const blocked = parseInt(o.is_assigned) === 1;
-        const statusLabel = blocked ? '⬤ On Assignment' : (o.status === 'available' ? '● Available' : `○ ${o.status}`);
-        const statusClass = blocked ? 'busy' : (o.status === 'available' ? 'available' : 'busy');
+        const blocked = o.status !== 'available';
+        const statusLabel = blocked ? '⬤ On Assignment' : '● Available';
+        const statusClass = blocked ? 'busy' : 'available';
         return `<div class="officer-card${blocked ? ' disabled' : ''}" id="ocard-${safeText(o.id)}" onclick="${blocked ? 'void(0)' : `selectOfficer('${safeText(o.id)}')`}">
         <div class="officer-name">${safeText(o.name)}</div>
         <div class="officer-meta">Badge: ${safeText(o.code)} · ${safeText(o.brgy)}</div>
@@ -955,9 +1078,9 @@ function openVerifyModal(id) {
     dispatchSelectedOfficerId = null;
 
     const officerCards = FIELD_OFFICERS_DATA.map(o => {
-        const blocked = parseInt(o.is_assigned) === 1;
-        const statusLabel = blocked ? '⬤ On Assignment' : (o.status === 'available' ? '● Available' : `○ ${o.status}`);
-        const statusClass = blocked ? 'busy' : (o.status === 'available' ? 'available' : 'busy');
+        const blocked = o.status !== 'available';
+        const statusLabel = blocked ? '⬤ On Assignment' : '● Available';
+        const statusClass = blocked ? 'busy' : 'available';
         return `<div class="officer-card${blocked ? ' disabled' : ''}" id="vocard-${safeText(o.id)}" onclick="${blocked ? 'void(0)' : `selectOfficerVerify('${safeText(o.id)}')`}">
         <div class="officer-name">${safeText(o.name)}</div>
         <div class="officer-meta">Badge: ${safeText(o.code)} · ${safeText(o.brgy)}</div>
@@ -1725,6 +1848,11 @@ function onProfileAvatarChange(event) {
         }
         if (pageId === 'analytics') {
             renderAnalytics();
+        }
+        if (pageId === 'active') {
+            setTimeout(() => {
+                Object.values(_activeCaseMaps).forEach(m => { try { m.invalidateSize(); } catch (_) {} });
+            }, 80);
         }
     };
 }());

@@ -8,12 +8,12 @@ $db     = getDb();
 $dispatchId  = (int)($user['officer_id'] ?? 0);
 $dispatchUid = (int)($user['user_id'] ?? 0);
 
-/* ── Auto-release: assignments older than 3 hours become 'failed', officer freed ── */
+/* ── Auto-release: mark pending assignments as failed when response_deadline passes ── */
 try {
     $db->exec(
         "UPDATE assignments SET assignment_status = 'failed'
-         WHERE assignment_status IN ('pending','in_progress')
-           AND assigned_at < NOW() - INTERVAL 3 HOUR"
+         WHERE assignment_status = 'pending'
+           AND response_deadline < NOW()"
     );
     $db->exec(
         "UPDATE field_officers SET is_available = 1
@@ -272,13 +272,13 @@ if ($action === 'reassign') {
 
     $stmt = $db->prepare(
         'SELECT assignment_id, field_officer_id FROM assignments
-         WHERE complaint_id = :cid AND assignment_status IN ("pending","in_progress")
+         WHERE complaint_id = :cid AND assignment_status IN ("pending","in_progress","failed")
          ORDER BY assigned_at DESC LIMIT 1'
     );
     $stmt->execute([':cid' => $complaintId]);
     $current = $stmt->fetch();
     if (!$current) {
-        errorResponse('No active assignment found for this complaint.');
+        errorResponse('No assignment found for this complaint.');
     }
 
     $db->prepare(
@@ -327,14 +327,17 @@ if ($action === 'activeCases') {
                 c.priority, c.status, c.submitted_at AS date,
                 c.description, c.latitude AS lat, c.longitude AS lng,
                 COALESCE(u.full_name, 'Field Officer') AS officer_name,
-                fo.badge_number AS officer_badge
+                fo.badge_number AS officer_badge,
+                a.response_deadline, a.assigned_at, a.assignment_status AS asgn_status
          FROM complaints c
-         LEFT JOIN assignments a ON a.complaint_id = c.complaint_id
-                                AND a.assignment_status IN ('pending','in_progress')
+         LEFT JOIN assignments a ON a.assignment_id = (
+             SELECT a2.assignment_id FROM assignments a2
+             WHERE a2.complaint_id = c.complaint_id
+             ORDER BY a2.assigned_at DESC LIMIT 1
+         )
          LEFT JOIN field_officers fo ON fo.officer_id = a.field_officer_id
          LEFT JOIN users u ON u.user_id = fo.user_id
          WHERE c.status IN ('assigned','in_progress')
-         GROUP BY c.complaint_id
          ORDER BY c.submitted_at DESC"
     );
     successResponse(['activeCases' => $stmt->fetchAll()]);

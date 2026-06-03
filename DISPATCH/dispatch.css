@@ -602,6 +602,52 @@
   font-size: 11px;
   color: var(--green);
 }
+.officer-failed-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ── ACTIVE CASE MAP (consistent size) ─────────────────────── */
+.active-case-map {
+  height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f0f0;
+}
+
+/* ── MAP LEGEND ─────────────────────────────────────────────── */
+.map-legend {
+  display: flex;
+  gap: 14px;
+  padding: 8px 0 4px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--mist);
+}
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── DASHBOARD SCROLLABLE SECTIONS ──────────────────────────── */
+#dash-queue-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+#dash-officer-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
 
 /* ── COUNTDOWN TIMER BADGE (in table) ──────────────────────── */
 .timer-badge {
@@ -613,6 +659,7 @@
   white-space: nowrap;
 }
 .timer-badge.urgent { background: #FEE2E2; color: var(--accent); }
+.timer-badge.failed { background: #FEE2E2; color: #dc2626; font-weight: 700; }
 
 /* ── OFFICER CARD (Full view) ──────────────────────────────── */
 .officer-full-card {
