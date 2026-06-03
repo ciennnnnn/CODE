@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/base.css" />
-  <link rel="stylesheet" href="dispatch.css?v=20260604f" />
+  <link rel="stylesheet" href="dispatch.css?v=20260604g" />
 </head>
 <body>
 
@@ -264,104 +264,95 @@
 
       <!-- PAGE: DISPATCH PROFILE -->
       <section id="page-profile" class="page-section hidden">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="profile-main-row">
-          <div class="card">
-            <div class="card-head"><span class="card-title">Personal Information</span></div>
-            <div id="profile-static" style="padding:24px;">
-              <div style="display:flex;align-items:center;margin-bottom:20px">
-                <div style="width:80px;height:80px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;position:relative" id="prof-avatar-static">
-                  <img id="prof-avatar-img-static" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;" />
+        <div class="profile-layout">
+
+          <!-- LEFT: Avatar + Quick Stats -->
+          <div class="card prof-left-card">
+            <div class="prof-avatar-block">
+              <div class="prof-avatar-wrap">
+                <div id="prof-avatar-static" class="prof-avatar-circle" onclick="document.getElementById('dispatch-avatar-main').click()" title="Click to change photo">
+                  <img id="prof-avatar-img-static" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:none;" />
                   <span id="prof-avatar-initials-static">DC</span>
                 </div>
-                <div style="margin-left:16px">
-                  <div style="font-size:18px;font-weight:600" id="prof-name-static">—</div>
-                  <div style="color:var(--mist);font-size:14px" id="prof-position-static">—</div>
+                <button type="button" class="prof-avatar-upload" onclick="document.getElementById('dispatch-avatar-main').click()" title="Upload profile picture">+</button>
+              </div>
+              <input type="file" id="dispatch-avatar-main" accept="image/*" style="display:none" onchange="onProfileAvatarChange(event)" />
+              <div class="prof-upload-copy">Click photo to update</div>
+              <div class="prof-display-name" id="prof-name-static">—</div>
+              <div class="prof-subtitle" id="prof-position-static">Dispatch Officer</div>
+              <div class="prof-active-badge">&#9679; System Online</div>
+            </div>
+
+            <div class="prof-stats-block">
+              <div class="prof-stats-heading">Quick Stats</div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Cases Processed</span><span class="prof-stat-val" id="prof-cases">—</span></div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Cases Closed</span><span class="prof-stat-val" id="prof-closed">—</span></div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Avg. Resolution</span><span class="prof-stat-val" id="prof-avgtime">—</span></div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Current Caseload</span><span class="prof-stat-val" id="prof-caseload">—</span></div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Officers Managed</span><span class="prof-stat-val" id="prof-officers-count">—</span></div>
+              <div class="prof-stat-row"><span class="prof-stat-label">Active Barangays</span><span class="prof-stat-val" id="prof-active-brgy">—</span></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Info + Performance + Actions -->
+          <div class="prof-right-col">
+
+            <!-- Personal Information card -->
+            <div class="card prof-panel-card">
+              <div class="card-head">
+                <span class="card-title">Personal Information</span>
+                <button type="button" class="btn-secondary btn-sm" onclick="showProfileEdit()">Edit</button>
+              </div>
+              <div id="profile-static" style="padding:20px 24px">
+                <div class="detail-item"><label>Badge ID</label><span id="prof-badgeid-static">—</span></div>
+                <div class="detail-item"><label>Email</label><span id="prof-email-static">—</span></div>
+                <div class="detail-item"><label>Phone</label><span id="prof-phone-static">—</span></div>
+                <div class="detail-item"><label>Primary Barangay</label><span id="prof-brgy-static">—</span></div>
+                <div class="detail-item"><label>Rank / Title</label><span id="prof-rank-static">—</span></div>
+                <div class="detail-item"><label>Department</label><span id="prof-dept-static">—</span></div>
+              </div>
+              <form id="profile-edit-form" style="padding:20px 24px;display:none" onsubmit="saveProfileEdit(event)">
+                <div class="detail-item"><label>Full Name</label><input type="text" id="prof-name-input" name="name" class="form-input" required /></div>
+                <div class="detail-item"><label>Badge ID</label><input type="text" id="prof-badgeid-input" name="badgeid" class="form-input" required /></div>
+                <div class="detail-item"><label>Email</label><input type="email" id="prof-email-input" name="email" class="form-input" required /></div>
+                <div class="detail-item"><label>Phone</label><input type="tel" id="prof-phone-input" name="phone" class="form-input" /></div>
+                <div class="detail-item"><label>Barangay</label><input type="text" id="prof-brgy-input" name="brgy" class="form-input" /></div>
+                <input type="hidden" id="prof-position-input" name="position" value="Dispatch Officer" />
+                <input type="hidden" id="prof-rank-input" name="rank" value="Dispatch Officer" />
+                <input type="hidden" id="prof-dept-input" name="dept" value="Traffic Management Division" />
+                <div style="display:flex;gap:10px;margin-top:16px">
+                  <button type="submit" class="btn-success" style="flex:1">Save Changes</button>
+                  <button type="button" class="btn-secondary" onclick="cancelProfileEdit()">Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- This Month's Performance -->
+            <div class="card prof-panel-card">
+              <div class="card-head"><span class="card-title">This Month's Performance</span></div>
+              <div style="padding:20px 24px">
+                <div class="performance-row">
+                  <div class="performance-box green"><div class="performance-label">Resolution Rate</div><div class="performance-val" id="prof-resolution-rate">—</div></div>
+                  <div class="performance-box blue"><div class="performance-label">On-Time Closure</div><div class="performance-val" id="prof-on-time">—</div></div>
+                  <div class="performance-box red"><div class="performance-label">Average Rating</div><div class="performance-val" id="prof-avg-rating">—</div></div>
+                  <div class="performance-box purple"><div class="performance-label">Efficiency Score</div><div class="performance-val" id="prof-efficiency">—</div></div>
                 </div>
               </div>
-              <div class="detail-item"><label>Badge ID</label><span id="prof-badgeid-static">—</span></div>
-              <div class="detail-item"><label>Email</label><span id="prof-email-static">—</span></div>
-              <div class="detail-item"><label>Phone</label><span id="prof-phone-static">—</span></div>
-              <div class="detail-item"><label>Primary Barangay</label><span id="prof-brgy-static">—</span></div>
-              <div class="detail-item"><label>Rank / Title</label><span id="prof-rank-static">—</span></div>
-              <div class="detail-item"><label>Department</label><span id="prof-dept-static">—</span></div>
-              <div style="margin-top:18px;display:flex;gap:10px;">
-                <button type="button" class="officer-btn primary" style="min-width:100px;" onclick="showProfileEdit()">Edit</button>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card prof-panel-card">
+              <div class="card-head"><span class="card-title">Quick Actions</span></div>
+              <div class="quick-actions">
+                <button onclick="showProfileEdit()">Edit Profile</button>
+                <button onclick="changePassword()">Change Password</button>
+                <button onclick="viewActivityLog()">Activity Log</button>
+                <button onclick="logout()">Sign Out</button>
               </div>
             </div>
-            <!-- Editable profile form -->
-            <form id="profile-edit-form" style="padding:24px;display:none;" enctype="multipart/form-data" onsubmit="saveProfileEdit(event)">
-              <div style="display:flex;align-items:center;margin-bottom:20px">
-                <label for="dispatch-avatar-upload" style="cursor:pointer;width:80px;height:80px;display:inline-block">
-                  <div style="width:80px;height:80px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;position:relative" id="prof-avatar">
-                    <img id="prof-avatar-img" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none;" />
-                    <span id="prof-avatar-initials">DC</span>
-                    <input id="dispatch-avatar-upload" name="avatar" type="file" accept="image/*" style="display:none" onchange="onProfileAvatarChange(event)">
-                    <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border-radius:50%;padding:2px 5px;font-size:14px;">+</span>
-                  </div>
-                </label>
-                <div style="margin-left:16px">
-                  <input type="text" id="prof-name-input" name="name" style="font-size:18px;font-weight:600;width:180px;" placeholder="Full Name" required />
-                  <input type="text" id="prof-position-input" name="position" style="color:var(--mist);font-size:14px;width:180px;margin-top:4px;" placeholder="Position" required />
-                </div>
-              </div>
-              <div class="detail-item"><label>Badge ID</label><input type="text" id="prof-badgeid-input" name="badgeid" required /></div>
-              <div class="detail-item"><label>Email</label><input type="email" id="prof-email-input" name="email" required /></div>
-              <div class="detail-item"><label>Phone</label><input type="tel" id="prof-phone-input" name="phone" required /></div>
-              <div class="detail-item"><label>Primary Barangay</label><input type="text" id="prof-brgy-input" name="brgy" required /></div>
-              <div class="detail-item"><label>Rank / Title</label><input type="text" id="prof-rank-input" name="rank" required /></div>
-              <div class="detail-item"><label>Department</label><input type="text" id="prof-dept-input" name="dept" required /></div>
-              <div style="margin-top:18px;display:flex;gap:10px;">
-                <button type="submit" class="officer-btn primary" style="min-width:100px;">Save</button>
-                <button type="button" class="officer-btn" style="min-width:100px;" onclick="cancelProfileEdit()">Cancel</button>
-              </div>
-            </form>
-          </div>
-          <div class="card">
-            <div class="card-head"><span class="card-title">Performance &amp; Statistics</span></div>
-            <div style="padding:24px">
-              <div class="stat-row">
-                <div class="stat-box accent"><div class="stat-val" id="prof-cases">0</div><div class="stat-label">Cases Processed</div></div>
-                <div class="stat-box green"><div class="stat-val" id="prof-closed">0</div><div class="stat-label">Cases Closed</div></div>
-              </div>
-              <div class="detail-item"><label>Avg. Resolution Time</label><span id="prof-avgtime">—</span></div>
-              <div class="detail-item"><label>Current Case Load</label><span id="prof-caseload">0</span></div>
-              <div class="detail-item"><label>Officers Managed</label><span id="prof-officers-count">—</span></div>
-              <div class="detail-item"><label>Active Barangays</label><span id="prof-active-brgy">4</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="margin-top:24px">
-          <div class="card-head"><span class="card-title">This Month's Performance</span></div>
-          <div style="padding:24px">
-            <div class="performance-row">
-              <div class="performance-box green">
-                <div class="performance-label">Resolution Rate</div>
-                <div class="performance-val" id="prof-resolution-rate">—</div>
-              </div>
-              <div class="performance-box blue">
-                <div class="performance-label">On-Time Closure</div>
-                <div class="performance-val" id="prof-on-time">—</div>
-              </div>
-              <div class="performance-box red">
-                <div class="performance-label">Average Rating</div>
-                <div class="performance-val" id="prof-avg-rating">—</div>
-              </div>
-              <div class="performance-box purple">
-                <div class="performance-label">Efficiency Score</div>
-                <div class="performance-val" id="prof-efficiency">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="margin-top:24px">
-          <div class="card-head"><span class="card-title">Quick Actions</span></div>
-          <div class="quick-actions">
-            <button onclick="editProfile()">Edit Profile</button>
-            <button onclick="changePassword()">Change Password</button>
-            <button onclick="viewActivityLog()">Activity Log</button>
-            <button onclick="logout()">Sign Out</button>
-          </div>
-        </div>
+
+          </div><!-- /prof-right-col -->
+        </div><!-- /profile-layout -->
       </section>
 
     </main>
@@ -376,10 +367,10 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../data.js?v=20260604f"></script>
-<script src="../api.js?v=20260604f"></script>
-<script src="dispatch.js?v=20260604f"></script>
-<script src="dispatch.backend.js?v=20260604f"></script>
+<script src="../data.js?v=20260604g"></script>
+<script src="../api.js?v=20260604g"></script>
+<script src="dispatch.js?v=20260604g"></script>
+<script src="dispatch.backend.js?v=20260604g"></script>
 <script>
 function toggleSidebar() {
   var sidebar = document.querySelector('.sidebar');

@@ -1362,6 +1362,10 @@ async function renderProfile() {
     const editInitials = document.getElementById('prof-avatar-initials');
     if (editInitials) editInitials.textContent = initial;
 
+    /* ── Restore saved avatar from localStorage ── */
+    const savedAvatar = _loadDispatchAvatar();
+    if (savedAvatar) _applyDispatchAvatar(savedAvatar);
+
     /* ── Fetch real profile stats from DB ── */
     try {
         const stats = await apiFetch('dispatch.php', {action: 'dispatchProfile'});
@@ -2040,6 +2044,26 @@ async function submitProfileEdit() {
     }
 }
 
+function _passEyeField(id, label, placeholder) {
+    return `<div class="form-group">
+      <label>${label}</label>
+      <div style="position:relative">
+        <input id="${id}" class="form-input" type="password" placeholder="${placeholder}" style="padding-right:42px" />
+        <button type="button" onclick="togglePassVis('${id}','eye-${id}')" id="eye-${id}"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;opacity:.45;transition:opacity .15s;line-height:1"
+          title="Show / hide">&#128065;</button>
+      </div>
+    </div>`;
+}
+
+function togglePassVis(inputId, btnId) {
+    const input = document.getElementById(inputId);
+    const btn   = document.getElementById(btnId);
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+    if (btn) btn.style.opacity = input.type === 'text' ? '1' : '.45';
+}
+
 function changePassword() {
     openModal(`
       <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -2049,18 +2073,9 @@ function changePassword() {
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body">
-            <div class="form-group">
-              <label for="current-pass">Current Password</label>
-              <input id="current-pass" class="form-input" type="password" placeholder="Enter current password" />
-            </div>
-            <div class="form-group">
-              <label for="new-pass">New Password</label>
-              <input id="new-pass" class="form-input" type="password" placeholder="Enter new password" />
-            </div>
-            <div class="form-group">
-              <label for="confirm-pass">Confirm Password</label>
-              <input id="confirm-pass" class="form-input" type="password" placeholder="Confirm new password" />
-            </div>
+            ${_passEyeField('current-pass','Current Password','Enter current password')}
+            ${_passEyeField('new-pass','New Password','Enter new password')}
+            ${_passEyeField('confirm-pass','Confirm Password','Confirm new password')}
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -2311,15 +2326,36 @@ async function saveProfileEdit(event) {
     }
 }
 
+function _applyDispatchAvatar(dataUrl) {
+    const imgStatic  = document.getElementById('prof-avatar-img-static');
+    const initStatic = document.getElementById('prof-avatar-initials-static');
+    if (imgStatic)  { imgStatic.src = dataUrl; imgStatic.style.display = 'block'; }
+    if (initStatic) initStatic.style.display = 'none';
+    /* Also update topbar avatar */
+    const topbarAvatar = document.getElementById('topbar-user-avatar');
+    if (topbarAvatar) {
+        topbarAvatar.style.backgroundImage = `url('${dataUrl}')`;
+        topbarAvatar.style.backgroundSize  = 'cover';
+        topbarAvatar.textContent = '';
+    }
+}
+
+function _saveDispatchAvatar(dataUrl) {
+    try { localStorage.setItem('dispatch_avatar_' + (DISPATCH_USER?.id || 'default'), dataUrl); } catch (_) {}
+}
+
+function _loadDispatchAvatar() {
+    try { return localStorage.getItem('dispatch_avatar_' + (DISPATCH_USER?.id || 'default')); } catch (_) { return null; }
+}
+
 function onProfileAvatarChange(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-        const img = document.getElementById('prof-avatar-img');
-        const initials = document.getElementById('prof-avatar-initials');
-        if (img) { img.src = e.target.result; img.style.display = ''; }
-        if (initials) initials.style.display = 'none';
+        _applyDispatchAvatar(e.target.result);
+        _saveDispatchAvatar(e.target.result);
+        showToast('Profile photo updated.');
     };
     reader.readAsDataURL(file);
 }

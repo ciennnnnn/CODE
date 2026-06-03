@@ -71,8 +71,15 @@ if ($action === 'analytics') {
     $statusSt = $db->query("SELECT LOWER(COALESCE(status,'unknown')) AS status, COUNT(*) AS cnt FROM complaints WHERE status IS NOT NULL AND status != '' GROUP BY LOWER(status) ORDER BY cnt DESC");
     $statusDist = $statusSt->fetchAll(PDO::FETCH_ASSOC);
 
-    /* ── Barangay breakdown ── */
-    $brgySt = $db->prepare("SELECT asset_town AS brgy, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY asset_town ORDER BY cnt DESC");
+    /* ── Barangay breakdown — always show all 4 barangays ── */
+    $brgySt = $db->prepare(
+        "SELECT b.brgy, COALESCE(c.cnt, 0) AS cnt
+         FROM (SELECT 'Commonwealth' AS brgy UNION ALL SELECT 'Batasan Hills'
+               UNION ALL SELECT 'Central' UNION ALL SELECT 'Sto. Cristo') b
+         LEFT JOIN (SELECT asset_town, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY asset_town) c
+           ON c.asset_town = b.brgy
+         ORDER BY cnt DESC, b.brgy ASC"
+    );
     $brgySt->execute([':s' => $periodStart]);
     $barangayStats = $brgySt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -648,7 +655,7 @@ if ($action === 'dispatchProfile') {
     $onTimeRate = $totalComp > 0 ? round($onTime / $totalComp * 100) : 0;
 
     /* Efficiency: weighted average of resolution rate + on-time rate */
-    $efficiency = round(($rate * 0.6 + $onTimeRate * 0.4));
+    $efficiency = round($rate * 0.6 + $onTimeRate * 0.4);
 
     /* Rejected complaints this month */
     $rejSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND status = 'rejected' AND submitted_at >= :m");
