@@ -315,31 +315,57 @@ function renderDashboard() {
 /* Maps raw DB status values to their displayed filter category so filtering is consistent
    with what the citizen sees in the badge (e.g. DB 'pending'/'unknown' both show as 'submitted'). */
 function normalizeStatusForFilter(raw) {
-    const map = { pending: 'submitted', unknown: 'submitted', en_route: 'assigned', validated: 'resolved' };
-    return map[(raw || '').toLowerCase()] || (raw || '').toLowerCase();
+    const s = (raw || '').trim().toLowerCase();
+    const map = {
+        pending: 'submitted', unknown: 'submitted',
+        en_route: 'assigned', validated: 'resolved',
+    };
+    return map[s] || s;
+}
+
+function resetComplaintsFilters() {
+    const s = document.getElementById('complaints-search');  if (s) s.value = '';
+    const sf = document.getElementById('complaints-filter-status'); if (sf) sf.value = '';
+    const bf = document.getElementById('complaints-filter-brgy');   if (bf) bf.value = '';
+    renderComplaintsTable();
 }
 
 function renderComplaintsTable() {
-    const search = (document.getElementById('complaints-search')?.value || '').toLowerCase();
+    const search    = (document.getElementById('complaints-search')?.value || '').toLowerCase().trim();
     const statusFil = document.getElementById('complaints-filter-status')?.value || '';
-    const brgyFil = document.getElementById('complaints-filter-brgy')?.value || '';
-    const my = getMyComplaints().filter(c => {
-        const matchSearch = !search || c.id.toLowerCase().includes(search) || c.cat.toLowerCase().includes(search);
+    const brgyFil   = document.getElementById('complaints-filter-brgy')?.value || '';
+    const all = getMyComplaints();
+    const my = all.filter(c => {
+        const matchSearch = !search || (c.id || '').toLowerCase().includes(search) || (c.cat || '').toLowerCase().includes(search);
         const matchStatus = !statusFil || normalizeStatusForFilter(c.status) === statusFil;
-        const matchBrgy = !brgyFil || (c.brgy || '').toLowerCase() === brgyFil.toLowerCase();
+        const matchBrgy   = !brgyFil   || (c.brgy || '').trim().toLowerCase() === brgyFil.toLowerCase();
         return matchSearch && matchStatus && matchBrgy;
     });
+
+    /* Update Clear button and count label */
+    const hasFilter = !!(search || statusFil || brgyFil);
+    const resetBtn  = document.getElementById('filter-reset-btn');
+    if (resetBtn) resetBtn.style.display = hasFilter ? '' : 'none';
+    const countLbl = document.getElementById('complaints-count-label');
+    if (countLbl) {
+        countLbl.textContent = hasFilter
+            ? `Showing ${my.length} of ${all.length} complaint${all.length !== 1 ? 's' : ''}`
+            : (all.length > 0 ? `${all.length} complaint${all.length !== 1 ? 's' : ''}` : '');
+    }
 
     const tbody = document.getElementById('complaints-tbody');
     if (!tbody) return;
 
     if (!my.length) {
+        const hint = hasFilter
+            ? `No complaints match these filters. <button class="btn-secondary btn-sm" style="margin-left:6px" onclick="resetComplaintsFilters()">Clear Filters</button>`
+            : 'You have not filed any complaints yet.';
         tbody.innerHTML = `
           <tr><td colspan="7">
             <div class="empty-state">
               <div class="empty-icon"></div>
               <div class="empty-title">No complaints found</div>
-              <div class="empty-sub">Try adjusting your search or filter.</div>
+              <div class="empty-sub">${hint}</div>
             </div>
           </td></tr>`;
         return;
@@ -629,8 +655,20 @@ function renderProfilePage() {
     // Profile card header
     document.getElementById('prof-display-name').textContent = displayName;
 
-    // Helper: set text content safely
-    const setField = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    // Helper: set text content — shows "Not set" in muted colour for empty fields
+    const setField = (id, val) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (val) {
+            el.textContent = val;
+            el.style.color = '';
+            el.style.fontStyle = '';
+        } else {
+            el.textContent = 'Not set';
+            el.style.color = 'var(--mist)';
+            el.style.fontStyle = 'italic';
+        }
+    };
 
     // Personal info — all signup fields
     setField('prof-name',         CIVILIAN_USER.name);
@@ -654,8 +692,28 @@ function renderProfilePage() {
     }
 
     // Emergency contact
-    setField('prof-emergency-name',  CIVILIAN_USER.emergency_contact_name);
-    setField('prof-emergency-phone', CIVILIAN_USER.emergency_contact_phone);
+    const ecName  = CIVILIAN_USER.emergency_contact_name  || '';
+    const ecPhone = CIVILIAN_USER.emergency_contact_phone || '';
+    const ecNameEl  = document.getElementById('prof-emergency-name');
+    const ecPhoneEl = document.getElementById('prof-emergency-phone');
+    const ecHint    = document.getElementById('emergency-empty-hint');
+    if (ecNameEl)  { ecNameEl.textContent  = ecName  || 'Not set'; ecNameEl.style.color  = ecName  ? '' : 'var(--mist)'; ecNameEl.style.fontStyle  = ecName  ? '' : 'italic'; }
+    if (ecPhoneEl) { ecPhoneEl.textContent = ecPhone || 'Not set'; ecPhoneEl.style.color = ecPhone ? '' : 'var(--mist)'; ecPhoneEl.style.fontStyle = ecPhone ? '' : 'italic'; }
+    if (ecHint) ecHint.style.display = (ecName || ecPhone) ? 'none' : '';
+
+    // Valid ID
+    const vidEl = document.getElementById('prof-valid-id');
+    if (vidEl) {
+        if (CIVILIAN_USER.valid_id_url) {
+            vidEl.innerHTML = `<a href="${CIVILIAN_USER.valid_id_url}" target="_blank" rel="noopener" style="color:var(--blue,#2563eb);text-decoration:underline;text-underline-offset:3px;font-weight:600;font-size:13px">View Uploaded ID &rarr;</a>`;
+            vidEl.style.color = '';
+            vidEl.style.fontStyle = '';
+        } else {
+            vidEl.textContent = 'Not uploaded';
+            vidEl.style.color = 'var(--mist)';
+            vidEl.style.fontStyle = 'italic';
+        }
+    }
 
     // Edit form pre-fill
     const setInput = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
@@ -738,9 +796,17 @@ async function saveEmergencyContact() {
         await apiFetch('user.php', {action: 'updateEmergencyContact', emergency_name: ename, emergency_phone: ephone}, 'POST');
         CIVILIAN_USER.emergency_contact_name  = ename;
         CIVILIAN_USER.emergency_contact_phone = ephone;
-        const setField = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
-        setField('prof-emergency-name',  ename);
-        setField('prof-emergency-phone', ephone);
+        const applyField = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent   = val || 'Not set';
+            el.style.color   = val ? '' : 'var(--mist)';
+            el.style.fontStyle = val ? '' : 'italic';
+        };
+        applyField('prof-emergency-name',  ename);
+        applyField('prof-emergency-phone', ephone);
+        const hint = document.getElementById('emergency-empty-hint');
+        if (hint) hint.style.display = (ename || ephone) ? 'none' : '';
         toggleEmergencyEdit();
         showToast('Emergency contact updated successfully.');
     } catch (error) {

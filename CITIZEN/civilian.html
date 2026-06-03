@@ -265,6 +265,8 @@
             <option value="Central">Central</option>
             <option value="Sto. Cristo">Sto. Cristo</option>
           </select>
+          <button class="btn-secondary btn-sm" id="filter-reset-btn" onclick="resetComplaintsFilters()" style="display:none;align-self:center">Clear Filters &#10005;</button>
+          <span id="complaints-count-label" style="font-size:12px;color:var(--mist);align-self:center"></span>
         </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
@@ -330,7 +332,9 @@
                   <div class="prof-info-item"><div class="prof-info-label">CITY</div><div class="prof-info-val" id="prof-city">Quezon City</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">PROVINCE</div><div class="prof-info-val" id="prof-province">&mdash;</div></div>
                   <div class="prof-info-item"><div class="prof-info-label">ZIP CODE</div><div class="prof-info-val" id="prof-zip">&mdash;</div></div>
+                  <div class="prof-info-item" style="grid-column:1/-1"><div class="prof-info-label">VALID ID</div><div id="prof-valid-id" style="margin-top:4px;font-size:13px;font-weight:500;color:var(--mist)">Not uploaded</div></div>
                 </div>
+                <div style="margin-top:12px;font-size:11px;color:var(--mist);letter-spacing:0.04em">Fields showing &ldquo;Not set&rdquo; can be updated via the Edit button above.</div>
               </div>
               <div id="profile-edit" class="prof-panel-body hidden">
                 <div class="form-row">
@@ -426,9 +430,10 @@
               </div>
               <div class="prof-panel-body" id="emergency-view">
                 <div class="prof-info-grid">
-                  <div class="prof-info-item"><div class="prof-info-label">CONTACT NAME</div><div class="prof-info-val" id="prof-emergency-name">&mdash;</div></div>
-                  <div class="prof-info-item"><div class="prof-info-label">CONTACT PHONE</div><div class="prof-info-val" id="prof-emergency-phone">&mdash;</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">CONTACT NAME</div><div class="prof-info-val" id="prof-emergency-name" style="color:var(--mist)">Not set</div></div>
+                  <div class="prof-info-item"><div class="prof-info-label">CONTACT PHONE</div><div class="prof-info-val" id="prof-emergency-phone" style="color:var(--mist)">Not set</div></div>
                 </div>
+                <div id="emergency-empty-hint" style="margin-top:10px;font-size:12px;color:var(--mist)">Click <strong>Edit</strong> to add an emergency contact who can be reached if needed.</div>
               </div>
               <div id="emergency-edit" class="prof-panel-body hidden">
                 <div class="form-row">
