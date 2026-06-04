@@ -134,6 +134,9 @@ async function doLogin() {
       }
     } catch (_) {}
 
+    /* Clear stale session-isolation entry so requireLoginRedirect() accepts the new session */
+    try { sessionStorage.removeItem('trapico_uid_' + selectedRole); } catch (_) {}
+
     const routes = {
       regular: '/CITIZEN/civilian.html',
       dispatch: '/DISPATCH/dispatch.html',
