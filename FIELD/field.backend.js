@@ -504,7 +504,7 @@ function renderContactList() {
         const initials = String(c.name || 'D').split(' ').filter(Boolean).map(p => p[0]).join('').slice(0,2).toUpperCase();
         const unread = fieldUnreadMap[String(c.user_id)] || 0;
         const isActive = fieldActiveContact && String(fieldActiveContact.user_id) === String(c.user_id);
-        return `<div class="contact-item${isActive ? ' active' : ''}" onclick="selectFieldContact(${JSON.stringify(c).replace(/'/g, '&#39;')})">
+        return `<div class="contact-item${isActive ? ' active' : ''}" onclick="selectFieldContactById('${safeText(c.user_id)}')">
             <div class="contact-avatar">${safeText(initials)}</div>
             <div class="contact-info">
                 <div class="contact-name">${safeText(c.name || 'Dispatch Officer')}</div>
@@ -513,6 +513,11 @@ function renderContactList() {
             ${unread > 0 ? `<div class="contact-unread">${unread}</div>` : ''}
         </div>`;
     }).join('');
+}
+
+function selectFieldContactById(userId) {
+    const contact = fieldContacts.find(c => String(c.user_id) === String(userId));
+    if (contact) selectFieldContact(contact);
 }
 
 function selectFieldContact(contact) {
