@@ -773,13 +773,15 @@ if ($action === 'officerCases') {
     if (!$officerId) {
         errorResponse('Officer ID required.');
     }
-    /* One row per complaint — use the most recent assignment from this officer */
     $stmt = $db->prepare(
         "SELECT c.tracking_id AS id, c.category AS cat, c.asset_town AS brgy,
-                c.priority, c.status, c.submitted_at AS date, c.description,
-                a.assigned_at, a.response_deadline, a.assignment_status AS asgn_status
+                c.priority, c.status, c.submitted_at AS date,
+                a.assignment_status AS asgn_status,
+                r.score AS rating
          FROM assignments a
          JOIN complaints c ON c.complaint_id = a.complaint_id
+         LEFT JOIN ratings r ON r.complaint_id = c.complaint_id
+                             AND r.field_officer_id = a.field_officer_id
          WHERE a.field_officer_id = :oid
            AND a.assignment_id = (
                SELECT MAX(a2.assignment_id) FROM assignments a2

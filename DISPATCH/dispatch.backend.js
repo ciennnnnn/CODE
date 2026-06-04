@@ -1456,23 +1456,15 @@ function _buildOfficerCard(o) {
 }
 
 function renderOfficers() {
-    const fieldGrid    = document.getElementById('field-officers-grid');
-    const dispatchGrid = document.getElementById('dispatch-officers-grid');
-    const fieldCount   = document.getElementById('field-officers-count');
-    const dispCount    = document.getElementById('dispatch-officers-count');
+    const fieldGrid  = document.getElementById('field-officers-grid');
+    const fieldCount = document.getElementById('field-officers-count');
 
     if (fieldGrid) {
         fieldGrid.innerHTML = FIELD_OFFICERS_DATA.length
             ? FIELD_OFFICERS_DATA.map(_buildOfficerCard).join('')
             : '<div class="empty-state" style="padding:24px 0"><div class="empty-title">No field officers found</div></div>';
     }
-    if (dispatchGrid) {
-        dispatchGrid.innerHTML = DISPATCH_OFFICERS_DATA.length
-            ? DISPATCH_OFFICERS_DATA.map(_buildOfficerCard).join('')
-            : '<div class="empty-state" style="padding:24px 0"><div class="empty-title">No dispatch officers found</div></div>';
-    }
-    if (fieldCount)   fieldCount.textContent   = `${FIELD_OFFICERS_DATA.length} officer${FIELD_OFFICERS_DATA.length !== 1 ? 's' : ''}`;
-    if (dispCount)    dispCount.textContent     = `${DISPATCH_OFFICERS_DATA.length} officer${DISPATCH_OFFICERS_DATA.length !== 1 ? 's' : ''}`;
+    if (fieldCount) fieldCount.textContent = `${FIELD_OFFICERS_DATA.length} officer${FIELD_OFFICERS_DATA.length !== 1 ? 's' : ''}`;
 }
 
 function switchOfficerCaseTab(el, targetId) {
@@ -1504,7 +1496,13 @@ async function openOfficerCasesModal(officerId, officerName) {
         if (!list.length) {
             return `<div class="empty-state" style="padding:32px 0"><div class="empty-title">No cases in this category</div></div>`;
         }
-        const rows = list.map(c => `
+        const rows = list.map(c => {
+            const rawRating = Number.parseInt(c.rating, 10);
+            const stars = Number.isFinite(rawRating) && rawRating > 0 ? Math.max(1, Math.min(5, rawRating)) : 0;
+            const ratingHtml = stars > 0
+                ? `${'<span style="color:#f59e0b">★</span>'.repeat(stars)}${'<span style="color:#d1d5db">★</span>'.repeat(5 - stars)}`
+                : '<span style="color:var(--mist)">—</span>';
+            return `
           <tr>
             <td class="track-id" style="font-size:11px;white-space:nowrap">${safeText(c.id)}</td>
             <td style="font-size:12px">${safeText(c.cat)}</td>
@@ -1512,13 +1510,15 @@ async function openOfficerCasesModal(officerId, officerName) {
             <td>${priorityBadge(c.priority)}</td>
             <td>${statusBadge(c.status)}</td>
             <td class="mono" style="font-size:11px">${formatDateTime(c.date)}</td>
-          </tr>`).join('');
+            <td style="white-space:nowrap">${ratingHtml}</td>
+          </tr>`;
+        }).join('');
         return `
           <div class="table-wrap">
             <table>
               <thead><tr>
                 <th>Tracking ID</th><th>Category</th><th>Barangay</th>
-                <th>Priority</th><th>Status</th><th>Date Assigned</th>
+                <th>Priority</th><th>Status</th><th>Date</th><th>Rating</th>
               </tr></thead>
               <tbody>${rows}</tbody>
             </table>
