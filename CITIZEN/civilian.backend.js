@@ -32,6 +32,8 @@ window.setActivePage = function setActivePage(pageId) {
 let CIVILIAN_USER = null;
 let MY_COMPLAINTS = [];
 let selectedPriority = 'medium';
+let _civilianStatusMap = {};
+let _civilianPollInterval = null;
 let civilianBackendCurrentStep = 1;
 let civilianNotifOpen = false;
 
@@ -168,15 +170,65 @@ async function initCivilian() {
         };
 
         await loadMyComplaints();
+        _buildCivilianStatusMap();
         renderDashboard();
         renderComplaintsTable();
         renderBrgyGrid();
         renderProfilePage();
         /* Initialize upload box handlers */
         initUploadBox();
+        startCivilianPolling();
     } catch (e) {
         console.error('[TRAPICO] Error initializing civilian dashboard:', e);
     }
+}
+
+function _buildCivilianStatusMap() {
+    _civilianStatusMap = {};
+    for (const c of MY_COMPLAINTS) {
+        if (c && c.id) _civilianStatusMap[String(c.id)] = c.status;
+    }
+}
+
+function startCivilianPolling() {
+    if (_civilianPollInterval) clearInterval(_civilianPollInterval);
+    _civilianPollInterval = setInterval(async () => {
+        try {
+            const resp = await apiFetch('complaints.php', {action: 'list'});
+            const fresh = resp.complaints || [];
+
+            const statusLabels = {
+                verified:    'verified by dispatch',
+                assigned:    'assigned to a field officer',
+                en_route:    'officer is en route',
+                in_progress: 'now being addressed',
+                resolved:    'resolved — awaiting validation',
+                validated:   'validated',
+                closed:      'closed',
+                rejected:    'rejected by dispatch',
+                cancelled:   'cancelled',
+            };
+
+            for (const c of fresh) {
+                const id  = String(c.id);
+                const old = _civilianStatusMap[id];
+                if (old !== undefined && old !== c.status) {
+                    const label = statusLabels[c.status] || c.status;
+                    showToast(`Complaint ${c.id}: ${label}`);
+                    const dot = document.getElementById('notif-dot');
+                    if (dot) dot.style.display = '';
+                }
+                _civilianStatusMap[id] = c.status;
+            }
+
+            MY_COMPLAINTS = fresh;
+            renderDashboard();
+            renderComplaintsTable();
+            renderNotifications();
+        } catch (err) {
+            console.warn('Civilian poll error:', err.message);
+        }
+    }, 7000);
 }
 
 async function loadMyComplaints() {

@@ -17,6 +17,9 @@ let activeChat = null;
 let chatInterval = null;
 let chatLastId = 0;
 let officerChatAlertInterval = null;
+let _dispatchQueueBaseline = -1;
+let _dispatchActiveBaseline = -1;
+let _dispatchQueueInterval = null;
 let officerChatAlertMap = {};
 let officerLastIncomingMap = {};
 let officerUnreadCountMap = {};
@@ -231,9 +234,66 @@ async function initDispatch() {
     renderActiveCases();
     renderOfficers();
     startOfficerChatAlertPolling();
+    startDispatchQueuePolling();
     /* Init maps after first data load */
     initDashMap();
     startMapPolling();
+}
+
+function startDispatchQueuePolling() {
+    if (_dispatchQueueInterval) clearInterval(_dispatchQueueInterval);
+
+    /* Set baselines from current loaded data — no notification on init */
+    _dispatchQueueBaseline  = Number((window.dispatchCounts || {}).pending ?? 0);
+    _dispatchActiveBaseline = Number((window.dispatchCounts || {}).active_cases ?? 0);
+
+    _dispatchQueueInterval = setInterval(async () => {
+        try {
+            const [dashResp, queueResp, activeResp] = await Promise.allSettled([
+                apiFetch('dispatch.php', {action: 'dashboard'}),
+                apiFetch('dispatch.php', {action: 'queue'}),
+                apiFetch('dispatch.php', {action: 'activeCases'}),
+            ]);
+
+            if (dashResp.status === 'fulfilled') {
+                const counts = dashResp.value.counts || {};
+                const newPending = Number(counts.pending ?? 0);
+                const newActive  = Number(counts.active_cases ?? 0);
+
+                if (_dispatchQueueBaseline >= 0 && newPending > _dispatchQueueBaseline) {
+                    const diff = newPending - _dispatchQueueBaseline;
+                    showNotification(
+                        `${diff} New Complaint${diff > 1 ? 's' : ''} Submitted`,
+                        'Check the Complaint Queue'
+                    );
+                }
+                if (_dispatchActiveBaseline >= 0 && newActive > _dispatchActiveBaseline) {
+                    const diff = newActive - _dispatchActiveBaseline;
+                    showNotification(
+                        `${diff} Case${diff > 1 ? 's' : ''} Now Active`,
+                        'View Active Cases'
+                    );
+                }
+
+                _dispatchQueueBaseline  = newPending;
+                _dispatchActiveBaseline = newActive;
+                window.dispatchCounts = counts;
+                renderDashboard();
+            }
+
+            if (queueResp.status === 'fulfilled') {
+                QUEUE_DATA = queueResp.value.complaints || [];
+                renderQueueTable();
+            }
+
+            if (activeResp.status === 'fulfilled') {
+                ACTIVE_CASES = activeResp.value.activeCases || [];
+                renderActiveCases();
+            }
+        } catch (err) {
+            console.warn('Queue polling error:', err.message);
+        }
+    }, 5000);
 }
 
 async function loadDispatchData() {

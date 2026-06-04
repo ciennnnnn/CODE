@@ -842,7 +842,7 @@ function startFieldNotificationPolling() {
         .then(r => { _notifLastAssignmentId = Number(r.latest_id || 0); })
         .catch(() => {});
 
-    setInterval(_pollFieldNotifications, 10000); // every 10 seconds
+    setInterval(_pollFieldNotifications, 5000); // every 5 seconds
 }
 
 async function loadAssignedTasks() {

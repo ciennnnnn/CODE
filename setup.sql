@@ -10,6 +10,39 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+-- ═══════════════════════════════════════════════════════════════
+-- TRAPICO TEST ACCOUNTS — LOGIN CREDENTIALS
+-- All timestamps are stored in UTC; the application converts to
+-- Philippine Standard Time (UTC+8 / Asia/Manila) at runtime.
+-- ═══════════════════════════════════════════════════════════════
+--
+-- DISPATCH OFFICERS
+--   dispatch_id | badge_number        | username              | password
+--   ------------|---------------------|-----------------------|----------------
+--       1       | DISP-2024-0001      | fae                   | Password123
+--       2       | DISP-2024-0002      | dispatch2             | DispatchPass456
+--       3       | DISP-2026-0013      | dispatch_test_133521  | (hashed)
+--       4       | DISP-2026-0024      | Ann2122               | (hashed)
+--       5       | DISP-2026-0026      | nikky                 | (hashed)
+--
+-- FIELD OFFICERS
+--   officer_id  | badge_number        | username              | password
+--   ------------|---------------------|-----------------------|----------------
+--       1       | EMP-2024-0032       | cien                  | (hashed)
+--       2       | EMP-2024-0033       | javier                | FieldPass2
+--       3       | EMP-2024-0034       | cruz                  | FieldPass3
+--       4       | field_test_133521   | field_test_133521     | (hashed)
+--       5       | OFF-001             | rreyes                | Password123
+--       6       | QC-1023             | Annie21               | (hashed)
+--       9       | QC-0124             | Ann21FE               | (hashed)
+--
+-- CITIZENS
+--   username: rikka    | password: Password123
+--   username: rosette  | password: Password123
+--   username: marcos   | password: Password123
+--   username: jdoe     | (hashed)
+-- ═══════════════════════════════════════════════════════════════
+
 -- Removed database creation and selection for ByetHost compatibility
 DROP TABLE IF EXISTS `account_unlock_history`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
