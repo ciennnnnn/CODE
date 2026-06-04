@@ -1264,13 +1264,12 @@ async function reassignCase(id) {
     const officerCards = availableOfficers.map(o => {
         const active   = Number(o.active_count) || 0;
         const handled  = Number(o.cases_closed) || 0;
-        const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
         return `
         <div class="officer-card reassign-officer-card" id="reassign-ocard-${safeText(o.id)}"
              onclick="selectReassignOfficer('${safeText(o.id)}')">
           <div class="officer-name">${safeText(o.name)}</div>
-          <div class="officer-meta">Badge: ${safeText(o.code || '—')} · Brgy. ${safeText(o.brgy)}</div>
-          <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;font-family:var(--font-mono);color:var(--mist)">
+          <div class="officer-meta" style="word-break:break-word">Badge: <strong>${safeText(o.code || '—')}</strong> · Brgy. ${safeText(o.brgy)}</div>
+          <div style="display:flex;gap:10px;margin-top:6px;font-size:11px;font-family:var(--font-mono);color:var(--mist);flex-wrap:wrap">
             <span>● Available</span>
             <span>${active} active</span>
             <span>${handled} handled</span>
@@ -1280,17 +1279,17 @@ async function reassignCase(id) {
 
     openModal(`
       <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
-        <div class="modal" style="max-width:540px">
+        <div class="modal modal-lg">
           <div class="modal-head">
             <div>
               <div class="modal-title">Reassign Case</div>
-              <div class="modal-subtitle">${safeText(id)}</div>
+              <div class="modal-subtitle" style="word-break:break-all;font-size:12px">${safeText(id)}</div>
             </div>
             <button class="modal-close" onclick="closeModal()">✕</button>
           </div>
           <div class="modal-body">
             <div class="section-title" style="margin-bottom:12px">Select Available Field Officer</div>
-            <div class="officer-grid">${officerCards}</div>
+            <div class="officer-grid reassign-grid">${officerCards}</div>
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1346,7 +1345,7 @@ async function renderProfile() {
     setEl('prof-badgeid-static', user.badge_number || ('DISP-' + String(user.id || '001').padStart(4, '0')));
     setEl('prof-brgy-static', user.home_barangay || user.brgy || user.assigned_barangay || 'QC Command');
     setEl('prof-rank-static', 'Dispatch Officer');
-    setEl('prof-dept-static', 'Traffic Management Division');
+    setEl('prof-dept-static', user.department || 'Traffic Management Division');
     const initialsEl = document.getElementById('prof-avatar-initials-static');
     if (initialsEl) initialsEl.textContent = initial;
 
@@ -1358,7 +1357,7 @@ async function renderProfile() {
     setInput('prof-badgeid-input', user.badge_number || ('DISP-' + String(user.id || '001').padStart(4, '0')));
     setInput('prof-brgy-input', user.home_barangay || user.brgy || '');
     setInput('prof-rank-input', 'Dispatch Officer');
-    setInput('prof-dept-input', 'Traffic Management Division');
+    setInput('prof-dept-input', user.department || 'Traffic Management Division');
     const editInitials = document.getElementById('prof-avatar-initials');
     if (editInitials) editInitials.textContent = initial;
 

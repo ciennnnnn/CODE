@@ -39,33 +39,33 @@ try {
         $user = $stmt->fetch();
         $redirect = 'CITIZEN/civilian.html';
     } elseif ($role === 'dispatch') {
-        /* Accept username, email, OR badge number for dispatch login */
+        /* Dispatch officers log in with their unique badge number only */
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
                     u.full_name AS name, u.email,
                     u.failed_login_attempts, u.locked_until
              FROM users u
-             LEFT JOIN dispatch_officers d ON d.user_id = u.user_id
-             WHERE (u.username = :u1 OR u.email = :u2 OR d.badge_number = :u3)
+             JOIN dispatch_officers d ON d.user_id = u.user_id
+             WHERE d.badge_number = :badge
                AND u.role = :role AND u.is_active = 1
              LIMIT 1'
         );
-        $stmt->execute([':u1' => $username, ':u2' => $username, ':u3' => $username, ':role' => 'dispatch_officer']);
+        $stmt->execute([':badge' => $username, ':role' => 'dispatch_officer']);
         $user = $stmt->fetch();
         $redirect = 'DISPATCH/dispatch.html?v=20260507';
     } elseif ($role === 'field') {
-        /* Accept username, email, OR badge number for field officer login */
+        /* Field officers log in with their unique badge number only */
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
                     u.full_name AS name, u.email,
                     u.failed_login_attempts, u.locked_until
              FROM users u
-             LEFT JOIN field_officers f ON f.user_id = u.user_id
-             WHERE (u.username = :u1 OR u.email = :u2 OR f.badge_number = :u3)
+             JOIN field_officers f ON f.user_id = u.user_id
+             WHERE f.badge_number = :badge
                AND u.role = :role AND u.is_active = 1
              LIMIT 1'
         );
-        $stmt->execute([':u1' => $username, ':u2' => $username, ':u3' => $username, ':role' => 'field_officer']);
+        $stmt->execute([':badge' => $username, ':role' => 'field_officer']);
         $user = $stmt->fetch();
         $redirect = 'FIELD/field.html';
     } else {

@@ -71,8 +71,10 @@ if ($action === 'profile') {
 
     } elseif ($currentRole === 'dispatch') {
         $stmt = $db->prepare(
-            'SELECT u.username, u.full_name AS name, u.email, u.profile_picture_url,
-                    d.badge_number, d.assigned_barangay AS home_barangay
+            'SELECT u.username, u.full_name AS name, u.email,
+                    u.phone_number AS phone, u.profile_picture_url,
+                    d.badge_number, d.assigned_barangay AS home_barangay,
+                    COALESCE(d.department, \'Traffic Management Division\') AS department
              FROM users u
              LEFT JOIN dispatch_officers d ON d.user_id = u.user_id
              WHERE u.user_id = :uid'
@@ -83,8 +85,10 @@ if ($action === 'profile') {
             $profile['username']      = $row['username'] ?? '';
             $profile['name']          = $row['name'] ?? '';
             $profile['email']         = $row['email'] ?? '';
+            $profile['phone']         = $row['phone'] ?? '';
             $profile['badge_number']  = $row['badge_number'] ?? '';
             $profile['home_barangay'] = $row['home_barangay'] ?? '';
+            $profile['department']    = $row['department'] ?? 'Traffic Management Division';
             $profile['profile_picture_url'] = $row['profile_picture_url'] ?? '';
         }
 

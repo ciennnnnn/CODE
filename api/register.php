@@ -212,7 +212,8 @@ try {
             errorResponse('Username is already registered.');
         }
 
-        $barangay = trim((string)($data['home_barangay'] ?? $barangay));
+        $barangay   = trim((string)($data['home_barangay'] ?? $barangay));
+        $department = trim((string)($data['department'] ?? 'Traffic Management Division'));
         $stmt = $db->prepare(
             'INSERT INTO users (username, email, password_hash, full_name, phone_number, barangay, role)
              VALUES (:username, :email, :hash, :name, :phone, :barangay, :role_val)'
@@ -233,8 +234,8 @@ try {
         if ($badgeCheck->fetchColumn()) {
             $badge = 'DISP-' . date('Y') . '-' . str_pad((string)($newUserId + time()), 4, '0', STR_PAD_LEFT);
         }
-        $db->prepare('INSERT INTO dispatch_officers (user_id, badge_number, assigned_barangay) VALUES (:uid, :badge, :brgy)')
-           ->execute([':uid' => $newUserId, ':badge' => $badge, ':brgy' => $barangay]);
+        $db->prepare('INSERT INTO dispatch_officers (user_id, badge_number, assigned_barangay, department) VALUES (:uid, :badge, :brgy, :dept)')
+           ->execute([':uid' => $newUserId, ':badge' => $badge, ':brgy' => $barangay, ':dept' => $department]);
 
     } else { /* field */
         if ($username === '') errorResponse('Username is required.');

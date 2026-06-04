@@ -213,6 +213,7 @@ CREATE TABLE `dispatch_officers` (
   `user_id` int(11) NOT NULL,
   `badge_number` varchar(20) NOT NULL,
   `assigned_barangay` varchar(100) DEFAULT NULL,
+  `department` varchar(100) DEFAULT 'Traffic Management Division',
   `is_on_duty` tinyint(1) DEFAULT 0,
   `total_complaints_handled` int(11) DEFAULT 0,
   `total_validated` int(11) DEFAULT 0,
