@@ -1,6 +1,13 @@
-/* ── SIDEBAR: z-index above Leaflet markers (max ~800) on mobile ── */
+/* ── MOBILE Z-INDEX HIERARCHY ────────────────────────────────────
+   Leaflet controls: up to 1000
+   Topbar (sticky): 1200  → sits above Leaflet, below sidebar
+   Backdrop:        1490
+   Sidebar.open:    1500
+   Modal overlay:   2000
+   ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .sidebar.open { z-index: 1500 !important; }
+  .topbar              { z-index: 1200 !important; }
+  .sidebar.open        { z-index: 1500 !important; }
   body.sidebar-open .sidebar-backdrop { z-index: 1490 !important; }
 }
 
@@ -418,15 +425,38 @@
 }
 /* Officer Map: full-width above the officer grid */
 #page-officers > .card {
-  position: static;
   width: 100%;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
 #officers-page-map {
-  position: static;
-  background: #fff;
+  position: relative;
+  background: #f0f0f0;
+  overflow: hidden;
+  isolation: isolate;
+  z-index: 0;
 }
+/* Contain Leaflet inside officers page map */
+#officers-page-map .leaflet-top,
+#officers-page-map .leaflet-bottom {
+  z-index: 400 !important;
+}
+#officers-page-map .leaflet-pane { z-index: 200 !important; }
+
+/* Dashboard live map containment */
+#officer-live-map {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  z-index: 0;
+}
+#officer-live-map .leaflet-top,
+#officer-live-map .leaflet-bottom {
+  z-index: 400 !important;
+}
+#officer-live-map .leaflet-pane { z-index: 200 !important; }
+
 #officers-grid {
   margin-right: 0;
 }
@@ -588,6 +618,8 @@
   border-left: 3px solid var(--amber);
   padding: 20px 24px;
   margin-bottom: 20px;
+  overflow: hidden;
+  max-width: 100%;
 }
 .active-case-header {
   display: flex;
@@ -621,7 +653,13 @@
   letter-spacing: 0.08em;
   margin-bottom: 6px;
 }
-.active-case-desc { font-size: 13px; line-height: 1.6; }
+.active-case-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
 
 .active-case-footer {
   display: flex;
@@ -933,6 +971,27 @@
   border-radius: 999px;
 }
 
+/* ── GLOBAL OVERFLOW SAFETY ─────────────────────────────────── */
+/* All cards must not spill content horizontally */
+.card { overflow: hidden; }
+
+/* Track IDs and mono text must wrap */
+.track-id,
+.active-case-title-row,
+.active-case-meta,
+.queue-preview-id,
+.queue-preview-meta {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* Leaflet popups above their map but below everything else */
+.leaflet-popup { z-index: 600 !important; }
+
+/* All page sections must not overflow viewport width */
+.page-section { overflow-x: hidden; max-width: 100%; }
+
 /* ── RESPONSIVE — TABLET (≤ 900px) ─────────────────────────── */
 @media (max-width: 900px) {
   .dash-grid        { grid-template-columns: 1fr; }
@@ -968,6 +1027,59 @@
 
 /* ── RESPONSIVE — MOBILE (≤ 640px) ─────────────────────────── */
 @media (max-width: 640px) {
+  /* Active case description: clamp to 4 lines */
+  .active-case-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Active case header buttons stack on mobile */
+  .active-case-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .active-case-header > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+  .active-case-header > div:last-child .btn-secondary,
+  .active-case-header > div:last-child .btn-danger {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Officers page: compact cards on mobile */
+  .officer-full-card {
+    padding: 14px 12px;
+  }
+  .officer-full-name  { font-size: 15px; }
+  .officer-full-brgy  { font-size: 10px; }
+
+  /* Ensure all map containers hard-clip on mobile */
+  #officers-page-map,
+  #officer-live-map,
+  .active-case-map {
+    overflow: hidden !important;
+  }
+
+  /* Dashboard cards prevent horizontal scroll */
+  .dash-grid .card,
+  #page-active .active-case-card {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Prevent long tracking IDs from widening cards */
+  .active-case-title-row .track-id {
+    font-size: 10px;
+    word-break: break-all;
+  }
+
   /* Stats row: 2-column on mobile */
   .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
   .stat-card { padding: 14px 12px; }

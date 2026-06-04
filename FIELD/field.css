@@ -1,30 +1,9 @@
-@media (max-width: 900px) {
-  html body .app-shell > aside.sidebar.open {
-    width: 100vw !important;
-    min-width: 100vw !important;
-    max-width: 100vw !important;
-    left: 0 !important;
-    right: 0 !important;
-    position: fixed !important;
-    z-index: 9999 !important;
-    box-shadow: 2px 0 16px rgba(0,0,0,0.12);
-    background: #181818 !important;
-    display: block !important;
-    overflow-y: auto !important;
-  }
-}
-@media (max-width: 900px) {
-  aside.sidebar.open {
-    width: 100vw !important;
-    left: 0 !important;
-    right: 0 !important;
-    min-width: 0 !important;
-    max-width: 100vw !important;
-    position: fixed !important;
-    z-index: 200 !important;
-    box-shadow: 2px 0 16px rgba(0,0,0,0.12);
-  }
-}
+/* ── FIELD MOBILE Z-INDEX HIERARCHY ─────────────────────────────
+   Topbar (sticky):  250   (base.css)
+   Backdrop:        9998   → covers topbar so user cannot interact
+                            with topbar while sidebar is open
+   Sidebar.open:    9999   → topmost layer when navigation is open
+   ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar.open {
     width: 100vw !important;
@@ -33,8 +12,15 @@
     min-width: 0 !important;
     max-width: 100vw !important;
     position: fixed !important;
-    z-index: 200 !important;
+    z-index: 9999 !important;
+    background: #181818 !important;
+    display: block !important;
+    overflow-y: auto !important;
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+    box-shadow: none !important;
   }
+  .sidebar-backdrop { z-index: 9998 !important; }
 }
 @media (max-width: 900px) {
   .active-job-card, .assigned-card {
@@ -440,33 +426,80 @@
 
   .countdown-val { font-size: 40px; }
 
-  /* Sticky submit button on resolution form */
+  /* Submit button: prominent but not sticky (sticky overlaps page content while scrolling) */
   .btn-row .btn-success {
-    position: sticky;
-    bottom: 16px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   }
 }
 
-/* ── COMPACT SIDEBAR (field officer) ───────────────────────── */
+/* ── COMPACT SIDEBAR (field officer) ───────────────────────────
+   On tablet (601px–900px): sidebar stays visible as a 56px
+   icon-only strip — no hamburger needed.
+   On phone (≤600px): sidebar hides; hamburger opens it as a
+   full-screen overlay (handled by the sidebar.open rule above).
+   ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   :root { --sidebar-w: 56px; }
 
-  .sidebar-logo,
-  .sidebar-role-badge,
-  .nav-section-label,
-  .srb-name, .srb-label,
-  .nav-item > span:last-child,
-  .nav-badge,
-  .logout-btn > span:last-child {
+  /* Keep compact sidebar visible — counter base.css translateX(-100%) */
+  .sidebar {
+    transform: translateX(0) !important;
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    pointer-events: auto;
+  }
+
+  /* main-content must clear the 56px strip */
+  .main-content { margin-left: 56px !important; }
+
+  /* No hamburger on tablet — sidebar is always visible */
+  .menu-btn { display: none !important; }
+
+  /* Hide text labels only when sidebar is in compact (closed) state.
+     When sidebar.open is added (phone overlay), labels show naturally. */
+  .sidebar:not(.open) .sidebar-logo,
+  .sidebar:not(.open) .sidebar-role-badge,
+  .sidebar:not(.open) .nav-section-label,
+  .sidebar:not(.open) .srb-name,
+  .sidebar:not(.open) .srb-label,
+  .sidebar:not(.open) .nav-item > span:last-child,
+  .sidebar:not(.open) .nav-badge,
+  .sidebar:not(.open) .logout-btn > span:last-child {
     display: none;
   }
 
-  .nav-item { justify-content: center; padding: 14px 0; }
+  .sidebar:not(.open) .nav-item { justify-content: center; padding: 14px 0; }
   .nav-icon { width: auto; font-size: 18px; }
 
-  .sidebar-footer { display: flex; justify-content: center; }
-  .logout-btn { justify-content: center; }
+  .sidebar:not(.open) .sidebar-footer { display: flex; justify-content: center; }
+  .sidebar:not(.open) .logout-btn { justify-content: center; }
+}
+
+/* ── PHONE (≤600px): switch back to hamburger + full-screen overlay */
+@media (max-width: 600px) {
+  :root { --sidebar-w: 0px; }
+
+  /* Let sidebar hide again so hamburger controls it */
+  .sidebar {
+    transform: translateX(-100%) !important;
+    width: min(85vw, 280px) !important;
+    min-width: 0 !important;
+    max-width: 85vw !important;
+    pointer-events: none;
+  }
+
+  /* main-content goes edge-to-edge — sidebar is an overlay */
+  .main-content { margin-left: 0 !important; }
+
+  /* Show hamburger again */
+  .menu-btn { display: flex !important; }
+
+  /* When sidebar.open, restore compact icon layout back to full layout */
+  .sidebar.open .nav-item {
+    justify-content: flex-start !important;
+    padding: 14px 24px !important;
+  }
 }
 
 /* ── TRANSPARENCY TIMELINE ─────────────────────────────────── */
