@@ -16,25 +16,31 @@
 -- Philippine Standard Time (UTC+8 / Asia/Manila) at runtime.
 -- ═══════════════════════════════════════════════════════════════
 --
--- DISPATCH OFFICERS
---   dispatch_id | badge_number        | username              | password
---   ------------|---------------------|-----------------------|----------------
---       1       | DISP-2024-0001      | fae                   | Password123
---       2       | DISP-2024-0002      | dispatch2             | DispatchPass456
---       3       | DISP-2026-0013      | dispatch_test_133521  | (hashed)
---       4       | DISP-2026-0024      | Ann2122               | (hashed)
---       5       | DISP-2026-0026      | nikky                 | (hashed)
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  DISPATCH OFFICERS (table: dispatch_officers)               │
+-- ├────────────┬──────────────────┬───────────────────┬─────────┤
+-- │dispatch_id │ badge_number     │ username          │password │
+-- ├────────────┼──────────────────┼───────────────────┼─────────┤
+-- │     1      │ DISP-2024-0001   │ fae               │Password123      │
+-- │     2      │ DISP-2024-0002   │ dispatch2         │DispatchPass456  │
+-- │     3      │ DISP-2026-0013   │dispatch_test_133521│(hashed)        │
+-- │     4      │ DISP-2026-0024   │ Ann2122           │(hashed)         │
+-- │     5      │ DISP-2026-0026   │ nikky             │(hashed)         │
+-- └────────────┴──────────────────┴───────────────────┴─────────┘
 --
--- FIELD OFFICERS
---   officer_id  | badge_number        | username              | password
---   ------------|---------------------|-----------------------|----------------
---       1       | EMP-2024-0032       | cien                  | (hashed)
---       2       | EMP-2024-0033       | javier                | FieldPass2
---       3       | EMP-2024-0034       | cruz                  | FieldPass3
---       4       | field_test_133521   | field_test_133521     | (hashed)
---       5       | OFF-001             | rreyes                | Password123
---       6       | QC-1023             | Annie21               | (hashed)
---       9       | QC-0124             | Ann21FE               | (hashed)
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  FIELD OFFICERS (table: field_officers)                     │
+-- ├───────────┬───────────────────┬───────────────────┬─────────┤
+-- │officer_id │ badge_number      │ username          │password │
+-- ├───────────┼───────────────────┼───────────────────┼─────────┤
+-- │     1     │ EMP-2024-0032     │ cien              │(hashed) │
+-- │     2     │ EMP-2024-0033     │ javier            │FieldPass2       │
+-- │     3     │ EMP-2024-0034     │ cruz              │FieldPass3       │
+-- │     4     │ field_test_133521 │field_test_133521  │(hashed) │
+-- │     5     │ OFF-001           │ rreyes            │Password123      │
+-- │     6     │ QC-1023           │ Annie21           │(hashed) │
+-- │     9     │ QC-0124           │ Ann21FE           │(hashed) │
+-- └───────────┴───────────────────┴───────────────────┴─────────┘
 --
 -- CITIZENS
 --   username: rikka    | password: Password123
