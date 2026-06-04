@@ -269,7 +269,7 @@ try {
         ]);
         $newUserId = (int)$db->lastInsertId();
         $db->prepare('INSERT INTO field_officers (user_id, badge_number, assigned_barangay, is_available) VALUES (:uid, :badge, :brgy, :avail)')
-           ->execute([':uid' => $newUserId, ':badge' => $badgeNumber, ':brgy' => $barangay, ':avail' => 'offline']);
+           ->execute([':uid' => $newUserId, ':badge' => $badgeNumber, ':brgy' => $barangay, ':avail' => 0]);
     }
 } catch (PDOException $e) {
     $msg = $e->getMessage();

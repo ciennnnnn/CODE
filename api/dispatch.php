@@ -679,74 +679,92 @@ if ($action === 'dispatchProfile') {
 }
 
 if ($action === 'citizens') {
-    $search = trim((string)($_REQUEST['search'] ?? $data['search'] ?? ''));
-    $brgy   = trim((string)($_REQUEST['brgy']   ?? $data['brgy']   ?? ''));
+    try {
+        $search = trim((string)($_REQUEST['search'] ?? $data['search'] ?? ''));
+        $brgy   = trim((string)($_REQUEST['brgy']   ?? $data['brgy']   ?? ''));
 
-    /* Citizens are stored with role = 'citizen' in the users table */
-    $where  = ["u.role = 'citizen'"];
-    $params = [];
+        /* Citizens stored as role='citizen' OR older records as role='regular' */
+        $where  = ["u.role IN ('citizen','regular')"];
+        $params = [];
 
-    if ($search !== '') {
-        $where[] = '(u.full_name LIKE :search OR u.email LIKE :search)';
-        $params[':search'] = '%' . $search . '%';
+        if ($search !== '') {
+            $where[] = '(u.full_name LIKE :search OR u.email LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+        if ($brgy !== '') {
+            /* Filter to citizens who have at least one complaint in that barangay */
+            $where[] = 'EXISTS (SELECT 1 FROM complaints cx WHERE cx.user_id = u.user_id AND cx.asset_town = :brgy)';
+            $params[':brgy'] = $brgy;
+        }
+
+        /* Use correlated subqueries to avoid GROUP BY strict-mode issues */
+        $sql =
+            "SELECT u.user_id,
+                    u.full_name,
+                    u.email,
+                    COALESCE(u.phone_number, '') AS phone_number,
+                    COALESCE(u.barangay, '')     AS home_brgy,
+                    (SELECT COUNT(*) FROM complaints c WHERE c.user_id = u.user_id) AS total_cases,
+                    (SELECT COUNT(*) FROM complaints c WHERE c.user_id = u.user_id AND c.status = 'closed') AS closed_cases
+             FROM users u
+             WHERE " . implode(' AND ', $where) . "
+             ORDER BY total_cases DESC, u.full_name ASC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        successResponse(['citizens' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    } catch (Throwable $e) {
+        errorResponse('Citizens query error: ' . $e->getMessage());
     }
-    if ($brgy !== '') {
-        $where[] = 'EXISTS (SELECT 1 FROM complaints cc WHERE cc.user_id = u.user_id AND cc.asset_town = :brgy)';
-        $params[':brgy'] = $brgy;
-    }
-
-    $sql =
-        "SELECT u.user_id, u.full_name, u.email,
-                COALESCE(u.phone_number, '') AS phone_number,
-                COALESCE(u.barangay, '') AS home_brgy,
-                COUNT(c.complaint_id) AS total_cases,
-                SUM(CASE WHEN c.status = 'closed' THEN 1 ELSE 0 END) AS closed_cases,
-                MAX(c.submitted_at) AS last_case_at
-         FROM users u
-         LEFT JOIN complaints c ON c.user_id = u.user_id
-         WHERE " . implode(' AND ', $where) . "
-         GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.barangay
-         ORDER BY total_cases DESC, u.full_name ASC";
-
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-    successResponse(['citizens' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 }
 
 if ($action === 'citizenDetail') {
-    $userId = intval($_REQUEST['user_id'] ?? $data['user_id'] ?? 0);
-    if (!$userId) errorResponse('User ID required.');
+    try {
+        $userId = intval($_REQUEST['user_id'] ?? $data['user_id'] ?? 0);
+        if (!$userId) errorResponse('User ID required.');
 
-    $uStmt = $db->prepare(
-        "SELECT user_id, full_name, email,
-                COALESCE(phone_number, '') AS phone_number,
-                COALESCE(middle_name, '')  AS middle_name,
-                COALESCE(barangay, '')     AS barangay,
-                birthdate, sex,
-                COALESCE(street, '')   AS street,
-                COALESCE(city, '')     AS city,
-                COALESCE(province, '') AS province,
-                COALESCE(zip_code, '') AS zip_code
-         FROM users
-         WHERE user_id = :uid AND role = 'citizen'
-         LIMIT 1"
-    );
-    $uStmt->execute([':uid' => $userId]);
-    $citizen = $uStmt->fetch(PDO::FETCH_ASSOC);
-    if (!$citizen) errorResponse('Citizen not found.');
+        /* First fetch only the guaranteed base columns */
+        $baseStmt = $db->prepare(
+            "SELECT user_id, full_name, email,
+                    COALESCE(phone_number, '') AS phone_number,
+                    COALESCE(barangay, '')     AS barangay
+             FROM users
+             WHERE user_id = :uid AND role IN ('citizen','regular')
+             LIMIT 1"
+        );
+        $baseStmt->execute([':uid' => $userId]);
+        $citizen = $baseStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$citizen) errorResponse('Citizen not found.');
 
-    $cStmt = $db->prepare(
-        "SELECT tracking_id, category, status, priority,
-                asset_town AS brgy, description,
-                submitted_at, updated_at
-         FROM complaints
-         WHERE user_id = :uid
-         ORDER BY submitted_at DESC"
-    );
-    $cStmt->execute([':uid' => $userId]);
-    $cases = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+        /* Extended profile columns — added later via ALTER TABLE, may not exist on all servers.
+           Fetch each with a fallback so the query never fails if a column is absent. */
+        $extFields = ['middle_name', 'birthdate', 'sex', 'street', 'city', 'province', 'zip_code'];
+        foreach ($extFields as $col) {
+            try {
+                $chk = $db->prepare("SELECT `{$col}` FROM users WHERE user_id = :uid LIMIT 1");
+                $chk->execute([':uid' => $userId]);
+                $row = $chk->fetch(PDO::FETCH_NUM);
+                $citizen[$col] = $row ? (string)($row[0] ?? '') : '';
+            } catch (Throwable $e) {
+                $citizen[$col] = ''; /* column does not exist yet */
+            }
+        }
 
-    successResponse(['citizen' => $citizen, 'cases' => $cases]);
+        $cStmt = $db->prepare(
+            "SELECT tracking_id, category, status, priority,
+                    COALESCE(asset_town, '') AS brgy, description,
+                    submitted_at, updated_at
+             FROM complaints
+             WHERE user_id = :uid
+             ORDER BY submitted_at DESC"
+        );
+        $cStmt->execute([':uid' => $userId]);
+        $cases = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        successResponse(['citizen' => $citizen, 'cases' => $cases]);
+    } catch (Throwable $e) {
+        errorResponse('Citizen detail error: ' . $e->getMessage());
+    }
 }
 
 if ($action === 'officerCases') {

@@ -2418,8 +2418,14 @@ async function loadCitizens() {
         if (brgy)   params.set('brgy', brgy);
 
         const resp = await fetch('/api/dispatch.php?' + params.toString());
-        const data = await resp.json();
-        if (!data.success) throw new Error(data.message || 'Failed to load citizens');
+        const rawText = await resp.text();
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (jsonErr) {
+            throw new Error('Server sent non-JSON (first 400 chars): ' + rawText.substring(0, 400));
+        }
+        if (!data.success) throw new Error(data.error || data.message || 'Failed to load citizens');
 
         const list = data.citizens || [];
         if (!list.length) {
