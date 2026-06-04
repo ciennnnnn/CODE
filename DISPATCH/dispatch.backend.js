@@ -1766,15 +1766,8 @@ function _buildMonthlyBarChart(monthlyData) {
     </div>`;
 }
 
-function setAnalyticsPeriod(period) {
-    document.querySelectorAll('.analytics-period-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.period === period);
-    });
-    renderAnalytics(period);
-}
-
 async function renderAnalytics(period) {
-    period = period || 'month';
+    period = period || 'year';
     let d = null;
     try { d = await apiFetch('dispatch.php', {action: 'analytics', period}); } catch (_) {}
 
@@ -1798,8 +1791,9 @@ async function renderAnalytics(period) {
         setEl('analytics-avg-sub',   resolved > 0 ? 'Hours per closed case' : 'No closed cases yet');
         setEl('analytics-avg', d.avg_hours != null ? parseFloat(d.avg_hours).toFixed(1) + 'h' : '—');
 
-        /* Update KPI card labels and per-card period labels to reflect selected period */
-        const periodLabel = d.period_label || 'This Month';
+        /* Update all period labels to reflect the active period */
+        const periodLabel = d.period_label || 'This Year';
+        setEl('analytics-active-period-chip', periodLabel);
         setEl('analytics-total-label', `Total · ${periodLabel}`);
         setEl('analytics-rejected-sub', periodLabel);
         setEl('cat-period-label',  periodLabel);
@@ -1935,7 +1929,7 @@ const _PRINT_STYLES = `
   th{background:#111;color:#fff;padding:7px 10px;text-align:left}
   td{border:1px solid #e5e5e5;padding:6px 10px}
   tr:nth-child(even) td{background:#f9f9f9}
-  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
   .stat-box{border:1px solid #e5e5e5;padding:14px;border-radius:6px;text-align:center}
   .stat-val{font-size:26px;font-weight:900}
   .stat-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
@@ -2112,6 +2106,153 @@ async function printAnalyticsSection(sectionKey, sectionTitle, period) {
     <div class="section-title">${safeText(sectionTitle)}</div>
     ${bodyHtml}
     <div class="footer">TRAPICO — Computer-generated analytics report. All data sourced from live database.</div>
+    <script>window.onload=()=>window.print();</script></body></html>`;
+
+    _openPrintWindow(html);
+}
+
+/* ── Full Analytics Export ── */
+function openExportAnalyticsModal() {
+    openModal(`
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Export Analytics Report</div>
+              <div class="modal-subtitle">Choose a time period for the full report</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">&#10005;</button>
+          </div>
+          <div class="modal-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <button class="btn-secondary" onclick="exportFullAnalytics('month');closeModal()">
+                This Month<br><span style="font-size:10px;color:var(--mist);font-weight:400">Current calendar month</span>
+              </button>
+              <button class="btn-secondary" onclick="exportFullAnalytics('3month');closeModal()">
+                3 Months<br><span style="font-size:10px;color:var(--mist);font-weight:400">Last 90 days</span>
+              </button>
+              <button class="btn-secondary" onclick="exportFullAnalytics('6month');closeModal()">
+                6 Months<br><span style="font-size:10px;color:var(--mist);font-weight:400">Last 180 days</span>
+              </button>
+              <button class="btn-secondary" onclick="exportFullAnalytics('year');closeModal()">
+                This Year<br><span style="font-size:10px;color:var(--mist);font-weight:400">Jan 1 – today</span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+          </div>
+        </div>
+      </div>`);
+}
+
+async function exportFullAnalytics(period) {
+    showToast('Generating report…');
+    let d = null;
+    try { d = await apiFetch('dispatch.php', {action: 'analytics', period}); } catch (_) {
+        showToast('Could not load report data.');
+        return;
+    }
+
+    const PERIOD_LABELS = { week:'Last 7 Days', month:'This Month', '3month':'Last 3 Months', '6month':'Last 6 Months', year:'This Year' };
+    const periodLabel = PERIOD_LABELS[period] || d?.period_label || period;
+
+    const cats   = d?.categories    || [];
+    const prios  = d?.priority_stats || [];
+    const brgys  = d?.barangay_stats || [];
+    const stats  = d?.status_dist    || [];
+    const trend  = d?.monthly_trend  || [];
+    const officers = d?.officer_perf || [];
+
+    const catTotal  = cats.reduce((s, c) => s + Number(c.cnt || 0), 0) || 1;
+    const prioTotal = prios.reduce((s, p) => s + Number(p.cnt || 0), 0) || 1;
+    const brgyMax   = Math.max(...brgys.map(b => Number(b.cnt || 0)), 1);
+    const statTotal = stats.reduce((s, x) => s + Number(x.cnt || 0), 0) || 1;
+
+    const tableRows = (rows) => rows.map((r, i) =>
+        `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9f9f9'}">${r}</tr>`
+    ).join('');
+
+    const catTable = cats.length
+        ? `<table><thead><tr><th>Category</th><th>Count</th><th>Share</th></tr></thead><tbody>
+           ${tableRows(cats.map(c => `<td>${safeText(c.category)}</td><td>${c.cnt}</td><td>${Math.round(Number(c.cnt)/catTotal*100)}%</td>`))}</tbody></table>`
+        : '<p style="color:#888">No data for this period.</p>';
+
+    const prioTable = prios.length
+        ? `<table><thead><tr><th>Priority</th><th>Count</th><th>Share</th></tr></thead><tbody>
+           ${tableRows(prios.map(p => `<td style="text-transform:capitalize">${safeText(p.priority)}</td><td>${p.cnt}</td><td>${Math.round(Number(p.cnt)/prioTotal*100)}%</td>`))}</tbody></table>`
+        : '<p style="color:#888">No data.</p>';
+
+    const brgyTable = brgys.length
+        ? `<table><thead><tr><th>Barangay</th><th>Count</th><th>Share</th></tr></thead><tbody>
+           ${tableRows(brgys.map(b => `<td>${safeText(b.brgy || 'Unknown')}</td><td>${b.cnt}</td><td>${Math.round(Number(b.cnt)/brgyMax*100)}%</td>`))}</tbody></table>`
+        : '<p style="color:#888">No data.</p>';
+
+    const statusTable = stats.length
+        ? `<table><thead><tr><th>Status</th><th>Count</th><th>Share</th></tr></thead><tbody>
+           ${tableRows(stats.map(s => `<td style="text-transform:capitalize">${safeText(s.status)}</td><td>${s.cnt}</td><td>${Math.round(Number(s.cnt)/statTotal*100)}%</td>`))}</tbody></table>`
+        : '<p style="color:#888">No status data.</p>';
+
+    const trendTable = trend.length
+        ? `<table><thead><tr><th>Month</th><th>Complaints</th></tr></thead><tbody>
+           ${tableRows(trend.map(m => `<td>${safeText(m.label)}</td><td>${m.count}</td>`))}</tbody></table>`
+        : '<p style="color:#888">No trend data.</p>';
+
+    const officerTable = officers.length
+        ? `<table><thead><tr><th>Officer</th><th>Status</th><th>Resolved</th><th>Active</th><th>Avg Rating</th></tr></thead><tbody>
+           ${tableRows(officers.map(o => `<td>${safeText(o.name)}</td><td style="text-transform:capitalize">${safeText(o.status)}</td><td>${o.resolved}</td><td>${o.active_count}</td><td>${parseFloat(o.avg_rating||0).toFixed(1)}</td>`))}</tbody></table>`
+        : '<p style="color:#888">No officer data.</p>';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>TRAPICO Full Analytics Report — ${safeText(periodLabel)}</title>
+    <style>${_PRINT_STYLES}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:4px}
+    @media print{.two-col{grid-template-columns:1fr 1fr}.page-break{page-break-before:always}}
+    </style></head><body>
+    ${_printHeader('Full Analytics Report', periodLabel, DISPATCH_USER?.name)}
+    <div class="period-tag">Period: ${safeText(periodLabel)}</div>
+
+    <div class="stat-row" style="margin-bottom:24px">
+      <div class="stat-box"><div class="stat-val">${d?.total ?? 0}</div><div class="stat-label">Total Complaints</div></div>
+      <div class="stat-box"><div class="stat-val">${d?.rate ?? 0}%</div><div class="stat-label">Resolution Rate</div></div>
+      <div class="stat-box"><div class="stat-val">${d?.avg_hours != null ? parseFloat(d.avg_hours).toFixed(1)+'h' : '—'}</div><div class="stat-label">Avg Resolution Time</div></div>
+      <div class="stat-box"><div class="stat-val">${d?.rejected ?? 0}</div><div class="stat-label">Rejected</div></div>
+      <div class="stat-box"><div class="stat-val">${d?.active ?? 0}</div><div class="stat-label">Active in Field</div></div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-title">Complaints by Category</div>
+        ${catTable}
+      </div>
+      <div>
+        <div class="section-title">Status Distribution (All Time)</div>
+        ${statusTable}
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:20px">
+      <div>
+        <div class="section-title">Priority Breakdown</div>
+        ${prioTable}
+      </div>
+      <div>
+        <div class="section-title">Complaints by Barangay</div>
+        ${brgyTable}
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="section-title">6-Month Volume Trend</div>
+      ${trendTable}
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="section-title">Officer Performance</div>
+      ${officerTable}
+    </div>
+
+    <div class="footer">TRAPICO — Full analytics report generated on ${new Date().toLocaleString()}. All data sourced from live database.</div>
     <script>window.onload=()=>window.print();</script></body></html>`;
 
     _openPrintWindow(html);

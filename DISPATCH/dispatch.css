@@ -822,18 +822,46 @@
   margin-bottom: 24px;
 }
 
-/* Period selector */
-.analytics-period-btn.active {
+/* Analytics action bar */
+.analytics-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+.analytics-period-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ink, #111);
+  color: #fff;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+.btn-analytics-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
   background: var(--brand, #e53e3e);
   color: #fff;
-  border-color: var(--brand, #e53e3e);
+  font-family: var(--font-head, sans-serif);
   font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
 }
-.analytics-period-btn.active:hover {
-  opacity: 0.88;
-  background: var(--brand, #e53e3e);
-  color: #fff;
-}
+.btn-analytics-export:hover { opacity: 0.88; }
+.btn-analytics-export-icon { font-size: 15px; line-height: 1; }
 
 /* ── CASE TIMELINE MODAL (Dispatch) ───────────────────────── */
 .dispatch-timeline-wrap {
