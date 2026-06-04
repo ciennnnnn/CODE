@@ -1255,3 +1255,301 @@
   #topbar-title { font-size: 15px !important; }
   .user-chip-name { display: none; }
 }
+
+/* ================================================================
+   MOBILE POLISH — Fix specific issues visible in screenshots
+   ================================================================ */
+
+/* ── 1. btn-sm must NEVER go full-width (base.css overrides them) */
+.btn-sm,
+a.btn-sm {
+  width: auto !important;
+  min-width: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 2. Assigned card: compact, clean header buttons ─────────── */
+@media (max-width: 768px) {
+  .assigned-card {
+    padding: 14px !important;
+  }
+  .assigned-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  /* Button row — stays horizontal, wraps if needed */
+  .assigned-card-header > div[style*="display:flex"] {
+    width: 100%;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start !important;
+  }
+  .assigned-card-header .btn-sm {
+    flex: 1 1 auto;
+    min-width: 80px;
+    max-width: 160px;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+  /* Description: word-wrap so long strings don't overflow */
+  .assigned-card-body div,
+  .assigned-card-body span {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  /* Meta labels alignment */
+  .assigned-meta-row {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .assigned-meta-label {
+    width: 72px;
+    font-size: 12px;
+  }
+  .assigned-meta-val {
+    font-size: 12px;
+  }
+  /* Map in assigned: reasonable height */
+  .assigned-map-shell {
+    height: 170px !important;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+}
+
+/* ── 3. Description text overflow fix everywhere ─────────────── */
+.assigned-card-body,
+.assigned-card-body > div,
+.job-meta-cell,
+.active-job-card {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ── 4. Messenger: clean, compact, desktop-like on mobile ────── */
+@media (max-width: 768px) {
+  /* Composer bar */
+  .messenger-composer {
+    padding: 8px 12px;
+    gap: 8px;
+    background: var(--white);
+    border-top: 1px solid var(--border);
+  }
+  /* Input: pill, same as desktop */
+  .messenger-input {
+    flex: 1 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    border-radius: 999px !important;
+    padding: 9px 14px !important;
+    font-size: 14px !important;
+    height: 40px;
+    box-sizing: border-box;
+  }
+  /* SEND button: compact pill, NOT full-width */
+  .messenger-send-btn,
+  .messenger-send-btn.btn-primary {
+    width: auto !important;
+    min-width: 60px !important;
+    max-width: 90px !important;
+    flex-shrink: 0 !important;
+    border-radius: 999px !important;
+    padding: 9px 18px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    height: 40px;
+    box-sizing: border-box;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Chat header: tighter */
+  .messenger-chat-header {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .chat-header-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .chat-header-name { font-size: 14px; }
+  .chat-header-sub  { font-size: 11px; }
+  /* Message bubbles: same proportions as desktop */
+  .msg-bubble {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    max-width: 100%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .msg-sender-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .messenger-messages {
+    padding: 12px !important;
+    gap: 4px;
+  }
+  /* Contact list: clean items */
+  .contact-item {
+    padding: 12px 14px;
+  }
+  .contact-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .contact-name { font-size: 14px; }
+  .contact-brgy { font-size: 12px; }
+  /* Messenger shell: full height minus topbar */
+  .messenger-shell {
+    height: calc(100dvh - 54px);
+    border-radius: 0;
+    border: none;
+  }
+}
+
+/* ── 5. Active job: description doesn't overlap map ──────────── */
+@media (max-width: 768px) {
+  .job-meta-cell {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .job-meta-cell .job-meta-v {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+  #active-job-map {
+    overflow: hidden;
+    border-radius: 8px;
+  }
+}
+
+/* ── 6. Track IDs and badges: no overflow ────────────────────── */
+@media (max-width: 600px) {
+  .track-id {
+    font-size: 10px !important;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+  .assigned-card-title {
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .badge {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+  }
+}
+
+/* ── 7. Dashboard task card: clean 3-part row on mobile ──────── */
+@media (max-width: 600px) {
+  .task-card {
+    align-items: flex-start;
+    padding: 12px !important;
+    gap: 10px;
+  }
+  .task-num {
+    font-size: 20px;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .task-body { flex: 1; min-width: 0; }
+  .task-id   { font-size: 10px; word-break: break-all; }
+  .task-cat  { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .task-meta { font-size: 11px; }
+  .task-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .task-actions .btn-sm {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    font-size: 11px !important;
+    padding: 6px 4px !important;
+    text-align: center;
+  }
+}
+
+/* ── 8. Keep all map containers from overflowing ─────────────── */
+[id^="assigned-map-"],
+#active-job-map,
+#details-case-map,
+#officers-page-map {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* ── 9. Assigned card button group (replaces inline flex style) ─ */
+.assigned-card-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Desktop: right-aligned */
+.assigned-card-header .assigned-card-btns {
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .assigned-card-btns {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .assigned-card-btns .btn-sm {
+    flex: 1 1 auto;
+    min-width: 76px !important;
+    max-width: 140px !important;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .assigned-card-btns {
+    flex-direction: column;
+  }
+  .assigned-card-btns .btn-sm {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* ── 10. Messenger shell: correct height accounting for topbar ── */
+@media (max-width: 768px) {
+  #page-messages {
+    padding: 0 !important;
+    margin: -32px;
+  }
+  .messenger-shell {
+    height: calc(100dvh - 54px) !important;
+    min-height: 400px;
+  }
+}
+@media (max-width: 600px) {
+  #page-messages {
+    margin: -12px;
+  }
+  .messenger-shell {
+    height: calc(100dvh - 54px) !important;
+  }
+}

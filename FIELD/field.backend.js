@@ -895,16 +895,16 @@ function renderAssigned() {
             </div>
             <div class="assigned-card-name">${safeText(c.cat)} · Barangay ${safeText(c.brgy)}</div>
           </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                    <div class="assigned-card-btns">
                         <button class="btn-secondary btn-sm" onclick="showCaseDetailsMap('${safeText(c.id)}')">Details</button>
                         <button class="btn-danger btn-sm" onclick="openFieldReassignModal('${safeText(c.assignment_id)}', '${safeText(c.id)}')">Reassign</button>
-                        <button class="btn-primary btn-sm" onclick="openJobByAssignment('${safeText(c.assignment_id)}')">▶ Start Job</button>
+                        <button class="btn-primary btn-sm" onclick="openJobByAssignment('${safeText(c.assignment_id)}')">&#9654; Start Job</button>
                     </div>
         </div>
         <div class="assigned-card-body">
           <div>
             <div style="font-family:var(--font-mono);font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Description</div>
-            <div style="font-size:13px;line-height:1.6">${safeText(c.desc)}</div>
+            <div style="font-size:13px;line-height:1.6;word-break:break-word;overflow-wrap:anywhere">${safeText(c.desc)}</div>
             <div style="margin-top:14px;display:flex;flex-direction:column;gap:4px">
               <div class="assigned-meta-row"><span class="assigned-meta-label">Date/Time</span><span class="assigned-meta-val">${formatDateTime(c.date)}</span></div>
               <div class="assigned-meta-row"><span class="assigned-meta-label">Priority</span><span class="assigned-meta-val">${safeText(c.priority)}</span></div>
