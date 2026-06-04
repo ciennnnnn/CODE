@@ -234,8 +234,8 @@ try {
         if ($badgeCheck->fetchColumn()) {
             $badge = 'DISP-' . date('Y') . '-' . str_pad((string)($newUserId + time()), 4, '0', STR_PAD_LEFT);
         }
-        $db->prepare('INSERT INTO dispatch_officers (user_id, badge_number, assigned_barangay, department) VALUES (:uid, :badge, :brgy, :dept)')
-           ->execute([':uid' => $newUserId, ':badge' => $badge, ':brgy' => $barangay, ':dept' => $department]);
+        $db->prepare('INSERT INTO dispatch_officers (user_id, username, password, badge_number, assigned_barangay, department) VALUES (:uid, :uname, :pass, :badge, :brgy, :dept)')
+           ->execute([':uid' => $newUserId, ':uname' => $username, ':pass' => $password, ':badge' => $badge, ':brgy' => $barangay, ':dept' => $department]);
 
     } else { /* field */
         if ($username === '') errorResponse('Username is required.');
@@ -269,8 +269,8 @@ try {
             ':role_val' => 'field_officer',
         ]);
         $newUserId = (int)$db->lastInsertId();
-        $db->prepare('INSERT INTO field_officers (user_id, badge_number, assigned_barangay, is_available) VALUES (:uid, :badge, :brgy, :avail)')
-           ->execute([':uid' => $newUserId, ':badge' => $badgeNumber, ':brgy' => $barangay, ':avail' => 0]);
+        $db->prepare('INSERT INTO field_officers (user_id, username, password, badge_number, assigned_barangay, is_available) VALUES (:uid, :uname, :pass, :badge, :brgy, :avail)')
+           ->execute([':uid' => $newUserId, ':uname' => $username, ':pass' => $password, ':badge' => $badgeNumber, ':brgy' => $barangay, ':avail' => 0]);
     }
 } catch (PDOException $e) {
     $msg = $e->getMessage();

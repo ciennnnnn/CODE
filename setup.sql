@@ -290,6 +290,8 @@ DROP TABLE IF EXISTS `dispatch_officers`;
 CREATE TABLE `dispatch_officers` (
   `dispatch_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
+  `username` varchar(50) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `badge_number` varchar(20) NOT NULL,
   `assigned_barangay` varchar(100) DEFAULT NULL,
   `department` varchar(100) DEFAULT 'Traffic Management Division',
@@ -308,7 +310,12 @@ CREATE TABLE `dispatch_officers` (
 
 LOCK TABLES `dispatch_officers` WRITE;
 /*!40000 ALTER TABLE `dispatch_officers` DISABLE KEYS */;
-INSERT INTO `dispatch_officers` VALUES (1,4,'DISP-2024-0001','Commonwealth','Traffic Management Division',1,0,0,0,'2026-05-07 04:52:15','2026-05-07 04:52:15'),(2,5,'DISP-2024-0002','BGC','Traffic Management Division',1,0,0,0,'2026-05-07 04:52:15','2026-05-07 04:52:15'),(3,13,'DISP-2026-0013','Commonwealth','Traffic Management Division',0,0,0,0,'2026-05-07 05:35:21','2026-05-07 05:35:21'),(4,24,'DISP-2026-0024','Commonwealth','Traffic Management Division',0,0,0,0,'2026-05-08 00:51:11','2026-05-08 00:51:11'),(5,26,'DISP-2026-0026','Commonwealth','Traffic Management Division',0,0,0,0,'2026-05-08 01:03:34','2026-05-08 01:03:34');
+INSERT INTO `dispatch_officers` (`dispatch_id`,`user_id`,`username`,`password`,`badge_number`,`assigned_barangay`,`department`,`is_on_duty`,`total_complaints_handled`,`total_validated`,`total_rejected`,`created_at`,`updated_at`) VALUES
+(1, 4, 'fae',                  'Password123',                                                    'DISP-2024-0001', 'Commonwealth', 'Traffic Management Division', 1, 0, 0, 0, '2026-05-07 04:52:15', '2026-05-07 04:52:15'),
+(2, 5, 'dispatch2',            'DispatchPass456',                                                'DISP-2024-0002', 'BGC',          'Traffic Management Division', 1, 0, 0, 0, '2026-05-07 04:52:15', '2026-05-07 04:52:15'),
+(3,13, 'dispatch_test_133521', '$2y$10$GCKISXkSfimiz1vrKHCJK.kW0NOjpwee.gboIDWM7kbUjvlbS0R2m', 'DISP-2026-0013', 'Commonwealth', 'Traffic Management Division', 0, 0, 0, 0, '2026-05-07 05:35:21', '2026-05-07 05:35:21'),
+(4,24, 'Ann2122',              '$2y$10$7VUOf3xCpGhDa19ZyPckjeqKPp1TKg02BMQ6/mmnl/3J1xRAL7J/.',  'DISP-2026-0024', 'Commonwealth', 'Traffic Management Division', 0, 0, 0, 0, '2026-05-08 00:51:11', '2026-05-08 00:51:11'),
+(5,26, 'nikky',                '$2y$10$uO9FrskLBANuYwHEOMDB4u9iJlxSYaI0UQlCWsz9ro8MbIKr34Um2',  'DISP-2026-0026', 'Commonwealth', 'Traffic Management Division', 0, 0, 0, 0, '2026-05-08 01:03:34', '2026-05-08 01:03:34');
 /*!40000 ALTER TABLE `dispatch_officers` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `duplicate_complaint_detection`;
@@ -340,6 +347,8 @@ DROP TABLE IF EXISTS `field_officers`;
 CREATE TABLE `field_officers` (
   `officer_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
+  `username` varchar(50) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `badge_number` varchar(20) NOT NULL,
   `assigned_barangay` varchar(100) DEFAULT NULL,
   `is_available` tinyint(1) DEFAULT 0,
@@ -362,7 +371,14 @@ CREATE TABLE `field_officers` (
 
 LOCK TABLES `field_officers` WRITE;
 /*!40000 ALTER TABLE `field_officers` DISABLE KEYS */;
-INSERT INTO `field_officers` VALUES (1,7,'EMP-2024-0032','Commonwealth',1,14.67600000,121.04370000,NULL,100.00,0,100.00,5.00,0.00,'2026-05-07 04:52:13','2026-05-07 22:52:41'),(2,8,'EMP-2024-0033','BGC',0,14.59940000,121.04230000,NULL,100.00,0,100.00,5.00,0.00,'2026-05-07 04:52:13','2026-05-07 04:52:13'),(3,9,'EMP-2024-0034','Makati',1,14.56310000,121.02030000,NULL,100.00,0,100.00,5.00,0.00,'2026-05-07 04:52:13','2026-05-08 02:21:15'),(4,14,'field_test_133521','Batasan Hills',0,NULL,NULL,NULL,100.00,0,100.00,5.00,0.00,'2026-05-07 05:35:22','2026-05-07 05:35:22'),(5,17,'OFF-001','Commonwealth',1,14.67600000,121.04370000,NULL,100.00,0,100.00,5.00,0.00,'2026-05-07 11:11:48','2026-05-08 01:54:15'),(6,22,'QC-1023','Commonwealth',1,NULL,NULL,NULL,100.00,1,100.00,5.00,0.00,'2026-05-08 00:18:34','2026-05-08 02:48:27'),(9,28,'QC-0124','Central',1,NULL,NULL,NULL,100.00,1,100.00,5.00,0.00,'2026-05-08 01:43:30','2026-05-08 02:22:02');
+INSERT INTO `field_officers` (`officer_id`,`user_id`,`username`,`password`,`badge_number`,`assigned_barangay`,`is_available`,`current_latitude`,`current_longitude`,`gps_last_updated`,`efficiency_score`,`total_resolved`,`on_time_arrival_rate`,`average_user_rating`,`avg_response_time`,`created_at`,`updated_at`) VALUES
+(1, 7, 'cien',              '$2y$10$YpHaK6RSkc3YABWnSt4dAeAGWn3lX1431SASCjhg62BsD.uAhjI8e', 'EMP-2024-0032',    'Commonwealth', 1, 14.67600000, 121.04370000, NULL, 100.00, 0, 100.00, 5.00, 0.00, '2026-05-07 04:52:13', '2026-05-07 22:52:41'),
+(2, 8, 'javier',           'FieldPass2',                                                       'EMP-2024-0033',    'BGC',          0, 14.59940000, 121.04230000, NULL, 100.00, 0, 100.00, 5.00, 0.00, '2026-05-07 04:52:13', '2026-05-07 04:52:13'),
+(3, 9, 'cruz',             'FieldPass3',                                                       'EMP-2024-0034',    'Makati',       1, 14.56310000, 121.02030000, NULL, 100.00, 0, 100.00, 5.00, 0.00, '2026-05-07 04:52:13', '2026-05-08 02:21:15'),
+(4,14, 'field_test_133521','$2y$10$dcyOpu/NyL.L4kaB4ffefurPcBYLV0BBgjDqombrIcNBzRBeE3e.C',   'field_test_133521','Batasan Hills',0, NULL,        NULL,         NULL, 100.00, 0, 100.00, 5.00, 0.00, '2026-05-07 05:35:22', '2026-05-07 05:35:22'),
+(5,17, 'rreyes',           'Password123',                                                      'OFF-001',          'Commonwealth', 1, 14.67600000, 121.04370000, NULL, 100.00, 0, 100.00, 5.00, 0.00, '2026-05-07 11:11:48', '2026-05-08 01:54:15'),
+(6,22, 'Annie21',          '$2y$10$4YzwhUnx..iisjaQRjhZUOPNecAMZeHgNwOP4jT6C5kizLe4hAHPm',   'QC-1023',          'Commonwealth', 1, NULL,        NULL,         NULL, 100.00, 1, 100.00, 5.00, 0.00, '2026-05-08 00:18:34', '2026-05-08 02:48:27'),
+(9,28, 'Ann21FE',          '$2y$10$l/ZCMkwNh5ETK57BhYlTJecdKF8dH.iCL3HZe/SPJDAXr1rNUdvdW',   'QC-0124',          'Central',      1, NULL,        NULL,         NULL, 100.00, 1, 100.00, 5.00, 0.00, '2026-05-08 01:43:30', '2026-05-08 02:22:02');
 /*!40000 ALTER TABLE `field_officers` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `media`;
