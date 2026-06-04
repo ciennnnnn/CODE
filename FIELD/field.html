@@ -236,16 +236,13 @@
               <div style="font-size:13px;color:var(--mist)">Choose a Dispatch Officer from the list to start messaging</div>
             </div>
             <div class="messenger-chat-active hidden" id="chat-active-area">
-              <div class="messenger-chat-header" id="chat-header" style="justify-content:space-between">
-                <div style="display:flex;align-items:center;gap:10px;min-width:0">
-                  <button class="chat-back-btn" onclick="backToContacts()" aria-label="Back to contacts">&#8592;</button>
-                  <div class="chat-header-avatar" id="chat-header-avatar">D</div>
-                  <div style="min-width:0">
-                    <div class="chat-header-name" id="chat-header-name">Dispatch Officer</div>
-                    <div class="chat-header-sub">Dispatch Command Center</div>
-                  </div>
+              <div class="messenger-chat-header" id="chat-header">
+                <button class="chat-back-btn" onclick="backToContacts()" aria-label="Back to contacts">&#8592;</button>
+                <div class="chat-header-avatar" id="chat-header-avatar">D</div>
+                <div>
+                  <div class="chat-header-name" id="chat-header-name">Dispatch Officer</div>
+                  <div class="chat-header-sub">Dispatch Command Center</div>
                 </div>
-                <button onclick="openFieldAiPanel()" style="border:none;background:#111;color:#fff;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.05em;flex-shrink:0;white-space:nowrap;font-family:inherit" title="AI Analysis">&#129302; AI</button>
               </div>
               <div class="messenger-messages" id="messenger-messages-body"></div>
               <div class="messenger-composer">
@@ -402,8 +399,6 @@
 
 <!-- Modal container -->
 <div id="modal-container"></div>
-<!-- AI Analysis modal container -->
-<div id="ai-modal-container"></div>
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
