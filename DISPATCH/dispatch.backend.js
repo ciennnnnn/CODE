@@ -1450,10 +1450,8 @@ function renderOfficers() {
           </div>
           ${perfBar(`Workload`, workload)}
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">VIEW CASES</button>
-            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">
-              <span id="contact-label-${safeText(chatKey)}">${hasAlert && unread > 0 ? `MESSAGE (${unread})` : 'MESSAGE'}</span>
-            </button>
+            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">View Cases</button>
+            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
           </div>
         </div>`;
     }).join('');
@@ -1554,7 +1552,6 @@ async function openOfficerCasesModal(officerId, officerName) {
 
         const btn   = document.getElementById(`contact-btn-${key}`);
         const badge = document.getElementById(`unread-badge-${key}`);
-        const label = document.getElementById(`contact-label-${key}`);
 
         if (btn) {
           btn.classList.remove('btn-secondary', 'btn-danger');
@@ -1563,9 +1560,6 @@ async function openOfficerCasesModal(officerId, officerName) {
         if (badge) {
           badge.style.display = hasAlert ? 'flex' : 'none';
           badge.textContent   = hasAlert ? (count > 0 ? String(count) : '!') : '';
-        }
-        if (label) {
-          label.textContent = hasAlert && count > 0 ? `MESSAGE (${count})` : 'MESSAGE';
         }
       });
       updateOfficerNavBadge();
@@ -2233,7 +2227,7 @@ function openChatModal(officerId, officerName, receiverRole = 'field') {
     startChatPolling();
 }
 
-async function loadChatThread() {
+async function loadChatThread(silent = false) {
     if (!activeChat) return;
     try {
         const resp = await apiFetch('messages.php', {action: 'thread', receiver_role: activeChat.receiverRole, receiver_id: activeChat.receiverId});
@@ -2248,7 +2242,11 @@ async function loadChatThread() {
         chatLastId = messages.length ? Number(messages[messages.length - 1].id) : 0;
         renderChatMessages(messages);
     } catch (error) {
-        showToast(error.message);
+        if (silent) {
+            console.warn('Chat thread reload failed:', error.message);
+        } else {
+            showToast(error.message);
+        }
     }
 }
 
@@ -2304,8 +2302,9 @@ async function sendChatMessage() {
             receiver_id: activeChat.receiverId,
             message,
         }, 'POST');
-        await loadChatThread();
+        await loadChatThread(true);
     } catch (error) {
+        input.value = message;
         showToast(error.message);
     }
 }

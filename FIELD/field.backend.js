@@ -538,7 +538,7 @@ function openFieldChat(contact) {
     if (nameEl) nameEl.textContent = contact.name || 'Dispatch Officer';
 }
 
-async function loadFieldChatThread() {
+async function loadFieldChatThread(silent = false) {
     if (!fieldActiveContact) return;
     try {
         const resp = await apiFetch('messages.php', {
@@ -550,7 +550,11 @@ async function loadFieldChatThread() {
         fieldChatLastId = messages.length ? Number(messages[messages.length - 1].id) : 0;
         renderFieldChatMessages(messages);
     } catch (error) {
-        showToast(error.message);
+        if (silent) {
+            console.warn('Field chat thread reload failed:', error.message);
+        } else {
+            showToast(error.message);
+        }
     }
 }
 
@@ -604,8 +608,9 @@ async function sendFieldMessage() {
             receiver_id: String(fieldActiveContact.user_id),
             message,
         }, 'POST');
-        await loadFieldChatThread();
+        await loadFieldChatThread(true);
     } catch (error) {
+        input.value = message;
         showToast(error.message);
     }
 }

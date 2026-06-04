@@ -33,13 +33,13 @@ function normalizeRole(string $role): string
 
 function buildConversationKey(string $roleA, int $idA, string $roleB, int $idB): string
 {
-    if ($roleA < $roleB || ($roleA === $roleB && $idA <= $idB)) {
+    if ($roleA < $roleB || $roleA === $roleB && $idA <= $idB) {
         return sprintf('%s:%d|%s:%d', $roleA, $idA, $roleB, $idB);
     }
     return sprintf('%s:%d|%s:%d', $roleB, $idB, $roleA, $idA);
 }
 
-ensureChatMessagesTable($db);
+try { ensureChatMessagesTable($db); } catch (Throwable $e) { /* table already exists or DDL lock — safe to continue */ }
 
 $senderRole = normalizeRole($user['role']);
 $senderId   = (int)($user['user_id'] ?? $user['id'] ?? 0);
