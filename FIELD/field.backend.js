@@ -870,6 +870,7 @@ function renderAssigned() {
           </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                         <button class="btn-secondary btn-sm" onclick="showCaseDetailsMap('${safeText(c.id)}')">Details</button>
+                        <button class="btn-danger btn-sm" onclick="openFieldReassignModal('${safeText(c.assignment_id)}', '${safeText(c.id)}')">Reassign</button>
                         <button class="btn-primary btn-sm" onclick="openJobByAssignment('${safeText(c.assignment_id)}')">▶ Start Job</button>
                     </div>
         </div>
@@ -956,11 +957,7 @@ function centerAssignedMapToGps(assignmentId) {
         if (label) label.textContent = `Pinned: ${point[0].toFixed(5)}, ${point[1].toFixed(5)}`;
         showToast('Your location has been pinned on the map.');
     }).catch(error => {
-<<<<<<< HEAD
-        if (label) label.textContent = 'GPS unavailable on this origin. Use https.';
-=======
         if (label) label.textContent = 'GPS unavailable. Please use HTTPS (https://yourdomain) for GPS features.';
->>>>>>> 906d5df481d66fb25a8efc250ef9388054df4945
         showToast('Unable to fetch GPS location: ' + (error.message || 'Permission denied.'));
     });
 }
@@ -1210,11 +1207,7 @@ function centerActiveJobMapToGps() {
         if (label) label.textContent = `Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         showToast('Your location has been pinned on the map.');
     }).catch(error => {
-<<<<<<< HEAD
-        if (label) label.textContent = 'GPS unavailable on this origin. Use https.';
-=======
         if (label) label.textContent = 'GPS unavailable. Please use HTTPS (https://yourdomain) for GPS features.';
->>>>>>> 906d5df481d66fb25a8efc250ef9388054df4945
         showToast('Unable to fetch GPS location: ' + (error.message || 'Permission denied.'));
     });
 }
@@ -1680,4 +1673,83 @@ function showCaseDetailsMap(caseId) {
             }
         }
     }, 200);
+}
+
+/* ── FIELD REASSIGN ─────────────────────────────────────────── */
+let _fieldReassignOfficerId = null;
+
+async function openFieldReassignModal(assignmentId, caseId) {
+    _fieldReassignOfficerId = null;
+    let officers = [];
+    try {
+        const resp = await apiFetch('field.php', {action: 'availableOfficers'});
+        officers = resp.officers || [];
+    } catch (error) {
+        showToast(error.message);
+        return;
+    }
+    if (!officers.length) {
+        showToast('No available field officers at this time. All are currently busy or offline.');
+        return;
+    }
+    const cards = officers.map(o => `
+        <div class="officer-card reassign-officer-card" id="freassign-ocard-${safeText(o.id)}"
+             onclick="selectFieldReassignOfficer('${safeText(o.id)}')">
+            <div class="officer-name">${safeText(o.name)}</div>
+            <div class="officer-meta" style="word-break:break-word">Badge: <strong>${safeText(o.code || '—')}</strong> · Brgy. ${safeText(o.brgy)}</div>
+            <div style="display:flex;gap:10px;margin-top:6px;font-size:11px;font-family:var(--font-mono);color:var(--mist);flex-wrap:wrap">
+                <span>● Available</span>
+                <span>${Number(o.active_count) || 0} active</span>
+                <span>${Number(o.cases_closed) || 0} closed</span>
+            </div>
+        </div>`).join('');
+
+    openModal(`
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+            <div class="modal modal-lg">
+                <div class="modal-head">
+                    <div>
+                        <div class="modal-title">Reassign Case</div>
+                        <div class="modal-subtitle" style="word-break:break-all;font-size:12px">${safeText(caseId)}</div>
+                    </div>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="section-title" style="margin-bottom:12px">Select Available Field Officer</div>
+                    <div class="officer-grid reassign-grid">${cards}</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn-success" onclick="submitFieldReassign('${safeText(assignmentId)}', '${safeText(caseId)}')">Reassign</button>
+                </div>
+            </div>
+        </div>`);
+}
+
+function selectFieldReassignOfficer(officerId) {
+    _fieldReassignOfficerId = officerId;
+    document.querySelectorAll('.reassign-officer-card').forEach(c => c.classList.remove('selected'));
+    const el = document.getElementById(`freassign-ocard-${officerId}`);
+    if (el) el.classList.add('selected');
+}
+
+async function submitFieldReassign(assignmentId, caseId) {
+    if (!_fieldReassignOfficerId) {
+        showToast('Please select an officer first.');
+        return;
+    }
+    closeModal();
+    try {
+        await apiFetch('field.php', {action: 'reassign', assignment_id: assignmentId, officer_id: _fieldReassignOfficerId}, 'POST');
+        showToast(`Case ${safeText(caseId)} reassigned successfully.`);
+        activeAssignmentId = null;
+        await Promise.all([loadAssignedTasks(), loadHistory(), loadPerformance()]);
+        renderDashboard();
+        renderAssigned();
+        renderActiveJob();
+        renderHistory();
+        renderPerformance();
+    } catch (error) {
+        showToast(error.message);
+    }
 }

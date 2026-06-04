@@ -368,4 +368,90 @@ if ($action === 'contacts') {
     successResponse(['contacts' => $stmt->fetchAll()]);
 }
 
+if ($action === 'availableOfficers') {
+    $stmt = $db->prepare(
+        'SELECT fo.officer_id AS id, u.full_name AS name, fo.badge_number AS code,
+                fo.assigned_barangay AS brgy,
+                (SELECT COUNT(*) FROM assignments a2
+                 WHERE a2.field_officer_id = fo.officer_id
+                   AND a2.assignment_status IN ("pending","in_progress")) AS active_count,
+                (SELECT COUNT(*) FROM assignments a3
+                 WHERE a3.field_officer_id = fo.officer_id
+                   AND a3.assignment_status = "completed") AS cases_closed
+         FROM field_officers fo
+         JOIN users u ON u.user_id = fo.user_id
+         WHERE fo.is_available = 1 AND fo.officer_id != :oid AND u.is_active = 1
+         ORDER BY u.full_name ASC'
+    );
+    $stmt->execute([':oid' => $officerId]);
+    successResponse(['officers' => $stmt->fetchAll()]);
+}
+
+if ($action === 'reassign') {
+    $assignmentId = intval($data['assignment_id'] ?? 0);
+    $newOfficerId = intval($data['officer_id'] ?? 0);
+
+    if ($assignmentId <= 0 || $newOfficerId <= 0) {
+        errorResponse('Assignment ID and new officer are required.');
+    }
+
+    $stmt = $db->prepare(
+        'SELECT a.assignment_id, a.complaint_id
+         FROM assignments a
+         WHERE a.assignment_id = :aid AND a.field_officer_id = :oid AND a.assignment_status IN ("pending","in_progress")'
+    );
+    $stmt->execute([':aid' => $assignmentId, ':oid' => $officerId]);
+    $current = $stmt->fetch();
+    if (!$current) {
+        errorResponse('Assignment not found or cannot be reassigned.');
+    }
+
+    $stmt = $db->prepare('SELECT officer_id FROM field_officers WHERE officer_id = :oid AND is_available = 1');
+    $stmt->execute([':oid' => $newOfficerId]);
+    if (!$stmt->fetch()) {
+        errorResponse('Selected officer is not available.');
+    }
+
+    $complaintId = (int)$current['complaint_id'];
+
+    $stmt = $db->prepare('SELECT dispatch_id FROM complaints WHERE complaint_id = :cid');
+    $stmt->execute([':cid' => $complaintId]);
+    $complaint = $stmt->fetch();
+    $dispatchId = (int)($complaint['dispatch_id'] ?? 0);
+
+    $db->prepare(
+        'UPDATE assignments SET assignment_status = :status, reassigned_to = :new_oid,
+         reassignment_reason = :reason, reassignment_at = NOW()
+         WHERE assignment_id = :aid'
+    )->execute([':status' => 'reassigned', ':new_oid' => $newOfficerId, ':reason' => 'Field officer requested reassignment', ':aid' => $assignmentId]);
+
+    $stmt = $db->prepare(
+        'SELECT COUNT(*) FROM assignments WHERE field_officer_id = :oid AND assignment_status IN ("pending","in_progress")'
+    );
+    $stmt->execute([':oid' => $officerId]);
+    if ((int)$stmt->fetchColumn() === 0) {
+        $db->prepare("UPDATE field_officers SET is_available = 1 WHERE officer_id = :oid")->execute([':oid' => $officerId]);
+    }
+
+    $deadline = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+    $db->prepare(
+        'INSERT INTO assignments (complaint_id, field_officer_id, dispatch_id, assigned_at, response_deadline, assignment_status, reassignment_reason)
+         VALUES (:cid, :officer_id, :did, NOW(), :deadline, :status, :reason)'
+    )->execute([
+        ':cid'       => $complaintId,
+        ':officer_id' => $newOfficerId,
+        ':did'       => $dispatchId,
+        ':deadline'  => $deadline,
+        ':status'    => 'pending',
+        ':reason'    => 'Reassigned by field officer',
+    ]);
+
+    $db->prepare("UPDATE field_officers SET is_available = 0 WHERE officer_id = :oid")->execute([':oid' => $newOfficerId]);
+
+    $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
+       ->execute([':cid' => $complaintId, ':uid' => $officerUid, ':status' => 'assigned', ':notes' => 'Case reassigned to officer ID ' . $newOfficerId . ' by field officer.']);
+
+    successResponse(['message' => 'Case reassigned successfully.']);
+}
+
 errorResponse('Unknown action.');
