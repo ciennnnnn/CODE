@@ -385,115 +385,118 @@
 
       <!-- PAGE: FAQ -->
       <section id="page-faq" class="page-section hidden">
-        <div class="faq-hero">
-          <div class="faq-hero-label">FREQUENTLY ASKED QUESTIONS</div>
-          <h1 class="faq-hero-title">You ask? <em>We answer.</em></h1>
-          <p class="faq-hero-sub">Everything you need to know about TRAPICO and your role as a Field Officer.</p>
-        </div>
+        <div class="faq-wrap">
 
-        <div class="faq-list">
-
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              What is TRAPICO?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              TRAPICO (Traffic and Road Incident Complaint System) is a digital platform that connects civilians, dispatch officers, and field officers to manage and resolve traffic and road-related incidents efficiently. Civilians file complaints, Dispatch validates and assigns them, and Field Officers respond on-site to resolve the issue.
-            </div>
+          <div class="faq-header">
+            <div class="faq-kicker">FREQUENTLY ASKED QUESTIONS</div>
+            <h2 class="faq-heading">You ask? <em>We answer</em></h2>
+            <p class="faq-subtext">Everything you need to know about TRAPICO and your role as a Field Officer.</p>
           </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              How do I use TRAPICO as a Field Officer?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              As a Field Officer, your workflow is: (1) Check your <strong>Assigned Cases</strong> for new assignments from Dispatch. (2) Go to <strong>Active Job</strong> to view the incident details and navigate to the site. (3) Perform a <strong>GPS Check-In</strong> once you arrive within 150m of the location. (4) Resolve the incident and submit a <strong>Resolution Report</strong> with before/after photos and a description. Your performance is tracked automatically.
-            </div>
-          </div>
+          <div class="faq-list">
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              What is the role of Dispatch in TRAPICO?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              Dispatch Officers are the command center of TRAPICO. They review and validate complaints submitted by civilians, set priority levels (High, Medium, Low), assign cases to available Field Officers, monitor real-time progress, and communicate with Field Officers via the Messages feature. Dispatch can also escalate cases or flag them for follow-up.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is TRAPICO?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO (Traffic and Road Incident Complaint System) is a digital platform that connects civilians, dispatch officers, and field officers to manage and resolve traffic and road-related incidents efficiently. Civilians file complaints, Dispatch validates and assigns them, and Field Officers respond on-site to resolve the issue.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              What is the 30-minute arrival window?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              Once a case is assigned to you, you have <strong>30 minutes</strong> to arrive at the incident site and complete your GPS Check-In. A countdown timer is shown on the Active Job page. If you fail to check in within this window, the system automatically generates a <strong>Failure-to-Arrive (FTA)</strong> alert and notifies Dispatch.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I use TRAPICO as a Field Officer?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                As a Field Officer, your workflow is: (1) Check your <strong>Assigned Cases</strong> for new assignments from Dispatch. (2) Go to <strong>Active Job</strong> to view the incident details and navigate to the site. (3) Perform a <strong>GPS Check-In</strong> once you arrive within 150m of the location. (4) Resolve the incident and submit a <strong>Resolution Report</strong> with before/after photos and a description. Your performance is tracked automatically.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              How does GPS Geofence Check-In work?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              The GPS Check-In verifies that you are physically at the incident location. When you tap <strong>Check In (GPS)</strong>, the system reads your device's GPS coordinates and confirms you are within 150 meters of the reported incident site. This ensures accountability and accurate response tracking.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is the role of Dispatch in TRAPICO?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Dispatch Officers are the command center of TRAPICO. They review and validate complaints submitted by civilians, set priority levels (High, Medium, Low), assign cases to available Field Officers, monitor real-time progress, and communicate with Field Officers via the Messages feature. Dispatch can also escalate cases or flag them for follow-up.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              How do I submit a Resolution Report?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              After checking in at the site, the Resolution Report form becomes available. Fill in the <strong>Resolution Method</strong>, upload <strong>Before and After</strong> photos or videos as evidence, describe the actions taken, and optionally add follow-up recommendations. Tap <strong>Save Draft</strong> to save progress, or <strong>Submit Resolution Report</strong> to close the case. Submitted reports go to Dispatch for final review.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is the 30-minute arrival window?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Once a case is assigned to you, you have <strong>30 minutes</strong> to arrive at the incident site and complete your GPS Check-In. A countdown timer is shown on the Active Job page. If you fail to check in within this window, the system automatically generates a <strong>Failure-to-Arrive (FTA)</strong> alert and notifies Dispatch.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              What does my Efficiency Score mean?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              Your Efficiency Score is a live performance metric calculated from: on-time arrival rate, case resolution speed, citizen satisfaction ratings, and the percentage of cases resolved successfully. A higher score reflects prompt, quality service. You can view your detailed breakdown in <strong>My Performance</strong>.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How does GPS Geofence Check-In work?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                The GPS Check-In verifies that you are physically at the incident location. When you tap <strong>Check In (GPS)</strong>, the system reads your device's GPS coordinates and confirms you are within 150 meters of the reported incident site. This ensures accountability and accurate response tracking.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              How do I communicate with Dispatch?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              Use the <strong>Messages</strong> section to send and receive messages directly with your assigned Dispatch Officers. Select a contact from the list, type your message, and press Send. Messages are delivered in real time and help coordinate on active cases. You will see a notification badge when you have unread messages.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I submit a Resolution Report?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                After checking in at the site, the Resolution Report form becomes available. Fill in the <strong>Resolution Method</strong>, upload <strong>Before and After</strong> photos or videos as evidence, describe the actions taken, and optionally add follow-up recommendations. Tap <strong>Save Draft</strong> to save progress, or <strong>Submit Resolution Report</strong> to close the case. Submitted reports go to Dispatch for final review.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              What types of incidents does TRAPICO handle?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              TRAPICO handles a wide range of traffic and road-related complaints including: road damage (potholes, cracks), illegal parking, stalled vehicles, flooding on roads, traffic signal issues, road obstructions, and other public road safety concerns reported by civilians in the community.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What does my Efficiency Score mean?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Your Efficiency Score is a live performance metric calculated from: on-time arrival rate, case resolution speed, citizen satisfaction ratings, and the percentage of cases resolved successfully. A higher score reflects prompt, quality service. You can view your detailed breakdown in <strong>My Performance</strong>.
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-              Who can see my submitted reports and ratings?
-              <span class="faq-icon">+</span>
-            </button>
-            <div class="faq-a">
-              Your resolution reports are reviewed by Dispatch Officers. Citizens who filed the complaint may receive a resolution status update and can submit a satisfaction rating. Your ratings and performance data are visible to you on your <strong>My Profile</strong> and <strong>My Performance</strong> pages, and to Dispatch supervisors for monitoring purposes.
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I communicate with Dispatch?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Use the <strong>Messages</strong> section to send and receive messages directly with your assigned Dispatch Officers. Select a contact from the list, type your message, and press Send. Messages are delivered in real time and help coordinate on active cases. You will see a notification badge when you have unread messages.
+              </div>
             </div>
-          </div>
 
-        </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What types of incidents does TRAPICO handle?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO handles a wide range of traffic and road-related complaints including: road damage (potholes, cracks), illegal parking, stalled vehicles, flooding on roads, traffic signal issues, road obstructions, and other public road safety concerns reported by civilians in the community.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>Who can see my submitted reports and ratings?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Your resolution reports are reviewed by Dispatch Officers. Citizens who filed the complaint may receive a resolution status update and can submit a satisfaction rating. Your ratings and performance data are visible to you on your <strong>My Profile</strong> and <strong>My Performance</strong> pages, and to Dispatch supervisors for monitoring purposes.
+              </div>
+            </div>
+
+          </div><!-- /faq-list -->
+        </div><!-- /faq-wrap -->
       </section>
 
     </main>
@@ -531,17 +534,10 @@ function closeSidebar() {
 document.querySelectorAll('.nav-item, .logout-btn').forEach(function(el) {
   el.addEventListener('touchstart', function(){}, {passive: true});
 });
-function toggleFaq(btn) {
-  var item = btn.closest('.faq-item');
+function toggleFaq(item) {
   var isOpen = item.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(function(el) {
-    el.classList.remove('open');
-    el.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
-  });
-  if (!isOpen) {
-    item.classList.add('open');
-    btn.setAttribute('aria-expanded', 'true');
-  }
+  document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) item.classList.add('open');
 }
 </script>
 </body>
