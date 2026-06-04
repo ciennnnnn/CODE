@@ -237,6 +237,7 @@
             </div>
             <div class="messenger-chat-active hidden" id="chat-active-area">
               <div class="messenger-chat-header" id="chat-header">
+                <button class="chat-back-btn" onclick="backToContacts()" aria-label="Back to contacts">&#8592; Contacts</button>
                 <div class="chat-header-avatar" id="chat-header-avatar">D</div>
                 <div>
                   <div class="chat-header-name" id="chat-header-name">Dispatch Officer</div>
@@ -313,7 +314,7 @@
 
       <!-- PAGE: MY PROFILE -->
       <section id="page-profile" class="page-section hidden">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="prof-main-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
           <div class="card" style="grid-column:1">
             <div class="card-head"><span class="card-title">Personal Information</span></div>
             <div style="padding:20px">
@@ -357,7 +358,7 @@
         <div class="card" style="margin-top:24px">
           <div class="card-head"><span class="card-title">This Month's Performance</span></div>
           <div style="padding:20px">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+            <div class="prof-month-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
               <div style="background:var(--green-light);padding:16px;border-radius:8px;border-left:4px solid var(--green)">
                 <div style="color:var(--mist);font-size:12px;font-weight:600">Resolution Rate</div>
                 <div style="font-size:28px;font-weight:800;color:var(--green);margin-top:8px" id="prof-resolution-rate">0%</div>

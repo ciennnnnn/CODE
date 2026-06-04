@@ -53,23 +53,47 @@ let checkedIn        = false;
 let jobSecs          = 18 * 60 + 42;
 
 /* ── INIT ──────────────────────────────────────────────────── */
+/* ── SIDEBAR GLOBAL FUNCTIONS (called by HTML onclick attrs) ── */
+function toggleSidebar() {
+  const sidebar  = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.toggle('open');
+  if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function closeSidebar() {
+  const sidebar  = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar)  sidebar.classList.remove('open');
+  if (backdrop) backdrop.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 (function init() {
-    // Sidebar toggle for mobile
-    const sidebar = document.querySelector('.sidebar');
-    const menuBtn = document.getElementById('menu-btn');
-    if (sidebar && menuBtn) {
-      menuBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        sidebar.classList.toggle('open');
-      });
-      document.addEventListener('click', function(e) {
-        if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-          sidebar.classList.remove('open');
-        }
-      });
+  const sidebar  = document.querySelector('.sidebar');
+  const menuBtn  = document.getElementById('menu-btn');
+
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', function(e) {
+    if (!sidebar || !sidebar.classList.contains('open')) return;
+    if (!sidebar.contains(e.target) && !menuBtn?.contains(e.target)) {
+      closeSidebar();
     }
-  // All dashboard/stat rendering is now handled by field.backend.js
-  // No-op here to avoid duplicate/conflicting logic
+  });
+
+  // Close sidebar when any nav item is tapped on mobile
+  document.querySelectorAll('.nav-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      if (window.innerWidth <= 600) closeSidebar();
+    });
+  });
+
+  // Close sidebar on resize if it was open
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 600) closeSidebar();
+  });
 })();
 
 /* ── NOTIF PANEL ───────────────────────────────────────────── */

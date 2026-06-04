@@ -541,6 +541,23 @@ function openFieldChat(contact) {
     const nameEl = document.getElementById('chat-header-name');
     if (avatarEl) avatarEl.textContent = initials;
     if (nameEl) nameEl.textContent = contact.name || 'Dispatch Officer';
+
+    // Mobile: switch to chat panel
+    if (window.innerWidth <= 768) {
+        const shell = document.querySelector('.messenger-shell');
+        if (shell) shell.classList.add('chat-mode');
+    }
+}
+
+function backToContacts() {
+    const shell = document.querySelector('.messenger-shell');
+    if (shell) shell.classList.remove('chat-mode');
+    stopFieldChatPolling();
+    fieldActiveContact = null;
+    const placeholder = document.getElementById('chat-placeholder');
+    const chatArea = document.getElementById('chat-active-area');
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (chatArea) chatArea.classList.add('hidden');
 }
 
 async function loadFieldChatThread(silent = false) {
@@ -1448,6 +1465,9 @@ window.setActivePage = function(pageId) {
     if (pageId === 'drafts') renderDrafts();
     if (pageId === 'profile') renderProfile();
     if (pageId === 'messages') {
+        /* On mobile: reset to contact-list view */
+        const shell = document.querySelector('.messenger-shell');
+        if (shell && window.innerWidth <= 768) shell.classList.remove('chat-mode');
         loadFieldContacts();
         /* Clear unread counts for active contact when returning to messages */
         if (fieldActiveContact) {
