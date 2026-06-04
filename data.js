@@ -222,6 +222,7 @@ function setActivePage(pageId) {
   const titleMap = {
     dash:'Dashboard', report:'File a Complaint', complaints:'My Complaints',
     profile:'My Profile', queue:'Complaint Queue', active:'Active Cases',
+    citizens:'Citizen Records',
     officers:'Field Officers', analytics:'Analytics', assigned:'Assigned Cases',
     job:'Active Job', drafts:'Drafts', history:'Case History', performance:'My Performance',
     about:'About Us', messages:'Messages',

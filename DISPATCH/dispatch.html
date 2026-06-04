@@ -33,6 +33,7 @@
       <div class="nav-item active" id="nav-dash"      onclick="openPage('dash')">      Command Center      </div>
       <div class="nav-item"        id="nav-queue"     onclick="openPage('queue')">     Complaint Queue    <span class="nav-badge" id="badge-queue">0</span> </div>
       <div class="nav-item"        id="nav-active"    onclick="openPage('active')">    Active Cases       <span class="nav-badge" id="badge-active">0</span> </div>
+      <div class="nav-item"        id="nav-citizens"  onclick="openPage('citizens')">  Citizen Records    </div>
       <div class="nav-item"        id="nav-officers"  onclick="openPage('officers')">  Field Officers     <span class="nav-badge hidden" id="badge-officers-msg">0</span> </div>
       <div class="nav-item"        id="nav-analytics" onclick="openPage('analytics')"> Analytics          </div>
       <div class="nav-item"        id="nav-profile"   onclick="openPage('profile')">   My Profile        </div>
@@ -168,6 +169,51 @@
       <!-- PAGE: ACTIVE CASES -->
       <section id="page-active" class="page-section hidden">
         <div id="active-cases-list"></div>
+      </section>
+
+      <!-- PAGE: CITIZEN RECORDS -->
+      <section id="page-citizens" class="page-section hidden">
+
+        <!-- Filter row -->
+        <div class="queue-filters">
+          <input  class="form-input"  style="max-width:280px" id="citizen-search"
+                  placeholder="Search name or email…" oninput="debounceCitizenSearch()" />
+          <select class="form-select" style="width:auto"       id="citizen-brgy"
+                  onchange="loadCitizens()">
+            <option value="">All Barangays</option>
+            <option>Commonwealth</option><option>Batasan Hills</option>
+            <option>Central</option><option>Sto. Cristo</option>
+          </select>
+          <button class="btn-secondary btn-sm" onclick="loadCitizens()">&#128269; Search</button>
+        </div>
+
+        <!-- Citizens table -->
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Barangay</th>
+                  <th style="text-align:center">Total Cases</th>
+                  <th style="text-align:center">Closed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="citizen-tbody">
+                <tr><td colspan="7">
+                  <div class="empty-state" style="padding:32px">
+                    <div class="empty-icon">&#128100;</div>
+                    <div class="empty-title">Select a barangay or search to load citizens</div>
+                  </div>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </section>
 
       <!-- PAGE: FIELD OFFICERS -->

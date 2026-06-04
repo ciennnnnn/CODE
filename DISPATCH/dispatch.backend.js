@@ -2384,6 +2384,197 @@ function onProfileAvatarChange(event) {
     reader.readAsDataURL(file);
 }
 
+/* ── CITIZEN RECORDS ────────────────────────────────────────── */
+function _esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+let _citizenSearchTimer = null;
+
+function debounceCitizenSearch() {
+    clearTimeout(_citizenSearchTimer);
+    _citizenSearchTimer = setTimeout(loadCitizens, 420);
+}
+
+async function loadCitizens() {
+    const search = (document.getElementById('citizen-search')?.value || '').trim();
+    const brgy   = document.getElementById('citizen-brgy')?.value || '';
+    const tbody  = document.getElementById('citizen-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:28px">
+        <div class="empty-icon">&#9203;</div>
+        <div class="empty-title">Loading citizens…</div>
+      </div></td></tr>`;
+
+    try {
+        const params = new URLSearchParams({ action: 'citizens' });
+        if (search) params.set('search', search);
+        if (brgy)   params.set('brgy', brgy);
+
+        const resp = await fetch('/api/dispatch.php?' + params.toString());
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.message || 'Failed to load citizens');
+
+        const list = data.citizens || [];
+        if (!list.length) {
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:28px">
+                <div class="empty-icon">&#128100;</div>
+                <div class="empty-title">No citizens found</div>
+                <div class="empty-sub">Try a different search or barangay filter.</div>
+              </div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = list.map(c => `
+          <tr>
+            <td style="font-weight:600">${_esc(c.full_name || '—')}</td>
+            <td class="mono" style="font-size:12px">${_esc(c.email || '—')}</td>
+            <td style="font-size:12px">${_esc(c.phone_number || '—')}</td>
+            <td style="font-size:12px">${_esc(c.last_brgy || '—')}</td>
+            <td style="text-align:center;font-weight:700">${c.total_cases || 0}</td>
+            <td style="text-align:center;font-weight:700;color:var(--green)">${c.closed_cases || 0}</td>
+            <td>
+              <button class="btn-secondary btn-sm" onclick="printCitizenReport(${c.user_id}, ${JSON.stringify(_esc(c.full_name))})">&#128424; Print PDF</button>
+            </td>
+          </tr>`).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:28px">
+            <div class="empty-icon">&#9888;</div>
+            <div class="empty-title">Error loading citizens</div>
+            <div class="empty-sub">${_esc(err.message)}</div>
+          </div></td></tr>`;
+    }
+}
+
+async function printCitizenReport(userId, displayName) {
+    showToast('Preparing citizen report…');
+    try {
+        const resp = await fetch('/api/dispatch.php?action=citizenDetail&user_id=' + encodeURIComponent(userId));
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.message || 'Could not load citizen data');
+
+        const { citizen, cases } = data;
+        const now = new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' });
+
+        const casesRows = cases.length
+            ? cases.map((c, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><code>${_esc(c.tracking_id)}</code></td>
+                  <td>${_esc(c.category)}</td>
+                  <td>${_esc(c.brgy || '—')}</td>
+                  <td>${_esc(c.priority || '—')}</td>
+                  <td>${_esc(c.status)}</td>
+                  <td>${c.submitted_at ? c.submitted_at.substring(0, 10) : '—'}</td>
+                  <td>${_esc(c.description || '—')}</td>
+                </tr>`).join('')
+            : `<tr><td colspan="8" style="text-align:center;color:#888;padding:16px">No complaints on record</td></tr>`;
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Citizen Case Report — ${_esc(citizen.full_name)}</title>
+<style>
+  @page { margin: 18mm 14mm; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
+  /* Header */
+  .rpt-header { display: flex; justify-content: space-between; align-items: flex-start;
+                border-bottom: 3px solid #111; padding-bottom: 12px; margin-bottom: 18px; }
+  .rpt-brand  { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
+  .rpt-brand-sub { font-size: 10px; color: #777; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .rpt-meta   { text-align: right; font-size: 11px; color: #777; line-height: 1.6; }
+  /* Section headings */
+  h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+       border-bottom: 1.5px solid #ddd; padding-bottom: 5px; margin: 18px 0 10px; color: #333; }
+  /* Info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; }
+  .info-row  { display: flex; gap: 8px; align-items: baseline; }
+  .info-lbl  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: #888; min-width: 96px; flex-shrink: 0; }
+  .info-val  { font-weight: 600; font-size: 12px; }
+  /* Table */
+  table  { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
+  thead tr { background: #111; color: #fff; }
+  th  { padding: 7px 8px; text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td  { padding: 6px 8px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  code { font-family: monospace; font-size: 10px; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
+  /* Footer */
+  .rpt-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #ddd;
+                font-size: 9.5px; color: #aaa; }
+  @media print { @page { margin: 15mm 12mm; } }
+</style>
+</head>
+<body>
+
+<div class="rpt-header">
+  <div>
+    <div class="rpt-brand">TRAPICO</div>
+    <div class="rpt-brand-sub">Traffic Complaint Information System</div>
+    <div style="font-size:11px;color:#888;margin-top:6px">Quezon City — Barangay Traffic Management</div>
+  </div>
+  <div class="rpt-meta">
+    <div style="font-size:12px;font-weight:700;color:#333">Citizen Case Report</div>
+    <div>Printed: ${_esc(now)}</div>
+    <div>Prepared by: Dispatch Command Center</div>
+  </div>
+</div>
+
+<h2>Personal Information</h2>
+<div class="info-grid">
+  <div class="info-row"><span class="info-lbl">Full Name</span><span class="info-val">${_esc(citizen.full_name || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Email</span><span class="info-val">${_esc(citizen.email || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Phone</span><span class="info-val">${_esc(citizen.phone_number || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Sex</span><span class="info-val">${_esc(citizen.sex || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Birthdate</span><span class="info-val">${citizen.birthdate ? String(citizen.birthdate).substring(0,10) : '—'}</span></div>
+  <div class="info-row"><span class="info-lbl">Middle Name</span><span class="info-val">${_esc(citizen.middle_name || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Street</span><span class="info-val">${_esc(citizen.street || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${_esc(citizen.city || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Province</span><span class="info-val">${_esc(citizen.province || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">ZIP Code</span><span class="info-val">${_esc(citizen.zip_code || '—')}</span></div>
+</div>
+
+<h2>Complaint History &mdash; ${cases.length} case${cases.length !== 1 ? 's' : ''} on record</h2>
+<table>
+  <thead>
+    <tr>
+      <th>#</th><th>Tracking ID</th><th>Category</th><th>Barangay</th>
+      <th>Priority</th><th>Status</th><th>Date Filed</th><th>Description</th>
+    </tr>
+  </thead>
+  <tbody>${casesRows}</tbody>
+</table>
+
+<div class="rpt-footer">
+  <p>CONFIDENTIAL — For official use only. Generated by TRAPICO Dispatch Command Center on ${_esc(now)}.</p>
+</div>
+
+<script>
+  window.onload = function () { window.print(); };
+<\/script>
+</body>
+</html>`;
+
+        const w = window.open('', '_blank', 'width=960,height=720,scrollbars=yes');
+        if (!w) {
+            showToast('Allow pop-ups in your browser to print the report.');
+            return;
+        }
+        w.document.write(html);
+        w.document.close();
+    } catch (err) {
+        showToast('Error: ' + (err.message || 'Could not generate report'));
+    }
+}
+
 /* ── Page navigation hook: initialize/invalidate maps on page switch ── */
 (function patchSetActivePage() {
     const _prev = typeof setActivePage === 'function' ? setActivePage : null;
@@ -2402,6 +2593,9 @@ function onProfileAvatarChange(event) {
         }
         if (pageId === 'analytics') {
             renderAnalytics();
+        }
+        if (pageId === 'citizens') {
+            loadCitizens();
         }
         if (pageId === 'active') {
             setTimeout(() => {

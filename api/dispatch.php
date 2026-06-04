@@ -678,6 +678,78 @@ if ($action === 'dispatchProfile') {
     ]);
 }
 
+if ($action === 'citizens') {
+    $search = trim((string)($_REQUEST['search'] ?? $data['search'] ?? ''));
+    $brgy   = trim((string)($_REQUEST['brgy']   ?? $data['brgy']   ?? ''));
+
+    $where  = ['u.role = :role'];
+    $params = [':role' => 'regular'];
+
+    if ($search !== '') {
+        $where[] = '(u.full_name LIKE :search OR u.email LIKE :search)';
+        $params[':search'] = '%' . $search . '%';
+    }
+    if ($brgy !== '') {
+        $where[] = 'EXISTS (SELECT 1 FROM complaints cc WHERE cc.user_id = u.user_id AND cc.asset_town = :brgy)';
+        $params[':brgy'] = $brgy;
+    }
+
+    $sql =
+        "SELECT u.user_id, u.full_name, u.email,
+                COALESCE(u.phone_number,'—') AS phone_number,
+                COALESCE((
+                    SELECT asset_town FROM complaints
+                    WHERE user_id = u.user_id ORDER BY submitted_at DESC LIMIT 1
+                ),'—') AS last_brgy,
+                COUNT(c.complaint_id) AS total_cases,
+                COALESCE(SUM(c.status = 'closed'), 0) AS closed_cases,
+                MAX(c.submitted_at) AS last_case_at
+         FROM users u
+         LEFT JOIN complaints c ON c.user_id = u.user_id
+         WHERE " . implode(' AND ', $where) . "
+         GROUP BY u.user_id
+         ORDER BY total_cases DESC, u.full_name ASC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    successResponse(['citizens' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+}
+
+if ($action === 'citizenDetail') {
+    $userId = intval($_REQUEST['user_id'] ?? $data['user_id'] ?? 0);
+    if (!$userId) errorResponse('User ID required.');
+
+    $uStmt = $db->prepare(
+        "SELECT user_id, full_name, email,
+                COALESCE(phone_number,'') AS phone_number,
+                COALESCE(middle_name,'')  AS middle_name,
+                birthdate, sex,
+                COALESCE(street,'')   AS street,
+                COALESCE(city,'')     AS city,
+                COALESCE(province,'') AS province,
+                COALESCE(zip_code,'') AS zip_code
+         FROM users
+         WHERE user_id = :uid AND role = 'regular'
+         LIMIT 1"
+    );
+    $uStmt->execute([':uid' => $userId]);
+    $citizen = $uStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$citizen) errorResponse('Citizen not found.');
+
+    $cStmt = $db->prepare(
+        "SELECT tracking_id, category, status, priority,
+                asset_town AS brgy, description,
+                submitted_at, updated_at
+         FROM complaints
+         WHERE user_id = :uid
+         ORDER BY submitted_at DESC"
+    );
+    $cStmt->execute([':uid' => $userId]);
+    $cases = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    successResponse(['citizen' => $citizen, 'cases' => $cases]);
+}
+
 if ($action === 'officerCases') {
     $officerId = intval($_REQUEST['officer_id'] ?? $data['officer_id'] ?? 0);
     if (!$officerId) {
