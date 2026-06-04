@@ -1405,56 +1405,74 @@ async function renderProfile() {
     }
 }
 
+function _buildOfficerCard(o) {
+    const initials    = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
+    const handled     = Number(o.cases_closed) || 0;
+    const rating      = Number(o.rating) || 0;
+    const active      = Number(o.active_count) || 0;
+    const workload    = Math.round(Math.min(100, (active / 5) * 100));
+    const isDispatch  = o.officer_role === 'dispatch_officer';
+    const statusLabel = isDispatch
+        ? (o.status === 'on_duty' ? 'ON DUTY' : 'OFFLINE')
+        : (o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE');
+    const chatKey     = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
+    const hasAlert    = officerChatAlertMap[chatKey];
+    const unread      = Number(officerUnreadCountMap[chatKey] || 0);
+
+    return `
+    <div class="officer-full-card" style="position:relative">
+      <div id="unread-badge-${safeText(chatKey)}"
+           style="display:${hasAlert ? 'flex' : 'none'};position:absolute;top:-8px;right:-8px;background:#E63946;color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:22px;height:22px;align-items:center;justify-content:center;padding:0 6px;font-family:var(--font-mono);z-index:3;box-shadow:0 0 0 3px rgba(230,57,70,0.25),0 2px 6px rgba(0,0,0,0.18)">
+        ${hasAlert ? (unread > 0 ? unread : '!') : ''}
+      </div>
+      <div class="officer-full-header">
+        <div class="officer-avatar-lg">${initials}</div>
+        <div style="flex:1">
+          <div class="officer-full-name">${safeText(o.name)}</div>
+          <div class="officer-full-brgy">Brgy. ${safeText(o.brgy || 'N/A')}</div>
+        </div>
+        <span class="badge ${_badgeClassByStatus(o.status)}">${statusLabel}</span>
+      </div>
+      <div class="officer-stats-row">
+        <div class="officer-stat-box">
+          <div class="officer-stat-val">${handled}</div>
+          <div class="officer-stat-label">Handled</div>
+        </div>
+        <div class="officer-stat-box">
+          <div class="officer-stat-val">${rating.toFixed(2)}</div>
+          <div class="officer-stat-label">Score</div>
+        </div>
+        <div class="officer-stat-box">
+          <div class="officer-stat-val">${active}</div>
+          <div class="officer-stat-label">Active</div>
+        </div>
+      </div>
+      ${perfBar('Workload', workload)}
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">View Cases</button>
+        <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
+      </div>
+    </div>`;
+}
+
 function renderOfficers() {
-    const grid = document.getElementById('officers-grid');
-    if (!grid) return;
+    const fieldGrid    = document.getElementById('field-officers-grid');
+    const dispatchGrid = document.getElementById('dispatch-officers-grid');
+    const fieldCount   = document.getElementById('field-officers-count');
+    const dispCount    = document.getElementById('dispatch-officers-count');
 
-    grid.innerHTML = OFFICERS_DATA.map(o => {
-        const initials = String(o.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0,2).toUpperCase();
-        const handled  = Number(o.cases_closed) || 0;
-        const rating   = Number(o.rating) || 0;
-        const active   = Number(o.active_count) || 0;
-        const workload = Math.round(Math.min(100, (active / 5) * 100));
-        const statusLabel = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE';
-        const chatKey  = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
-        const hasAlert = officerChatAlertMap[chatKey];
-        const unread   = Number(officerUnreadCountMap[chatKey] || 0);
-
-        return `
-        <div class="officer-full-card" style="position:relative">
-          <div id="unread-badge-${safeText(chatKey)}"
-               style="display:${hasAlert ? 'flex' : 'none'};position:absolute;top:-8px;right:-8px;background:#E63946;color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:22px;height:22px;align-items:center;justify-content:center;padding:0 6px;font-family:var(--font-mono);z-index:3;box-shadow:0 0 0 3px rgba(230,57,70,0.25),0 2px 6px rgba(0,0,0,0.18)">
-            ${hasAlert ? (unread > 0 ? unread : '!') : ''}
-          </div>
-          <div class="officer-full-header">
-            <div class="officer-avatar-lg">${initials}</div>
-            <div style="flex:1">
-              <div class="officer-full-name">${safeText(o.name)}</div>
-              <div class="officer-full-brgy">${_officerRoleLabel(o)} · Brgy. ${safeText(o.brgy || 'N/A')}</div>
-            </div>
-            <span class="badge ${_badgeClassByStatus(o.status)}">${statusLabel}</span>
-          </div>
-          <div class="officer-stats-row">
-            <div class="officer-stat-box">
-              <div class="officer-stat-val">${handled}</div>
-              <div class="officer-stat-label">Handled</div>
-            </div>
-            <div class="officer-stat-box">
-              <div class="officer-stat-val">${rating.toFixed(2)}</div>
-              <div class="officer-stat-label">Score</div>
-            </div>
-            <div class="officer-stat-box">
-              <div class="officer-stat-val">${_officerRoleLabel(o)}</div>
-              <div class="officer-stat-label">Duty</div>
-            </div>
-          </div>
-          ${perfBar(`Workload`, workload)}
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">View Cases</button>
-            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
-          </div>
-        </div>`;
-    }).join('');
+    if (fieldGrid) {
+        fieldGrid.innerHTML = FIELD_OFFICERS_DATA.length
+            ? FIELD_OFFICERS_DATA.map(_buildOfficerCard).join('')
+            : '<div class="empty-state" style="padding:24px 0"><div class="empty-title">No field officers found</div></div>';
+    }
+    if (dispatchGrid) {
+        dispatchGrid.innerHTML = DISPATCH_OFFICERS_DATA.length
+            ? DISPATCH_OFFICERS_DATA.map(_buildOfficerCard).join('')
+            : '<div class="empty-state" style="padding:24px 0"><div class="empty-title">No dispatch officers found</div></div>';
+    }
+    if (fieldCount)   fieldCount.textContent   = `${FIELD_OFFICERS_DATA.length} officer${FIELD_OFFICERS_DATA.length !== 1 ? 's' : ''}`;
+    if (dispCount)    dispCount.textContent     = `${DISPATCH_OFFICERS_DATA.length} officer${DISPATCH_OFFICERS_DATA.length !== 1 ? 's' : ''}`;
 }
 
 function switchOfficerCaseTab(el, targetId) {
