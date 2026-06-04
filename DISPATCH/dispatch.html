@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/base.css" />
-  <link rel="stylesheet" href="dispatch.css?v=20260604h" />
+  <link rel="stylesheet" href="dispatch.css?v=20260604i" />
 </head>
 <body>
 
@@ -187,11 +187,11 @@
 
         <!-- Row 1: Summary KPIs -->
         <div class="stats-row">
-          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val" id="analytics-total">—</div><div class="stat-card-sub">Complaints submitted</div></div>
-          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val" id="analytics-rate">—</div><div class="stat-card-sub">Resolved / Total</div></div>
-          <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val" id="analytics-avg">—</div><div class="stat-card-sub">Hours per case</div></div>
+          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val" id="analytics-total">—</div><div class="stat-card-sub" id="analytics-total-sub">Complaints submitted</div></div>
+          <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val" id="analytics-rate">—</div><div class="stat-card-sub" id="analytics-rate-sub">Resolved / Total</div></div>
+          <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val" id="analytics-avg">—</div><div class="stat-card-sub" id="analytics-avg-sub">Hours per closed case</div></div>
           <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val" id="analytics-rejected">—</div><div class="stat-card-sub">This month</div></div>
-          <div class="stat-card"><div class="stat-card-label">Active in Field</div><div class="stat-card-val" id="analytics-active">—</div><div class="stat-card-sub">Currently deployed</div></div>
+          <div class="stat-card"><div class="stat-card-label">Active in Field</div><div class="stat-card-val" id="analytics-active">—</div><div class="stat-card-sub">All months · deployed</div></div>
         </div>
 
         <!-- Row 2: Category bars + Status donut -->
@@ -352,18 +352,22 @@
               <div class="performance-box green">
                 <div class="performance-label">Resolution Rate</div>
                 <div class="performance-val" id="prof-resolution-rate">—</div>
+                <div class="performance-sub" id="prof-resolution-sub" style="font-size:11px;color:var(--mist);margin-top:4px"></div>
               </div>
               <div class="performance-box blue">
                 <div class="performance-label">On-Time Closure</div>
                 <div class="performance-val" id="prof-on-time">—</div>
+                <div class="performance-sub" id="prof-ontime-sub" style="font-size:11px;color:var(--mist);margin-top:4px"></div>
               </div>
               <div class="performance-box red">
                 <div class="performance-label">Average Rating</div>
                 <div class="performance-val" id="prof-avg-rating">—</div>
+                <div style="font-size:11px;color:var(--mist);margin-top:4px">No citizen ratings for dispatch</div>
               </div>
               <div class="performance-box purple">
                 <div class="performance-label">Efficiency Score</div>
                 <div class="performance-val" id="prof-efficiency">—</div>
+                <div class="performance-sub" id="prof-efficiency-sub" style="font-size:11px;color:var(--mist);margin-top:4px"></div>
               </div>
             </div>
           </div>
@@ -394,10 +398,10 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../data.js?v=20260604h"></script>
-<script src="../api.js?v=20260604h"></script>
-<script src="dispatch.js?v=20260604h"></script>
-<script src="dispatch.backend.js?v=20260604h"></script>
+<script src="../data.js?v=20260604i"></script>
+<script src="../api.js?v=20260604i"></script>
+<script src="dispatch.js?v=20260604i"></script>
+<script src="dispatch.backend.js?v=20260604i"></script>
 <script>
 function toggleSidebar() {
   var sidebar = document.querySelector('.sidebar');

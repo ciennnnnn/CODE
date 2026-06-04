@@ -58,9 +58,10 @@ if ($action === 'analytics') {
     $active   = (int)$db->query("SELECT COUNT(*) FROM complaints WHERE status IN ('assigned','in_progress')")->fetchColumn();
     $rate     = $total > 0 ? round($resolved / $total * 100) : 0;
 
-    $avgSt = $db->prepare("SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)),0) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :s");
+    $avgSt = $db->prepare("SELECT AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)) / 60 FROM complaints WHERE status IN ('resolved','closed') AND submitted_at >= :s");
     $avgSt->execute([':s' => $periodStart]);
-    $avgHours = round((float)$avgSt->fetchColumn(), 1);
+    $avgRaw   = $avgSt->fetchColumn();
+    $avgHours = $avgRaw !== null && $avgRaw !== false ? round((float)$avgRaw, 1) : null;
 
     /* ── Category breakdown ── */
     $catSt = $db->prepare("SELECT category, COUNT(*) AS cnt FROM complaints WHERE submitted_at >= :s GROUP BY category ORDER BY cnt DESC");
@@ -133,7 +134,7 @@ if ($action === 'analytics') {
         'rejected'       => $rejected,
         'active'         => $active,
         'rate'           => $rate,
-        'avg_hours'      => $avgHours ?: 0,
+        'avg_hours'      => $avgHours,
         'period'         => $period,
         'period_label'   => $periodLabel,
         'categories'     => $categories,
@@ -623,11 +624,12 @@ if ($action === 'dispatchProfile') {
 
     /* Average resolution time (hours) for cases this dispatch handled */
     $avgSt = $db->prepare(
-        "SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)), 0) / 60
+        "SELECT AVG(TIMESTAMPDIFF(MINUTE, submitted_at, updated_at)) / 60
          FROM complaints WHERE dispatch_id = :did AND status IN ('resolved','closed')"
     );
     $avgSt->execute([':did' => $dispatchId]);
-    $avgHours = round((float)$avgSt->fetchColumn(), 1);
+    $avgRawP  = $avgSt->fetchColumn();
+    $avgHours = $avgRawP !== null && $avgRawP !== false ? round((float)$avgRawP, 1) : null;
 
     /* This-month resolution rate for this dispatch */
     $mTotalSt = $db->prepare("SELECT COUNT(*) FROM complaints WHERE dispatch_id = :did AND submitted_at >= :m");

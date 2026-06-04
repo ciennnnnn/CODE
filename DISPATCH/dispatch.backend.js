@@ -1379,10 +1379,20 @@ async function renderProfile() {
         setEl('prof-active-brgy',    String(s.active_brgy ?? '—'));
 
         /* This Month's Performance boxes */
-        setEl('prof-resolution-rate', s.rate        != null ? s.rate        + '%' : '—');
-        setEl('prof-on-time',         s.on_time_rate != null ? s.on_time_rate + '%' : '—');
-        setEl('prof-efficiency',      s.efficiency  != null ? s.efficiency  + '%' : '—');
-        setEl('prof-avg-rating', '—');  /* No citizen-rating system for dispatch */
+        const profRate = s.rate != null ? s.rate + '%' : '—';
+        const profOnTime = s.on_time_rate != null ? s.on_time_rate + '%' : '—';
+        const profEff = s.efficiency != null ? s.efficiency + '%' : '—';
+        setEl('prof-resolution-rate', profRate);
+        setEl('prof-on-time',         profOnTime);
+        setEl('prof-efficiency',      profEff);
+        setEl('prof-avg-rating', '—');
+
+        /* Sub-labels explaining the context */
+        const mClosed = s.closed ?? 0;
+        const mTotal  = s.processed ?? 0;
+        setEl('prof-resolution-sub',  mTotal > 0 ? `${mClosed} closed of ${mTotal} processed` : 'No cases processed yet');
+        setEl('prof-ontime-sub',      (s.on_time_rate === 0 && mClosed === 0) ? 'Awaiting case completions' : '');
+        setEl('prof-efficiency-sub',  profEff === '0%' ? 'Will update as cases close' : '');
 
         /* Also update the command center resolution rate card */
         if (s.rate != null) setEl('stat-resolution-rate', s.rate + '%');
@@ -1673,12 +1683,19 @@ async function renderAnalytics() {
     /* ── KPI cards ── */
     if (d) {
         window.dispatchAnalytics = d;
-        setEl('analytics-total',    d.total    ?? '—');
+        const total    = d.total    ?? 0;
+        const resolved = d.resolved ?? 0;
+        setEl('analytics-total',    String(total));
         setEl('analytics-rejected', d.rejected ?? '—');
         setEl('analytics-active',   d.active   ?? '—');
+
         const rateDisplay = d.rate != null ? d.rate + '%' : '—';
         setEl('analytics-rate',       rateDisplay);
         setEl('stat-resolution-rate', rateDisplay);
+
+        /* Sub-labels with context */
+        setEl('analytics-rate-sub',  `${resolved} of ${total} resolved`);
+        setEl('analytics-avg-sub',   resolved > 0 ? 'Hours per closed case' : 'No closed cases yet');
         setEl('analytics-avg', d.avg_hours != null ? parseFloat(d.avg_hours).toFixed(1) + 'h' : '—');
     }
 
