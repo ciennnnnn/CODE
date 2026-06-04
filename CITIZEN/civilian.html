@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/base.css?v=20260527k" />
-  <link rel="stylesheet" href="civilian.css?v=20260527i" />
+  <link rel="stylesheet" href="civilian.css?v=20260605a" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 <body>
@@ -38,6 +38,7 @@
       <div class="nav-item"        id="nav-complaints"  onclick="setActivePage('complaints')">  My Complaints       <span class="nav-badge" id="badge-complaints">3</span> </div>
       <div class="nav-item"        id="nav-profile"     onclick="setActivePage('profile')">     My Profile          </div>
       <div class="nav-item"        id="nav-about"       onclick="setActivePage('about')">       About Us            </div>
+      <div class="nav-item"        id="nav-faq"         onclick="setActivePage('faq')">         FAQs                </div>
     </nav>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">
@@ -602,6 +603,102 @@
         </div>
       </section>
 
+      <!-- ═══════════════ PAGE: FAQs ═══════════════ -->
+      <section id="page-faq" class="page-section hidden">
+        <div class="faq-wrap">
+
+          <div class="faq-header">
+            <div class="faq-kicker">FREQUENTLY ASKED QUESTIONS</div>
+            <h2 class="faq-heading">You ask? <em>We answer</em></h2>
+            <p class="faq-subtext">Everything you need to know about TRAPICO and how to use the system.</p>
+          </div>
+
+          <div class="faq-list">
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is TRAPICO?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO (Traffic Routing and Patrol Intelligence Command Operations) is a digital traffic complaint and dispatch platform designed for Quezon City. It connects civilians, dispatch officers, and field personnel in one unified system to ensure faster and more accountable traffic enforcement.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I file a traffic complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Click <strong>File a Complaint</strong> in the navigation menu. Fill out the form with the violation type, location, date and time, and any supporting details. Once submitted, your complaint is assigned a case number and routed to dispatch for review.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What types of traffic violations can I report?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                You can report common traffic violations such as illegal parking, reckless driving, obstruction of traffic flow, vehicle overloading, and violation of traffic signals. Use the complaint form to select the appropriate violation category when submitting.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How long does it take for a complaint to be resolved?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Most complaints are reviewed by dispatch within 24 hours of submission. Resolution time depends on the nature and location of the incident, but TRAPICO maintains a 91% on-time resolution rate across all active cases.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>Can I track the status of my complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Yes. Navigate to <strong>My Complaints</strong> in the sidebar to view live status updates for all your submitted reports — from <em>Pending</em> to <em>Dispatched</em> to <em>Resolved</em>. Each complaint card shows full case history and assigned officer details.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What happens after I submit a complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                After submission, a Dispatch Officer reviews and validates your report. If confirmed, a Field Officer is assigned to respond to the incident. You will see real-time status updates reflected in your <strong>My Complaints</strong> dashboard throughout the entire process.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>Can I edit or cancel a submitted complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Once a complaint is submitted and under review it cannot be edited or deleted directly by the citizen. If you need to make corrections or withdraw a complaint, please contact the system administrator via the <strong>Send a Message</strong> form found in the About Us section.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>Is my personal information kept confidential?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Yes. TRAPICO handles all personal data in accordance with data privacy policies. Your information is only accessible to authorized dispatch and field personnel directly involved in processing your complaint and is never shared publicly.
+              </div>
+            </div>
+
+          </div><!-- /faq-list -->
+        </div><!-- /faq-wrap -->
+      </section>
+
     </main><!-- /page-body -->
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
@@ -616,7 +713,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="../data.js?v=20260527g"></script>
 <script src="../api.js?v=20260527g"></script>
-<script src="civilian.js?v=20260527g"></script>
+<script src="civilian.js?v=20260605a"></script>
 <script src="civilian.backend.js?v=20260527g"></script>
 <script>
 function toggleSidebar() {

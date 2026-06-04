@@ -397,7 +397,8 @@ function setActivePage(page) {
     report: 'File a Complaint',
     complaints: 'My Complaints',
     profile: 'My Profile',
-    about: 'About Us'
+    about: 'About Us',
+    faq: 'FAQs'
   };
   if (document.getElementById('topbar-title') && titleMap[page]) {
     document.getElementById('topbar-title').textContent = titleMap[page];
@@ -407,3 +408,10 @@ function setActivePage(page) {
 }
 // Ensure global access
 window.setActivePage = setActivePage;
+
+function toggleFaq(item) {
+  var isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) item.classList.add('open');
+}
+window.toggleFaq = toggleFaq;
