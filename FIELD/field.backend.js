@@ -1922,3 +1922,78 @@ async function submitFieldReassign(assignmentId, caseId) {
         showToast(error.message);
     }
 }
+
+/* ── AI ANALYSIS ──────────────────────────────────────────── */
+let _fieldAiRcvId   = 0;
+let _fieldAiRcvRole = 'dispatch';
+let _fieldAiBusy    = false;
+
+function openFieldAiPanel() {
+    if (!fieldActiveContact) {
+        showToast('Open a chat first to use AI Analysis.');
+        return;
+    }
+    _fieldAiRcvId   = fieldActiveContact.user_id;
+    _fieldAiRcvRole = 'dispatch';
+    openAiModal(
+        fieldActiveContact.name || 'Dispatch Officer',
+        'sendFieldAiMsg',
+        'clearFieldAiHistory'
+    );
+    _loadFieldAiHistory();
+}
+
+async function _loadFieldAiHistory() {
+    try {
+        const resp = await apiFetch('ai_analyze.php', {
+            action:        'history',
+            receiver_role: _fieldAiRcvRole,
+            receiver_id:   String(_fieldAiRcvId),
+        });
+        renderAiHistory(resp.history || []);
+    } catch (e) {
+        renderAiHistory([]);
+    }
+}
+
+async function sendFieldAiMsg() {
+    if (_fieldAiBusy) return;
+    const input = document.getElementById('ai-msg-input');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    _fieldAiBusy = true;
+    setAiBusy(true);
+    appendAiUserMsg(msg);
+    appendAiThinking();
+    try {
+        const resp = await apiFetch('ai_analyze.php', {
+            action:        'analyze',
+            receiver_role: _fieldAiRcvRole,
+            receiver_id:   String(_fieldAiRcvId),
+            message:       msg,
+        }, 'POST');
+        resolveAiThinking(resp.response || '');
+    } catch (e) {
+        resolveAiThinking('Error: ' + e.message);
+    } finally {
+        _fieldAiBusy = false;
+        setAiBusy(false);
+    }
+}
+
+async function clearFieldAiHistory() {
+    if (!confirm('Clear AI conversation history for this chat?')) return;
+    try {
+        await apiFetch('ai_analyze.php', {
+            action:        'clear',
+            receiver_role: _fieldAiRcvRole,
+            receiver_id:   String(_fieldAiRcvId),
+        }, 'POST');
+        renderAiHistory([]);
+        showToast('AI history cleared.');
+    } catch (e) {
+        showToast(e.message);
+    }
+}

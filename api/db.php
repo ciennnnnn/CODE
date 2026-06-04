@@ -21,6 +21,9 @@ define('DB_PORT', '3306');
 define('UPLOAD_PATH', __DIR__ . '/../uploads');
 define('UPLOAD_URL', '/uploads');
 
+// Get a free key from https://aistudio.google.com/app/apikey
+define('GEMINI_API_KEY', '');
+
 function getDb(): PDO
 {
     static $pdo = null;

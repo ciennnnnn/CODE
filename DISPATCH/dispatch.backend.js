@@ -2231,7 +2231,10 @@ function openChatModal(officerId, officerName, receiverRole = 'field') {
                 <div class="modal-subtitle">Field Officer &mdash; Command Chat</div>
               </div>
             </div>
-            <button class="modal-close" onclick="closeModal();stopChatPolling();">&#x2715;</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button onclick="openDispatchAiPanel()" style="border:none;background:#f0f0f0;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:#111;letter-spacing:0.04em;font-family:inherit" title="AI Analysis">&#129302; AI</button>
+              <button class="modal-close" onclick="closeModal();stopChatPolling();">&#x2715;</button>
+            </div>
           </div>
           <div id="chat-body" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:6px;background:#f2f4f8"></div>
           <div style="display:flex;gap:8px;padding:10px 14px;background:#fff;border-top:1px solid var(--border);flex-shrink:0;align-items:center">
@@ -2839,5 +2842,78 @@ async function purgeExpiredTrash() {
         loadTrash(_trashCurrentType);
     } catch (err) {
         showToast('Purge failed: ' + err.message);
+    }
+}
+
+/* ── AI ANALYSIS ──────────────────────────────────────────── */
+let _dispatchAiBusy = false;
+
+function openDispatchAiPanel() {
+    if (!activeChat) {
+        showToast('Open a chat first to use AI Analysis.');
+        return;
+    }
+    openAiModal(
+        activeChat.name || 'Field Officer',
+        'sendDispatchAiMsg',
+        'clearDispatchAiHistory'
+    );
+    _loadDispatchAiHistory();
+}
+
+async function _loadDispatchAiHistory() {
+    if (!activeChat) return;
+    try {
+        const resp = await apiFetch('ai_analyze.php', {
+            action:        'history',
+            receiver_role: activeChat.receiverRole,
+            receiver_id:   String(activeChat.receiverId),
+        });
+        renderAiHistory(resp.history || []);
+    } catch (e) {
+        renderAiHistory([]);
+    }
+}
+
+async function sendDispatchAiMsg() {
+    if (_dispatchAiBusy || !activeChat) return;
+    const input = document.getElementById('ai-msg-input');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    _dispatchAiBusy = true;
+    setAiBusy(true);
+    appendAiUserMsg(msg);
+    appendAiThinking();
+    try {
+        const resp = await apiFetch('ai_analyze.php', {
+            action:        'analyze',
+            receiver_role: activeChat.receiverRole,
+            receiver_id:   String(activeChat.receiverId),
+            message:       msg,
+        }, 'POST');
+        resolveAiThinking(resp.response || '');
+    } catch (e) {
+        resolveAiThinking('Error: ' + e.message);
+    } finally {
+        _dispatchAiBusy = false;
+        setAiBusy(false);
+    }
+}
+
+async function clearDispatchAiHistory() {
+    if (!activeChat) return;
+    if (!confirm('Clear AI conversation history for this chat?')) return;
+    try {
+        await apiFetch('ai_analyze.php', {
+            action:        'clear',
+            receiver_role: activeChat.receiverRole,
+            receiver_id:   String(activeChat.receiverId),
+        }, 'POST');
+        renderAiHistory([]);
+        showToast('AI history cleared.');
+    } catch (e) {
+        showToast(e.message);
     }
 }
