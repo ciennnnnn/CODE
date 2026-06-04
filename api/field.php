@@ -355,6 +355,99 @@ if ($action === 'performance') {
     ]]);
 }
 
+/* ── Auto-create field_drafts table ── */
+try {
+    $db->exec(
+        'CREATE TABLE IF NOT EXISTS field_drafts (
+            draft_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            assignment_id  INT UNSIGNED NOT NULL,
+            officer_id     INT UNSIGNED NOT NULL,
+            method         VARCHAR(255) DEFAULT "",
+            equipment      TEXT,
+            description    TEXT,
+            followup       TEXT,
+            before_url     TEXT,
+            after_url      TEXT,
+            saved_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_asgn_officer (assignment_id, officer_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+} catch (Throwable $e) { /* table already exists or DDL lock — safe */ }
+
+if ($action === 'saveDraft') {
+    $assignmentId = intval($data['assignment_id'] ?? 0);
+    if ($assignmentId <= 0) errorResponse('Assignment ID required.');
+
+    $stmt = $db->prepare(
+        'SELECT assignment_id FROM assignments WHERE assignment_id = :aid AND field_officer_id = :oid'
+    );
+    $stmt->execute([':aid' => $assignmentId, ':oid' => $officerId]);
+    if (!$stmt->fetch()) errorResponse('Assignment not found.');
+
+    $db->prepare(
+        'INSERT INTO field_drafts (assignment_id, officer_id, method, equipment, description, followup, before_url, after_url)
+         VALUES (:aid, :oid, :m, :eq, :desc, :fu, :bu, :au)
+         ON DUPLICATE KEY UPDATE method=:m2, equipment=:eq2, description=:desc2,
+         followup=:fu2, before_url=:bu2, after_url=:au2, saved_at=NOW()'
+    )->execute([
+        ':aid'  => $assignmentId, ':oid'  => $officerId,
+        ':m'    => trim((string)($data['method']           ?? '')),
+        ':eq'   => trim((string)($data['equipment']        ?? '')),
+        ':desc' => trim((string)($data['description']      ?? '')),
+        ':fu'   => trim((string)($data['followup']         ?? '')),
+        ':bu'   => trim((string)($data['before_photo_url'] ?? '')),
+        ':au'   => trim((string)($data['after_photo_url']  ?? '')),
+        ':m2'   => trim((string)($data['method']           ?? '')),
+        ':eq2'  => trim((string)($data['equipment']        ?? '')),
+        ':desc2'=> trim((string)($data['description']      ?? '')),
+        ':fu2'  => trim((string)($data['followup']         ?? '')),
+        ':bu2'  => trim((string)($data['before_photo_url'] ?? '')),
+        ':au2'  => trim((string)($data['after_photo_url']  ?? '')),
+    ]);
+    successResponse(['message' => 'Draft saved.']);
+}
+
+if ($action === 'getDrafts') {
+    $stmt = $db->prepare(
+        'SELECT fd.assignment_id, fd.method, fd.equipment, fd.description, fd.followup,
+                fd.before_url, fd.after_url, fd.saved_at,
+                c.tracking_id AS tracking_id, c.category AS cat
+         FROM field_drafts fd
+         JOIN assignments a ON a.assignment_id = fd.assignment_id
+         JOIN complaints  c ON c.complaint_id  = a.complaint_id
+         WHERE fd.officer_id = :oid
+         ORDER BY fd.saved_at DESC'
+    );
+    $stmt->execute([':oid' => $officerId]);
+    successResponse(['drafts' => $stmt->fetchAll()]);
+}
+
+if ($action === 'deleteDraft') {
+    $assignmentId = intval($data['assignment_id'] ?? 0);
+    if ($assignmentId <= 0) errorResponse('Assignment ID required.');
+    $db->prepare('DELETE FROM field_drafts WHERE assignment_id = :aid AND officer_id = :oid')
+       ->execute([':aid' => $assignmentId, ':oid' => $officerId]);
+    successResponse(['message' => 'Draft deleted.']);
+}
+
+if ($action === 'notifications') {
+    $lastId = intval($_REQUEST['last_id'] ?? $data['last_id'] ?? 0);
+    $stmt = $db->prepare(
+        'SELECT a.assignment_id, c.tracking_id AS id, c.category AS cat,
+                c.asset_town AS brgy, c.priority, a.assigned_at AS date
+         FROM assignments a
+         JOIN complaints c ON c.complaint_id = a.complaint_id
+         WHERE a.field_officer_id = :oid
+           AND a.assignment_id > :last
+           AND a.assignment_status IN ("pending","in_progress")
+         ORDER BY a.assignment_id ASC'
+    );
+    $stmt->execute([':oid' => $officerId, ':last' => $lastId]);
+    $rows = $stmt->fetchAll();
+    $maxId = $rows ? (int)max(array_column($rows, 'assignment_id')) : $lastId;
+    successResponse(['notifications' => $rows, 'latest_id' => $maxId]);
+}
+
 if ($action === 'contacts') {
     $stmt = $db->prepare(
         'SELECT d.dispatch_id, d.user_id, u.full_name AS name, u.email,

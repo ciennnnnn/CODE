@@ -100,6 +100,13 @@ function closeSidebar() {
 function toggleNotif() {
   notifOpen = !notifOpen;
   document.getElementById('notif-panel').classList.toggle('hidden', !notifOpen);
+  if (notifOpen) {
+    // Clear unread count when bell is opened
+    if (typeof _notifUnreadCount !== 'undefined') {
+      _notifUnreadCount = 0;
+      if (typeof _updateNotifBell === 'function') _updateNotifBell();
+    }
+  }
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('#notif-btn') && notifOpen) {

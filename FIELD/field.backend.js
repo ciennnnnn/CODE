@@ -54,21 +54,76 @@ function getAssignmentDraft(assignmentId) {
     return store[String(assignmentId)] || null;
 }
 
-function persistAssignmentDraft(assignmentId, payload) {
+async function persistAssignmentDraft(assignmentId, payload) {
+    // 1. Write to localStorage immediately (instant feedback)
     const store = getDraftStore();
-    store[String(assignmentId)] = {
-        ...payload,
-        saved_at: new Date().toISOString(),
-    };
+    store[String(assignmentId)] = { ...payload, saved_at: new Date().toISOString() };
     saveDraftStore(store);
     localStorage.setItem(`field_draft_${assignmentId}`, JSON.stringify(payload));
+
+    // 2. Persist to server (survives page refresh / device change)
+    try {
+        await apiFetch('field.php', {
+            action:          'saveDraft',
+            assignment_id:   assignmentId,
+            method:          payload.method   || '',
+            equipment:       payload.equipment || '',
+            description:     payload.desc     || '',
+            followup:        payload.followup  || '',
+            before_photo_url: payload.before  || '',
+            after_photo_url:  payload.after   || '',
+        }, 'POST');
+    } catch (err) {
+        console.warn('Draft server-save failed (stored locally):', err.message);
+    }
 }
 
-function clearAssignmentDraft(assignmentId) {
+async function clearAssignmentDraft(assignmentId) {
+    // Remove from localStorage
     const store = getDraftStore();
     delete store[String(assignmentId)];
     saveDraftStore(store);
     localStorage.removeItem(`field_draft_${assignmentId}`);
+
+    // Remove from server
+    try {
+        await apiFetch('field.php', { action: 'deleteDraft', assignment_id: assignmentId }, 'POST');
+    } catch (err) {
+        console.warn('Draft server-delete failed:', err.message);
+    }
+}
+
+/* Sync server drafts → localStorage on page load so refresh never loses drafts */
+async function loadDraftsFromServer() {
+    try {
+        const resp = await apiFetch('field.php', { action: 'getDrafts' });
+        const serverDrafts = resp.drafts || [];
+        if (!serverDrafts.length) return;
+
+        const store = getDraftStore();
+        for (const d of serverDrafts) {
+            const aid = String(d.assignment_id);
+            const serverTs = new Date(d.saved_at).getTime();
+            const localTs  = store[aid]?.saved_at ? new Date(store[aid].saved_at).getTime() : 0;
+            // Server wins if it's newer or local doesn't exist
+            if (serverTs >= localTs) {
+                store[aid] = {
+                    method:    d.method      || '',
+                    equipment: d.equipment   || '',
+                    desc:      d.description || '',
+                    followup:  d.followup    || '',
+                    before:    d.before_url  || '',
+                    after:     d.after_url   || '',
+                    saved_at:  d.saved_at,
+                    _title:    d.tracking_id,
+                    _cat:      d.cat,
+                };
+            }
+        }
+        saveDraftStore(store);
+    } catch (err) {
+        console.warn('Could not load drafts from server:', err.message);
+    }
 }
 
 function cleanupAssignedMaps() {
@@ -174,6 +229,8 @@ async function initField() {
     startPerformanceRefresh();
     loadFieldContacts();
     startGlobalUnreadPolling();
+    loadDraftsFromServer();        // Sync server drafts → localStorage (fixes refresh loss)
+    startFieldNotificationPolling(); // Real-time assignment notifications
 }
 
 async function loadFieldProfile() {
@@ -705,6 +762,87 @@ function startGlobalUnreadPolling() {
     setInterval(async () => {
         await pollAllContactsForUnread();
     }, 8000);
+}
+
+/* ── REAL-TIME NOTIFICATIONS ──────────────────────────────── */
+let _notifLastAssignmentId = 0;
+let _notifUnreadCount = 0;
+
+function _updateNotifBell() {
+    const dot = document.querySelector('.notif-dot');
+    if (!dot) return;
+    if (_notifUnreadCount > 0) {
+        dot.style.background = '#E63946';
+        dot.style.display    = 'block';
+    } else {
+        dot.style.background = '#aaa';
+    }
+}
+
+function _pushNotifEntry(title, body) {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    item.innerHTML = `
+        <div class="notif-dot-inline" style="background:#E63946"></div>
+        <div>
+            <div class="notif-msg" style="font-weight:700">${safeText(title)}</div>
+            <div class="notif-time">${safeText(body)}</div>
+        </div>`;
+    // Insert after the notif-head
+    const head = panel.querySelector('.notif-head');
+    if (head && head.nextSibling) {
+        panel.insertBefore(item, head.nextSibling);
+    } else {
+        panel.appendChild(item);
+    }
+    // Keep only last 6
+    const items = panel.querySelectorAll('.notif-item');
+    if (items.length > 6) items[items.length - 1].remove();
+}
+
+async function _pollFieldNotifications() {
+    try {
+        const resp = await apiFetch('field.php', { action: 'notifications', last_id: _notifLastAssignmentId });
+        const notifs = resp.notifications || [];
+        const latestId = Number(resp.latest_id || _notifLastAssignmentId);
+
+        if (notifs.length > 0 && _notifLastAssignmentId > 0) {
+            // There are genuinely NEW assignments since we last checked
+            for (const n of notifs) {
+                _pushNotifEntry(
+                    `New Assignment: ${safeText(n.cat)}`,
+                    `Brgy. ${safeText(n.brgy)} · ${safeText(n.priority)} priority`
+                );
+            }
+            _notifUnreadCount += notifs.length;
+            _updateNotifBell();
+
+            // Refresh the assignments list silently
+            try {
+                const r = await apiFetch('field.php', { action: 'assigned' });
+                ASSIGNMENTS = r.assignments || [];
+                renderDashboard();
+                renderAssigned();
+                renderActiveJob();
+            } catch (_) {}
+        }
+
+        if (latestId > _notifLastAssignmentId) _notifLastAssignmentId = latestId;
+    } catch (err) {
+        console.warn('Notification poll failed:', err.message);
+    }
+}
+
+function startFieldNotificationPolling() {
+    // Set baseline (don't notify about existing assignments on load)
+    apiFetch('field.php', { action: 'notifications', last_id: 0 })
+        .then(r => { _notifLastAssignmentId = Number(r.latest_id || 0); })
+        .catch(() => {});
+
+    setInterval(_pollFieldNotifications, 10000); // every 10 seconds
 }
 
 async function loadAssignedTasks() {
@@ -1485,9 +1623,10 @@ function renderDrafts() {
         const rows = Object.entries(store)
                 .map(([assignmentId, draft]) => {
                         const assignment = ASSIGNMENTS.find(item => String(item.assignment_id) === String(assignmentId));
-                        const title = assignment?.id || `Assignment #${assignmentId}`;
-                        const cat = assignment?.cat || 'Unassigned category';
-                        const savedAt = draft?.saved_at ? formatDateTime(draft.saved_at) : 'Unknown time';
+                        // Prefer live ASSIGNMENTS data, fall back to server-synced metadata
+                        const title   = assignment?.id   || draft._title || `Assignment #${assignmentId}`;
+                        const cat     = assignment?.cat  || draft._cat   || 'Unassigned category';
+                        const savedAt = draft?.saved_at  ? formatDateTime(draft.saved_at) : 'Unknown time';
                         return {assignmentId, draft, title, cat, savedAt};
                 })
                 .sort((a, b) => new Date(b.draft?.saved_at || 0) - new Date(a.draft?.saved_at || 0));
