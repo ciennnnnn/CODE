@@ -1879,3 +1879,45 @@ a.btn-sm {
     letter-spacing: 0.02em;
   }
 }
+
+/* ── PERFORMANCE EXPORT ACTION BAR ───────────────────────── */
+.perf-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+.analytics-period-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ink, #111);
+  color: #fff;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+.btn-analytics-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  background: var(--accent, #e53e3e);
+  color: #fff;
+  font-family: var(--font-head, sans-serif);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.btn-analytics-export:hover { opacity: 0.88; }
+.btn-analytics-export-icon { font-size: 15px; line-height: 1; }

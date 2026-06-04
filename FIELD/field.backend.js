@@ -1914,3 +1914,232 @@ async function submitFieldReassign(assignmentId, caseId) {
     }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   PERFORMANCE REPORT EXPORT
+   ───────────────────────────────────────────────────────────── */
+
+const _FIELD_PRINT_STYLES = `
+  body{font-family:Arial,sans-serif;margin:40px;color:#111;font-size:13px}
+  .logo{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+  .logo-sub{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.1em}
+  h2{font-size:17px;margin:0 0 4px}
+  .period-tag{display:inline-block;background:#111;color:#fff;font-size:11px;padding:2px 10px;border-radius:4px;margin-bottom:18px}
+  .meta{font-size:12px;color:#555;margin-bottom:3px}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #111;padding-bottom:5px;margin:20px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#111;color:#fff;padding:7px 10px;text-align:left}
+  td{border:1px solid #e5e5e5;padding:6px 10px}
+  tr:nth-child(even) td{background:#f9f9f9}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .stat-box{border:1px solid #e5e5e5;padding:14px;border-radius:6px;text-align:center}
+  .stat-val{font-size:26px;font-weight:900}
+  .stat-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+  .profile-section{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+  .profile-card{border:1px solid #e5e5e5;padding:16px;border-radius:6px}
+  .profile-card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:12px}
+  .detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+  .detail-label{color:#888;font-weight:600}
+  .detail-val{font-weight:500;text-align:right}
+  .avatar-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .avatar{width:52px;height:52px;background:#111;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0}
+  .officer-name{font-size:18px;font-weight:800}
+  .officer-sub{font-size:12px;color:#888;margin-top:2px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .rating-row{background:#f9f9f9;border-radius:6px;padding:10px 14px;margin-bottom:8px;font-size:12px}
+  .rating-stars{font-size:14px;color:#f59e0b;margin-bottom:4px}
+  .rating-comment{color:#333;margin-bottom:4px}
+  .rating-meta{color:#aaa;font-size:11px}
+  .footer{margin-top:36px;padding-top:12px;border-top:1px solid #e5e5e5;font-size:10px;color:#aaa}
+  @media print{body{margin:16px}.two-col{grid-template-columns:1fr 1fr}.profile-section{grid-template-columns:1fr 1fr}}
+`;
+
+function _fieldPrintHeader(officerName) {
+    const initials = String(officerName || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;border-bottom:2px solid #111;padding-bottom:14px">
+        <div>
+            <div class="logo">TRAPICO</div>
+            <div class="logo-sub">Traffic Complaint &amp; Case Management System</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#888">
+            Generated: ${new Date().toLocaleString()}<br>
+            Officer: ${safeText(officerName || '—')}
+        </div>
+    </div>
+    <h2>Field Officer Performance Report</h2>`;
+}
+
+function openExportPerformanceModal() {
+    openModal(`
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal" style="max-width:400px">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Export Performance Report</div>
+              <div class="modal-subtitle">Generate a full printable performance report</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">&#10005;</button>
+          </div>
+          <div class="modal-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <button class="btn-secondary" onclick="exportPerformanceReport('month');closeModal()">
+                This Month<br><span style="font-size:10px;color:var(--mist);font-weight:400">Current calendar month</span>
+              </button>
+              <button class="btn-secondary" onclick="exportPerformanceReport('3month');closeModal()">
+                3 Months<br><span style="font-size:10px;color:var(--mist);font-weight:400">Last 90 days</span>
+              </button>
+              <button class="btn-secondary" onclick="exportPerformanceReport('6month');closeModal()">
+                6 Months<br><span style="font-size:10px;color:var(--mist);font-weight:400">Last 180 days</span>
+              </button>
+              <button class="btn-secondary" onclick="exportPerformanceReport('year');closeModal()">
+                This Year<br><span style="font-size:10px;color:var(--mist);font-weight:400">Jan 1 – today</span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+          </div>
+        </div>
+      </div>`);
+}
+
+async function exportPerformanceReport(period) {
+    showToast('Generating report…');
+
+    const PERIOD_LABELS = { month: 'This Month', '3month': 'Last 3 Months', '6month': 'Last 6 Months', year: 'This Year' };
+    const periodLabel = PERIOD_LABELS[period] || period;
+
+    const user = FIELD_USER || {};
+    const pd   = PERFORMANCE_DATA || {};
+
+    const name       = safeText(user.name || '—');
+    const badgeId    = safeText(getFieldBadgeId());
+    const email      = safeText(user.email || '—');
+    const phone      = safeText(user.phone || '—');
+    const barangay   = safeText(user.home_barangay || '—');
+    const rank       = 'Officer';
+    const department = 'Traffic Management Division';
+    const initials   = String(user.name || 'FO').split(' ').filter(Boolean).map(x => x[0]).join('').slice(0, 2).toUpperCase();
+
+    const efficiency   = computeEfficiencyScore();
+    const totalResolved= Number(pd.resolved || 0);
+    const onTimeRate   = Number(pd.on_time_rate || 0);
+    const satisfaction = Number(pd.satisfaction || 0);
+    const closureRate  = Number(pd.closure_rate || 0);
+    const totalAssign  = Number(pd.total_assignments || 0);
+    const resolvedMonth= Number(pd.resolved_this_month || 0);
+    const active       = Number(pd.active || 0);
+    const avgResp      = Number(pd.avg_response_mins || 0);
+    const fastest      = Number(pd.fastest_mins || 0);
+    const slowest      = Number(pd.slowest_mins || 0);
+    const currentLoad  = ASSIGNMENTS.length;
+    const processed    = HISTORY_ITEMS.length;
+
+    const metrics = [
+        ['Total Assignments',    totalAssign],
+        ['Cases Processed',      processed],
+        ['Total Resolved',       totalResolved],
+        ['Resolved This Month',  resolvedMonth],
+        ['Active Cases',         active],
+        ['Current Case Load',    currentLoad],
+        ['Avg. Arrival Time',    `${avgResp} min`],
+        ['Fastest Arrival',      `${fastest} min`],
+        ['Slowest Arrival',      `${slowest} min`],
+    ];
+
+    const metricsRows = metrics.map(([l, v], i) =>
+        `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9f9f9'}"><td>${safeText(String(l))}</td><td style="font-weight:600;text-align:right">${safeText(String(v))}</td></tr>`
+    ).join('');
+
+    const kpis = [
+        ['On-Time Arrival Rate', `${onTimeRate}%`],
+        ['Case Closure Rate',    `${closureRate}%`],
+        ['User Satisfaction',    `${satisfaction.toFixed(1)} / 5`],
+        ['Efficiency Score',     `${efficiency} / 100`],
+    ];
+
+    const kpiRows = kpis.map(([l, v], i) =>
+        `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9f9f9'}"><td>${safeText(String(l))}</td><td style="font-weight:600;text-align:right">${safeText(String(v))}</td></tr>`
+    ).join('');
+
+    const reviews = pd.recent_ratings || [];
+    const ratingsHtml = reviews.length
+        ? reviews.map(r => {
+            const score = Math.max(1, Math.min(5, parseInt(r.score, 10) || 0));
+            const stars = '★'.repeat(score) + '☆'.repeat(5 - score);
+            return `<div class="rating-row">
+                <div class="rating-stars">${stars}</div>
+                <div class="rating-comment">"${safeText(r.comments || 'No comment provided.')}"</div>
+                <div class="rating-meta">${formatDateTime(r.submitted_at)} · Case ${safeText(r.id)}</div>
+            </div>`;
+        }).join('')
+        : '<p style="color:#888;font-size:12px">No ratings on record.</p>';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>TRAPICO — Field Officer Performance Report</title>
+    <style>${_FIELD_PRINT_STYLES}</style></head><body>
+    ${_fieldPrintHeader(user.name)}
+    <div class="period-tag">Period: ${safeText(periodLabel)}</div>
+
+    <!-- Personal Information -->
+    <div class="section-title">Personal Information</div>
+    <div class="profile-section">
+      <div class="profile-card">
+        <div class="avatar-row">
+          <div class="avatar">${safeText(initials)}</div>
+          <div>
+            <div class="officer-name">${name}</div>
+            <div class="officer-sub">Field Officer &nbsp;·&nbsp; ${department}</div>
+          </div>
+        </div>
+        <div class="detail-row"><span class="detail-label">Badge ID</span><span class="detail-val">${badgeId}</span></div>
+        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-val">${email}</span></div>
+        <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val">${phone}</span></div>
+        <div class="detail-row"><span class="detail-label">Primary Barangay</span><span class="detail-val">${barangay}</span></div>
+        <div class="detail-row"><span class="detail-label">Rank / Title</span><span class="detail-val">${safeText(rank)}</span></div>
+        <div class="detail-row"><span class="detail-label">Department</span><span class="detail-val">${safeText(department)}</span></div>
+      </div>
+      <div class="profile-card">
+        <div class="profile-card-title">This Month's Performance</div>
+        <div class="detail-row"><span class="detail-label">Resolution Rate</span><span class="detail-val" style="color:#10b981;font-size:18px;font-weight:800">${closureRate}%</span></div>
+        <div class="detail-row"><span class="detail-label">On-Time Closure</span><span class="detail-val" style="color:#3b82f6;font-size:18px;font-weight:800">${onTimeRate}%</span></div>
+        <div class="detail-row"><span class="detail-label">Average Rating</span><span class="detail-val" style="color:#f59e0b;font-size:18px;font-weight:800">${satisfaction.toFixed(1)} ★</span></div>
+        <div class="detail-row"><span class="detail-label">Efficiency Score</span><span class="detail-val" style="color:#9c27b0;font-size:18px;font-weight:800">${efficiency}/100</span></div>
+      </div>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="section-title">Key Performance Indicators</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" style="color:#10b981">${efficiency}%</div><div class="stat-label">Efficiency Score</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:#111">${totalResolved}</div><div class="stat-label">Total Resolved</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:#3b82f6">${onTimeRate}%</div><div class="stat-label">On-Time Arrival</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:#f59e0b">${satisfaction.toFixed(1)}/5</div><div class="stat-label">Avg. Satisfaction</div></div>
+    </div>
+
+    <!-- Detailed Metrics + KPI Breakdown -->
+    <div class="two-col">
+      <div>
+        <div class="section-title">Performance Metrics</div>
+        <table><thead><tr><th>Metric</th><th style="text-align:right">Value</th></tr></thead>
+        <tbody>${metricsRows}</tbody></table>
+      </div>
+      <div>
+        <div class="section-title">KPI Breakdown</div>
+        <table><thead><tr><th>KPI</th><th style="text-align:right">Score</th></tr></thead>
+        <tbody>${kpiRows}</tbody></table>
+      </div>
+    </div>
+
+    <!-- Recent Ratings -->
+    <div class="section-title" style="margin-top:24px">Recent User Ratings (${reviews.length} record${reviews.length !== 1 ? 's' : ''})</div>
+    ${ratingsHtml}
+
+    <div class="footer">TRAPICO — Field Officer Performance Report generated on ${new Date().toLocaleString()}. All data sourced from live database. Badge: ${badgeId}</div>
+    <script>window.onload=()=>window.print();</script></body></html>`;
+
+    const win = window.open('', '_blank', 'width=960,height=720');
+    if (!win) { showToast('Please allow popups to print reports.'); return; }
+    win.document.write(html);
+    win.document.close();
+}
+

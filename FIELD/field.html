@@ -281,6 +281,13 @@
 
       <!-- PAGE: MY PERFORMANCE -->
       <section id="page-performance" class="page-section hidden">
+        <div class="perf-action-bar">
+          <div class="analytics-period-chip">My Performance</div>
+          <button class="btn-analytics-export" onclick="openExportPerformanceModal()">
+            <span class="btn-analytics-export-icon">&#128196;</span>
+            Export Full Report
+          </button>
+        </div>
         <div class="stats-row">
           <div class="stat-card green"><div class="stat-card-label">Efficiency Score</div><div class="stat-card-val" id="perf-efficiency">0%</div><div class="stat-card-sub">This month</div></div>
           <div class="stat-card"><div class="stat-card-label">Total Resolved</div><div class="stat-card-val" id="perf-total-resolved">0</div><div class="stat-card-sub">All time</div></div>
