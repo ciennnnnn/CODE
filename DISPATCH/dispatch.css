@@ -753,8 +753,12 @@
   #queue-tbody td:last-child > div .btn-secondary,
   #queue-tbody td:last-child > div .btn-success,
   #queue-tbody td:last-child > div .btn-danger { width: 100%; }
-  /* Tracking ID breaks cleanly */
-  #queue-tbody td:first-child { font-size: 10px !important; word-break: break-all; }
+  /* Tracking ID: keep on one line — table scrolls horizontally */
+  #queue-tbody td:first-child {
+    font-size: 10px !important;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+  }
 }
 
 /* ── COUNTDOWN TIMER BADGE (in table) ──────────────────────── */

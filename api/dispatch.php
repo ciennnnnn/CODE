@@ -738,7 +738,8 @@ if ($action === 'citizenDetail') {
 
         /* Extended profile columns — added later via ALTER TABLE, may not exist on all servers.
            Fetch each with a fallback so the query never fails if a column is absent. */
-        $extFields = ['middle_name', 'birthdate', 'sex', 'street', 'city', 'province', 'zip_code'];
+        $extFields = ['middle_name', 'birthdate', 'sex', 'street', 'city', 'province', 'zip_code',
+                      'emergency_contact_name', 'emergency_contact_phone'];
         foreach ($extFields as $col) {
             try {
                 $chk = $db->prepare("SELECT `{$col}` FROM users WHERE user_id = :uid LIMIT 1");

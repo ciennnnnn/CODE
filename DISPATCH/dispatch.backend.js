@@ -2556,6 +2556,8 @@ async function printCitizenReport(userId) {
   <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${_esc(citizen.city || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Province</span><span class="info-val">${_esc(citizen.province || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">ZIP Code</span><span class="info-val">${_esc(citizen.zip_code || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Emergency Contact</span><span class="info-val">${_esc(citizen.emergency_contact_name || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Emergency Phone</span><span class="info-val">${_esc(citizen.emergency_contact_phone || '—')}</span></div>
 </div>
 
 <h2>Complaint History &mdash; ${cases.length} case${cases.length !== 1 ? 's' : ''} on record</h2>
