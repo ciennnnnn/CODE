@@ -38,6 +38,7 @@
       <div class="nav-item"        id="nav-analytics" onclick="openPage('analytics')"> Analytics          </div>
       <div class="nav-item"        id="nav-trash"     onclick="openPage('trash')">     Trash Bin          <span class="nav-badge hidden" id="badge-trash">0</span> </div>
       <div class="nav-item"        id="nav-profile"   onclick="openPage('profile')">   My Profile        </div>
+      <div class="nav-item"        id="nav-faq"       onclick="openPage('faq')">       FAQ               </div>
     </nav>
     <div class="sidebar-footer">
       <div class="logout-btn" onclick="logout()">
@@ -485,6 +486,132 @@
 
       </section>
 
+      <!-- PAGE: FAQ -->
+      <section id="page-faq" class="page-section hidden">
+        <div class="faq-wrap">
+
+          <div class="faq-header">
+            <div class="faq-kicker">FREQUENTLY ASKED QUESTIONS</div>
+            <h2 class="faq-heading">You ask? <em>We answer</em></h2>
+            <p class="faq-subtext">Everything you need to know about TRAPICO and your role as a Dispatch Officer.</p>
+          </div>
+
+          <div class="faq-list">
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is TRAPICO?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO (Traffic and Road Incident Complaint System) is a digital platform that connects civilians, dispatch officers, and field officers to manage and resolve traffic and road-related incidents efficiently. Civilians file complaints through the Citizen portal, Dispatch Officers validate and coordinate responses, and Field Officers resolve issues on-site.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I use TRAPICO as a Dispatch Officer?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Your core workflow as a Dispatch Officer is: (1) Monitor the <strong>Command Center</strong> dashboard for real-time stats and incoming complaints. (2) Open the <strong>Complaint Queue</strong> to review submitted cases — verify details, set priority, and assign to an available Field Officer. (3) Track progress under <strong>Active Cases</strong> and communicate with Field Officers via their profile cards. (4) Once a Field Officer submits a resolution, review it and close the case. (5) Use <strong>Analytics</strong> to monitor overall performance.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is the role of Dispatch in TRAPICO?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Dispatch Officers are the command center of TRAPICO. You serve as the bridge between civilians who report problems and field officers who resolve them. Your responsibilities include: reviewing and validating incoming complaints, detecting duplicate reports, setting case priority levels (Urgent, High, Medium, Low), assigning cases to available Field Officers, monitoring on-field progress, communicating with officers, and closing cases once resolved.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I handle a citizen complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                When a complaint arrives in the <strong>Complaint Queue</strong>: (1) Click the complaint row to open its full details — description, location, photos, and reporter info. (2) Check if the system flagged it as a <strong>duplicate</strong> — if so, review and either merge or reject. (3) If the complaint is valid, click <strong>Verify</strong> to mark it as confirmed. (4) Set the appropriate <strong>Priority</strong> based on the severity and impact of the incident. (5) Select an available Field Officer and click <strong>Assign</strong> to dispatch them to the scene.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I assign a case to a Field Officer?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                From the Complaint Queue, open a verified complaint and click <strong>Assign Officer</strong>. A list of available Field Officers will appear showing their current workload, location, and status. Select the most suitable officer — ideally one who is <strong>Available</strong> (not Busy or At Capacity) and nearest to the incident location. Confirm the assignment; the officer will receive an immediate notification on their Field portal.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What are the complaint priority levels?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO uses four priority levels to rank cases: <strong>Urgent</strong> — immediate threat to public safety (e.g., road collapse, flooding blocking emergency routes). <strong>High</strong> — significant disruption requiring fast response (e.g., major road damage, stalled vehicle on highway). <strong>Medium</strong> — moderate impact, can be addressed within standard hours (e.g., illegal parking, minor obstruction). <strong>Low</strong> — minor or non-urgent issues (e.g., faded road markings, small pothole). Set the correct priority so Field Officers prioritize their workload appropriately.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I communicate with Field Officers?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                Go to <strong>Field Officers</strong> in the navigation and click on any officer's card to open a message thread with them. You can also use the messaging panel inside an Active Case to send case-specific updates. Field Officers receive notifications and can reply directly. Use messages to coordinate arrival details, provide on-site guidance, or request status updates. A notification badge will appear when you have unread replies.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What is the Complaint Queue and its tabs?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                The Complaint Queue is organized into four tabs: <strong>Submitted</strong> — new complaints from citizens awaiting your review and validation. <strong>Verified — Unassigned</strong> — complaints you have validated but have not yet been assigned to a Field Officer. <strong>Resolved — For Closing</strong> — cases where the Field Officer submitted a resolution report and awaits your final review and closure. <strong>Closed Cases</strong> — fully resolved and archived complaints.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What types of incidents does TRAPICO handle?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                TRAPICO handles a wide range of traffic and road-related complaints including: road damage (potholes, sinkholes, cracks), illegal parking, stalled or abandoned vehicles, flooding on roads, traffic signal malfunctions, road obstructions (debris, fallen trees), unauthorized road digging, and other public road safety concerns reported by civilians in covered barangays.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>What does the Analytics page show?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                The <strong>Analytics</strong> page gives you a full performance overview: total complaints this month, resolution rate, average resolution time, complaints by category and barangay, priority breakdown, status distribution (open vs. closed), and a 6-month volume trend chart. It also includes an <strong>Officer Performance</strong> table showing each Field Officer's case counts, on-time rate, and efficiency score — useful for identifying high performers and officers who may need support.
+              </div>
+            </div>
+
+            <div class="faq-item" onclick="toggleFaq(this)">
+              <div class="faq-q">
+                <span>How do I reject or flag a duplicate complaint?</span>
+                <span class="faq-icon">+</span>
+              </div>
+              <div class="faq-a">
+                In the Complaint Queue, open the complaint and click <strong>Reject</strong> to decline it — you will be prompted to provide a rejection reason that will be visible to the citizen. If the system auto-flags a complaint as a <strong>Duplicate</strong>, review both complaints side by side. If they are truly duplicates, reject the newer one and reference the original complaint ID in your reason. Duplicate flags appear on the Command Center dashboard and in the Complaint Queue as a yellow indicator.
+              </div>
+            </div>
+
+          </div><!-- /faq-list -->
+        </div><!-- /faq-wrap -->
+      </section>
+
     </main>
   </div>
 </div>
@@ -520,6 +647,11 @@ function closeSidebar() {
 document.querySelectorAll('.nav-item, .logout-btn').forEach(function(el) {
   el.addEventListener('touchstart', function(){}, {passive: true});
 });
+function toggleFaq(item) {
+  var isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) item.classList.add('open');
+}
 </script>
 </body>
 </html>
