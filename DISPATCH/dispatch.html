@@ -288,12 +288,24 @@
       <!-- PAGE: ANALYTICS -->
       <section id="page-analytics" class="page-section hidden">
 
+        <!-- Period selector -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--ink)">Period</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="analytics-period-btns">
+            <button class="btn-secondary btn-sm analytics-period-btn" data-period="week"   onclick="setAnalyticsPeriod('week')">Last 7 Days</button>
+            <button class="btn-secondary btn-sm analytics-period-btn active" data-period="month"  onclick="setAnalyticsPeriod('month')">This Month</button>
+            <button class="btn-secondary btn-sm analytics-period-btn" data-period="3month" onclick="setAnalyticsPeriod('3month')">3 Months</button>
+            <button class="btn-secondary btn-sm analytics-period-btn" data-period="6month" onclick="setAnalyticsPeriod('6month')">6 Months</button>
+            <button class="btn-secondary btn-sm analytics-period-btn" data-period="year"   onclick="setAnalyticsPeriod('year')">This Year</button>
+          </div>
+        </div>
+
         <!-- Row 1: Summary KPIs -->
         <div class="stats-row">
-          <div class="stat-card"><div class="stat-card-label">Total This Month</div><div class="stat-card-val" id="analytics-total">—</div><div class="stat-card-sub" id="analytics-total-sub">Complaints submitted</div></div>
+          <div class="stat-card"><div class="stat-card-label" id="analytics-total-label">Total · This Month</div><div class="stat-card-val" id="analytics-total">—</div><div class="stat-card-sub" id="analytics-total-sub">Complaints submitted</div></div>
           <div class="stat-card green"><div class="stat-card-label">Resolution Rate</div><div class="stat-card-val" id="analytics-rate">—</div><div class="stat-card-sub" id="analytics-rate-sub">Resolved / Total</div></div>
           <div class="stat-card blue"><div class="stat-card-label">Avg. Resolution</div><div class="stat-card-val" id="analytics-avg">—</div><div class="stat-card-sub" id="analytics-avg-sub">Hours per closed case</div></div>
-          <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val" id="analytics-rejected">—</div><div class="stat-card-sub">This month</div></div>
+          <div class="stat-card accent"><div class="stat-card-label">Rejected</div><div class="stat-card-val" id="analytics-rejected">—</div><div class="stat-card-sub" id="analytics-rejected-sub">This Month</div></div>
           <div class="stat-card"><div class="stat-card-label">Active in Field</div><div class="stat-card-val" id="analytics-active">—</div><div class="stat-card-sub">All months · deployed</div></div>
         </div>
 

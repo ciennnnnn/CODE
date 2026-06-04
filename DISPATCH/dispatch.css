@@ -822,6 +822,19 @@
   margin-bottom: 24px;
 }
 
+/* Period selector */
+.analytics-period-btn.active {
+  background: var(--brand, #e53e3e);
+  color: #fff;
+  border-color: var(--brand, #e53e3e);
+  font-weight: 700;
+}
+.analytics-period-btn.active:hover {
+  opacity: 0.88;
+  background: var(--brand, #e53e3e);
+  color: #fff;
+}
+
 /* ── CASE TIMELINE MODAL (Dispatch) ───────────────────────── */
 .dispatch-timeline-wrap {
   border-top: 1px solid var(--border);

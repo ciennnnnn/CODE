@@ -1766,9 +1766,17 @@ function _buildMonthlyBarChart(monthlyData) {
     </div>`;
 }
 
-async function renderAnalytics() {
+function setAnalyticsPeriod(period) {
+    document.querySelectorAll('.analytics-period-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.period === period);
+    });
+    renderAnalytics(period);
+}
+
+async function renderAnalytics(period) {
+    period = period || 'month';
     let d = null;
-    try { d = await apiFetch('dispatch.php', {action: 'analytics'}); } catch (_) {}
+    try { d = await apiFetch('dispatch.php', {action: 'analytics', period}); } catch (_) {}
 
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
@@ -1789,6 +1797,14 @@ async function renderAnalytics() {
         setEl('analytics-rate-sub',  `${resolved} of ${total} resolved`);
         setEl('analytics-avg-sub',   resolved > 0 ? 'Hours per closed case' : 'No closed cases yet');
         setEl('analytics-avg', d.avg_hours != null ? parseFloat(d.avg_hours).toFixed(1) + 'h' : '—');
+
+        /* Update KPI card labels and per-card period labels to reflect selected period */
+        const periodLabel = d.period_label || 'This Month';
+        setEl('analytics-total-label', `Total · ${periodLabel}`);
+        setEl('analytics-rejected-sub', periodLabel);
+        setEl('cat-period-label',  periodLabel);
+        setEl('prio-period-label', periodLabel);
+        setEl('brgy-period-label', periodLabel);
     }
 
     /* ── Complaints by Category ── */
