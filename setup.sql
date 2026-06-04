@@ -182,6 +182,46 @@ LOCK TABLES `complaints` WRITE;
 INSERT INTO `complaints` VALUES (1,1,'TRAPICO-2026-03-000016',1,'Traffic Obstruction','Large truck blocking intersection at Commonwealth Ave','2026-05-07 12:52:24','Commonwealth Ave, QC','Commonwealth',14.67600000,121.04370000,'low','verified',0,NULL,NULL,'2026-05-07 04:52:24','2026-05-07 17:12:18',0,NULL),(2,2,'TRAPICO-2026-03-000017',1,'Illegal Parking','Blue sedan parked illegally near Makati Avenue','2026-05-07 12:52:24','Makati Avenue, Makati','BGC',14.59940000,121.04230000,'high','assigned',0,NULL,NULL,'2026-05-07 04:52:24','2026-05-07 04:52:24',0,NULL),(3,3,'TRAPICO-2026-03-000018',1,'Road Hazard','Large pothole on Gil Puyat Avenue','2026-05-07 12:52:24','Gil Puyat Ave, Makati','Makati',14.56310000,121.02030000,'medium','in_progress',1,NULL,NULL,'2026-05-07 04:52:24','2026-05-07 04:52:24',0,NULL),(4,15,'TRAPICO-2026-05-000001',1,'Illegal Parking','mmljklnklnlknknkncfxgxfs thjdd rjyuyfifjhfgdgcguu fdh','2026-05-07 10:32:00',NULL,'Batasan Hills',14.69150000,121.05070000,'medium','assigned',0,NULL,NULL,'2026-05-07 07:51:17','2026-05-07 16:57:33',0,NULL),(5,15,'TRAPICO-2026-05-000002',1,'Illegal Parking','mmljklnklnlknknkncfxgxfs thjdd rjyuyfifjhfgdgcguu fdh','2026-05-07 10:32:00',NULL,'Batasan Hills',14.69150000,121.05070000,'medium','in_progress',1,NULL,NULL,'2026-05-07 07:51:31','2026-05-07 13:12:39',0,NULL),(6,16,'TRAPICO-2026-05-000003',1,'Illegal Parking','Vehicles are illegally parked on both lanes during rush hour, causing severe congestion and blocking emergency vehicles from passing through the area.','2026-05-07 10:30:00','123 Main Street','Commonwealth',14.67609877,121.04367256,'medium','resolved',0,NULL,NULL,'2026-05-07 08:24:53','2026-05-07 12:45:12',0,NULL),(7,16,'TRAPICO-2026-05-000004',3,'Traffic Obstruction','jgoae jgahejpehjrs pjypsjyrpsjyjpsry rpysprjypsyprypjspjr','2026-05-07 10:30:00','9 Latundan','Batasan Hills',14.67861042,121.02049828,'urgent','assigned',0,NULL,NULL,'2026-05-07 08:26:29','2026-05-07 12:09:55',0,NULL),(8,16,'TRAPICO-2026-05-000005',1,'Illegal Parking','fshfsg aga grrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr','2026-05-07 10:30:00','commonwealth ave','Commonwealth',14.67600000,121.04370000,'urgent','resolved',0,NULL,NULL,'2026-05-07 09:11:08','2026-05-07 11:23:22',0,NULL),(9,16,'TRAPICO-2026-05-000006',1,'Illegal Parking','LHOHKJHKJHKLHKHKHKH LHHHHHHHHHHHHHHHHHHHHHHHHH LHHHHHHHHHHHHHHHHHH L','2026-05-07 10:30:00','commonwealth ave','Commonwealth',14.67600000,121.04370000,'medium','resolved',0,NULL,NULL,'2026-05-07 09:45:30','2026-05-07 12:08:22',0,NULL),(10,1,'TRAPICO-2026-05-000007',1,'Illegal Parking','FKJAGKRJGK;AGJ ;AG EGJE;GJ;EGJEJ;GJE ;AGJEJGE;JGJE','2026-05-07 10:30:00','commonwealth ave','Commonwealth',14.67600000,121.04370000,'urgent','assigned',0,NULL,NULL,'2026-05-07 11:59:00','2026-05-07 11:59:58',0,NULL),(11,1,'TRAPICO-2026-05-000008',1,'Road Damage','vdzdcbfxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxgbcgvfbdbazdavvvvvvvvvvvvvvvvvvvvvvvsgggggggggggggggggggggggggggggggg','2026-05-07 10:30:00','commonwealth ave','Commonwealth',14.67600000,121.04370000,'medium','assigned',0,NULL,NULL,'2026-05-07 16:56:40','2026-05-07 16:58:47',0,NULL),(12,18,'TRAPICO-2026-05-000009',1,'Road Damage','uigsuagsdua gfoaha gaochaso gafha hapgpa pahd adhpad spdhpa','2024-01-23 16:26:34','Session Road, Talanay, 2nd District','Batasan Hills',14.68147290,121.10041300,'medium','rejected',0,NULL,NULL,'2026-05-07 22:42:34','2026-05-07 23:12:05',0,NULL),(13,18,'TRAPICO-2026-05-000010',1,'Traffic Obstruction','bsdfbdjhos hdshfsdfh ohksbfs hogkhd sidho dshodhoshfoshf s','2026-05-07 23:46:50','Commonwealth Avenue, Commonwealth, 2nd District','Commonwealth',14.70024820,121.08755230,'urgent','assigned',0,NULL,NULL,'2026-05-07 22:49:18','2026-05-07 22:53:43',0,NULL),(14,18,'TRAPICO-2026-05-000011',1,'Traffic Obstruction','kjbkjasbfahfa gifhasf yihfao yoafha gfgoaih afyaofh f','2024-01-23 16:26:34','Latundan Street, Talanay, 2nd District','Batasan Hills',14.68270130,121.10052550,'high','in_progress',0,NULL,NULL,'2026-05-07 23:20:21','2026-05-07 23:32:24',0,NULL),(15,19,'TRAPICO-2026-05-000012',NULL,'Illegal Parking','JGG TGGGG RUGE tia dfafda fua fa fgi gsdig wgdigd egd ie','2026-05-07 23:46:50','Talanay, 2nd District','Batasan Hills',14.68096380,121.09656840,'low','submitted',0,NULL,NULL,'2026-05-07 23:35:58','2026-05-07 23:35:58',0,NULL),(16,1,'TRAPICO-2026-05-000013',NULL,'Traffic Obstruction','fa\'kgegeakg ;agke;g e;a g;gkea;gke;g ;egke;ag ea;gk;eag','2024-01-23 16:26:57','Quezon City','Batasan Hills',14.73847333,121.49002074,'medium','submitted',0,NULL,NULL,'2026-05-08 02:00:06','2026-05-08 02:00:06',0,NULL),(17,1,'TRAPICO-2026-05-000014',NULL,'Traffic Obstruction','JFK;AGE G;EAGJGKJLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL','2024-01-23 16:26:34','Commonwealth, 2nd District','Commonwealth',14.69360970,121.07389700,'medium','submitted',0,NULL,NULL,'2026-05-08 02:06:36','2026-05-08 02:06:36',0,NULL),(18,1,'TRAPICO-2026-05-000015',5,'Traffic Obstruction','hiiiiiiiiiiiiiiiiiiiiiiiiiii hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii','2024-01-22 06:49:40','Commonwealth, 2nd District','Commonwealth',14.69360970,121.07389700,'high','closed',0,NULL,NULL,'2026-05-08 02:10:53','2026-05-08 02:22:02',0,NULL),(19,1,'TRAPICO-2026-05-000016',5,'Signal Malfunction','wfstewtgdffgdyutdhesrtsgxdfyfusdfswrgsfghhjjkjkkkkkkkkkftydgsezcdsf','2023-09-26 03:37:04','Talanay, 2nd District','Batasan Hills',14.68096380,121.09656840,'high','closed',0,NULL,NULL,'2026-05-08 02:42:36','2026-05-08 02:48:27',0,NULL);
 /*!40000 ALTER TABLE `complaints` ENABLE KEYS */;
 UNLOCK TABLES;
+-- ═══════════════════════════════════════════════════════════════
+-- TRAPICO TRASH / SOFT-DELETE SYSTEM
+-- All soft-deleted records land here, segmented by entity_type.
+-- Records are NOT permanently removed unless explicitly purged.
+-- Auto-purge threshold: 90 days (enforced by API/cron).
+-- ═══════════════════════════════════════════════════════════════
+DROP TABLE IF EXISTS `trapico_trash`;
+CREATE TABLE `trapico_trash` (
+  `trash_id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `entity_type`         ENUM(
+                          'complaint',
+                          'user',
+                          'media',
+                          'chat_message',
+                          'rating',
+                          'resolution_report',
+                          'assignment'
+                        ) NOT NULL,
+  `entity_id`           VARCHAR(64)   NOT NULL COMMENT 'Primary key of the deleted record',
+  `entity_label`        VARCHAR(255)  DEFAULT NULL COMMENT 'Human-readable name (e.g. tracking_id)',
+  `record_snapshot`     LONGTEXT      NOT NULL COMMENT 'Full JSON snapshot at time of deletion',
+  `deleted_by_user_id`  INT           DEFAULT NULL,
+  `deleted_by_role`     VARCHAR(50)   DEFAULT NULL,
+  `deletion_reason`     TEXT          DEFAULT NULL,
+  `deleted_at`          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `purge_after`         DATETIME      DEFAULT NULL COMMENT 'NULL = keep forever; otherwise auto-purge date',
+  `is_restored`         TINYINT(1)    NOT NULL DEFAULT 0,
+  `restored_at`         DATETIME      DEFAULT NULL,
+  `restored_by_user_id` INT           DEFAULT NULL,
+  PRIMARY KEY (`trash_id`),
+  KEY `idx_entity`     (`entity_type`, `entity_id`),
+  KEY `idx_deleted_at` (`entity_type`, `deleted_at`),
+  KEY `idx_restored`   (`is_restored`, `entity_type`),
+  KEY `idx_purge`      (`purge_after`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Central recycle bin — soft-deleted records for all entity types';
+
+LOCK TABLES `trapico_trash` WRITE;
+UNLOCK TABLES;
+
 DROP TABLE IF EXISTS `deleted_records_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

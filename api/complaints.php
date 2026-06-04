@@ -230,8 +230,22 @@ if ($action === 'cancel') {
         errorResponse('The 30-minute cancellation window has passed. Please contact the Barangay office for further assistance.');
     }
 
-    $db->prepare("UPDATE complaints SET status = 'cancelled' WHERE complaint_id = :cid")
-       ->execute([':cid' => $row['complaint_id']]);
+    // Capture snapshot before marking deleted
+    $snapStmt = $db->prepare('SELECT * FROM complaints WHERE complaint_id = :cid');
+    $snapStmt->execute([':cid' => $row['complaint_id']]);
+    $snapshot = $snapStmt->fetch() ?: [];
+
+    $db->prepare(
+        "UPDATE complaints SET status = 'cancelled', is_soft_deleted = 1, deleted_at = NOW()
+         WHERE complaint_id = :cid"
+    )->execute([':cid' => $row['complaint_id']]);
+
+    sendToTrash(
+        $db, 'complaint',
+        (string)$row['complaint_id'], $id, $snapshot,
+        $userId, 'citizen',
+        'Citizen cancelled within 30-minute window'
+    );
 
     $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
        ->execute([':cid' => $row['complaint_id'], ':uid' => $userId, ':status' => 'cancelled', ':notes' => 'User cancelled the complaint before verification.']);

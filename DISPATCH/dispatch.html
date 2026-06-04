@@ -36,6 +36,7 @@
       <div class="nav-item"        id="nav-citizens"  onclick="openPage('citizens')">  Citizen Records    </div>
       <div class="nav-item"        id="nav-officers"  onclick="openPage('officers')">  Field Officers     <span class="nav-badge hidden" id="badge-officers-msg">0</span> </div>
       <div class="nav-item"        id="nav-analytics" onclick="openPage('analytics')"> Analytics          </div>
+      <div class="nav-item"        id="nav-trash"     onclick="openPage('trash')">     Trash Bin          <span class="nav-badge hidden" id="badge-trash">0</span> </div>
       <div class="nav-item"        id="nav-profile"   onclick="openPage('profile')">   My Profile        </div>
     </nav>
     <div class="sidebar-footer">
@@ -233,6 +234,52 @@
           </div>
           <div style="padding:20px">
             <div class="fo-grid" id="field-officers-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: TRASH BIN -->
+      <section id="page-trash" class="page-section hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:13px;color:var(--mist);margin-top:4px">Soft-deleted records — nothing is permanently lost until purged</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-secondary btn-sm" onclick="loadTrash()">&#8635; Refresh</button>
+            <button class="btn-danger btn-sm" onclick="purgeExpiredTrash()">&#128465; Purge Expired</button>
+          </div>
+        </div>
+
+        <!-- Filter tabs by entity type -->
+        <div class="tabs" id="trash-tabs" style="margin-bottom:16px">
+          <div class="tab active" onclick="switchTrashTab(this,'all')"      data-type="">All</div>
+          <div class="tab"        onclick="switchTrashTab(this,'complaint')" data-type="complaint">Complaints <span class="nav-badge hidden" id="trash-badge-complaint">0</span></div>
+          <div class="tab"        onclick="switchTrashTab(this,'user')"      data-type="user">Users <span class="nav-badge hidden" id="trash-badge-user">0</span></div>
+          <div class="tab"        onclick="switchTrashTab(this,'media')"     data-type="media">Media <span class="nav-badge hidden" id="trash-badge-media">0</span></div>
+        </div>
+
+        <!-- Trash list table -->
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table id="trash-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Label / ID</th>
+                  <th>Deleted By</th>
+                  <th>Reason</th>
+                  <th>Deleted At</th>
+                  <th>Purge After</th>
+                  <th style="min-width:160px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trash-tbody">
+                <tr><td colspan="7"><div class="empty-state" style="padding:32px">
+                  <div class="empty-icon">&#128465;</div>
+                  <div class="empty-title">Loading trash…</div>
+                </div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

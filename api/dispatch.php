@@ -255,7 +255,7 @@ if ($action === 'officers') {
         'officers'         => $fieldOfficers,
         'field_officers'   => $fieldOfficers,
         'dispatch_officers'=> $dispatchOfficers,
-        'all_officers'     => array_merge($fieldOfficers, $dispatchOfficers),
+        'all_officers'     => [...$fieldOfficers, ...$dispatchOfficers],
     ]);
 }
 
@@ -301,7 +301,7 @@ if ($action === 'verifyAssign') {
     $db->prepare(
         'INSERT INTO status_history (complaint_id, changed_by, status, notes)
          VALUES (:cid, :uid, :status, :notes)'
-    )->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'assigned', ':notes' => 'Verified and assigned to officer ID ' . $officerId]);
+    )->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'assigned', ':notes' => "Verified and assigned to officer ID $officerId"]);
 
     successResponse(['message' => 'Complaint verified and assigned successfully.']);
 }
@@ -320,14 +320,31 @@ if ($action === 'reject') {
         errorResponse('Complaint not found.');
     }
 
+    // Snapshot before marking rejected
+    $snapStmt = $db->prepare('SELECT * FROM complaints WHERE complaint_id = :cid');
+    $snapStmt->execute([':cid' => $complaintId]);
+    $snapshot = $snapStmt->fetch() ?: [];
+
     try {
-          $db->prepare('UPDATE complaints SET status = :status, rejection_reason = :reason, rejected_by = :did, dispatch_id = :did WHERE complaint_id = :cid')
-              ->execute([':status' => 'rejected', ':reason' => $reason, ':did' => $dispatchId, ':cid' => $complaintId]);
+        $db->prepare(
+            'UPDATE complaints SET status = :status, rejection_reason = :reason,
+             rejected_by = :did, dispatch_id = :did, is_soft_deleted = 1, deleted_at = NOW()
+             WHERE complaint_id = :cid'
+        )->execute([':status' => 'rejected', ':reason' => $reason, ':did' => $dispatchId, ':cid' => $complaintId]);
     } catch (PDOException $e) {
-        // Fallback for older schemas that do not yet include rejection metadata columns.
-          $db->prepare('UPDATE complaints SET status = :status, dispatch_id = :did WHERE complaint_id = :cid')
-              ->execute([':status' => 'rejected', ':did' => $dispatchId, ':cid' => $complaintId]);
+        $db->prepare(
+            'UPDATE complaints SET status = :status, dispatch_id = :did,
+             is_soft_deleted = 1, deleted_at = NOW()
+             WHERE complaint_id = :cid'
+        )->execute([':status' => 'rejected', ':did' => $dispatchId, ':cid' => $complaintId]);
     }
+
+    sendToTrash(
+        $db, 'complaint',
+        (string)$complaintId, $trackingId, $snapshot,
+        $dispatchUid, 'dispatch',
+        'Dispatch rejected: ' . $reason
+    );
 
     $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
        ->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'rejected', ':notes' => $reason]);
@@ -395,7 +412,7 @@ if ($action === 'reassign') {
     // $db->prepare('UPDATE users SET status = "busy" WHERE user_id = :oid')->execute([':oid' => $newOfficerId]);
 
     $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
-       ->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'assigned', ':notes' => 'Case reassigned to officer ID ' . $newOfficerId]);
+       ->execute([':cid' => $complaintId, ':uid' => $dispatchUid, ':status' => 'assigned', ':notes' => "Case reassigned to officer ID $newOfficerId"]);
 
     successResponse(['message' => 'Case reassigned successfully.']);
 }
@@ -689,7 +706,7 @@ if ($action === 'citizens') {
 
         if ($search !== '') {
             $where[] = '(u.full_name LIKE :search OR u.email LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $params[':search'] = "%$search%";
         }
         if ($brgy !== '') {
             /* Filter to citizens who have at least one complaint in that barangay */

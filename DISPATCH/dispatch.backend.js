@@ -2656,6 +2656,9 @@ async function printCitizenReport(userId, tableTotalCases, tableClosedCases) {
         if (pageId === 'citizens') {
             loadCitizens();
         }
+        if (pageId === 'trash') {
+            loadTrash();
+        }
         if (pageId === 'active') {
             setTimeout(() => {
                 Object.values(_activeCaseMaps).forEach(m => { try { m.invalidateSize(); } catch (_) {} });
@@ -2663,3 +2666,178 @@ async function printCitizenReport(userId, tableTotalCases, tableClosedCases) {
         }
     };
 }());
+
+/* ================================================================
+   TRASH BIN — Soft-delete management
+   ================================================================ */
+
+let _trashCurrentType = '';
+
+async function loadTrash(entityType) {
+    if (entityType !== undefined) _trashCurrentType = entityType;
+    const tbody = document.getElementById('trash-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:24px">
+        <div class="empty-icon">&#9203;</div><div class="empty-title">Loading…</div></div></td></tr>`;
+
+    try {
+        const params = { action: 'list' };
+        if (_trashCurrentType) params.entity_type = _trashCurrentType;
+
+        const resp = await apiFetch('trash.php', params);
+        const items = resp.items || [];
+
+        // Update sidebar badge
+        const totalInTrash = (resp.counts_by_type || []).reduce((s, r) => s + Number(r.cnt || 0), 0);
+        const trashBadge = document.getElementById('badge-trash');
+        if (trashBadge) {
+            trashBadge.textContent = String(totalInTrash);
+            trashBadge.classList.toggle('hidden', totalInTrash <= 0);
+        }
+
+        // Update per-type badges on the tabs
+        (resp.counts_by_type || []).forEach(r => {
+            const el = document.getElementById(`trash-badge-${r.entity_type}`);
+            if (el) { el.textContent = String(r.cnt); el.classList.toggle('hidden', Number(r.cnt) <= 0); }
+        });
+
+        if (!items.length) {
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:40px 24px">
+                <div class="empty-icon">&#128465;</div>
+                <div class="empty-title">Trash is empty</div>
+                <div class="empty-sub">Soft-deleted records appear here. Nothing is permanently lost.</div>
+            </div></td></tr>`;
+            return;
+        }
+
+        const typeColors = {
+            complaint: '#E63946', user: '#2563EB', media: '#f59e0b',
+            chat_message: '#10b981', rating: '#f97316', resolution_report: '#6b7280', assignment: '#8b5cf6',
+        };
+
+        tbody.innerHTML = items.map(item => {
+            const color = typeColors[item.entity_type] || '#888';
+            const typeLabel = String(item.entity_type).replace('_', ' ').toUpperCase();
+            const purge = item.purge_after
+                ? `<span style="color:${new Date(item.purge_after) < new Date() ? '#E63946' : 'var(--mist)'}">
+                     ${formatDateTime(item.purge_after)}</span>`
+                : '<span style="color:var(--mist)">Never</span>';
+            return `
+            <tr>
+              <td><span class="badge" style="background:${color};color:#fff;font-size:10px">${safeText(typeLabel)}</span></td>
+              <td>
+                <div style="font-family:var(--font-mono);font-size:11px;font-weight:600">${safeText(item.entity_label || item.entity_id)}</div>
+                <div style="font-size:10px;color:var(--mist)">ID: ${safeText(item.entity_id)}</div>
+              </td>
+              <td style="font-size:12px">
+                <div>${safeText(item.deleted_by_name || '—')}</div>
+                <div style="font-size:10px;color:var(--mist);text-transform:capitalize">${safeText(item.deleted_by_role || '')}</div>
+              </td>
+              <td style="font-size:12px;max-width:180px;word-break:break-word">${safeText(item.deletion_reason || '—')}</td>
+              <td class="mono" style="font-size:11px;white-space:nowrap">${formatDateTime(item.deleted_at)}</td>
+              <td style="font-size:11px">${purge}</td>
+              <td>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button class="btn-secondary btn-sm" onclick="viewTrashDetail(${item.trash_id})">View</button>
+                  <button class="btn-primary btn-sm"   onclick="restoreTrashItem(${item.trash_id},'${safeText(item.entity_label || item.entity_id)}')">Restore</button>
+                  <button class="btn-danger btn-sm"    onclick="purgeTrashItem(${item.trash_id},'${safeText(item.entity_label || item.entity_id)}')">Purge</button>
+                </div>
+              </td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:24px">
+            <div class="empty-icon">&#9888;</div>
+            <div class="empty-title">Error loading trash</div>
+            <div class="empty-sub">${safeText(err.message)}</div>
+        </div></td></tr>`;
+    }
+}
+
+function switchTrashTab(el, type) {
+    document.querySelectorAll('#trash-tabs .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    loadTrash(type);
+}
+
+async function viewTrashDetail(trashId) {
+    try {
+        const resp = await apiFetch('trash.php', { action: 'detail', trash_id: trashId });
+        const item = resp.item || {};
+        const snap = item.record_snapshot || {};
+
+        const rows = Object.entries(snap)
+            .filter(([, v]) => v !== null && v !== '')
+            .map(([k, v]) => `
+            <div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--mist);min-width:140px;flex-shrink:0">${safeText(k)}</span>
+                <span style="font-size:12px;word-break:break-all">${safeText(String(v))}</span>
+            </div>`).join('');
+
+        openModal(`
+            <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                <div class="modal modal-lg" style="max-width:680px;max-height:80vh;display:flex;flex-direction:column">
+                    <div class="modal-head">
+                        <div>
+                            <div class="modal-title">&#128465; Trash Detail</div>
+                            <div class="modal-subtitle">${safeText(item.entity_type)} — ${safeText(item.entity_label || item.entity_id)}</div>
+                        </div>
+                        <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+                    </div>
+                    <div class="modal-body" style="overflow-y:auto;padding:16px 20px">
+                        <div style="margin-bottom:14px;padding:10px 14px;background:var(--surface);border-radius:6px;font-size:12px;line-height:1.7">
+                            <div><strong>Deleted by:</strong> ${safeText(item.deleted_by_name || '—')} (${safeText(item.deleted_by_role || '—')})</div>
+                            <div><strong>Deleted at:</strong> ${formatDateTime(item.deleted_at)}</div>
+                            <div><strong>Reason:</strong> ${safeText(item.deletion_reason || '—')}</div>
+                            <div><strong>Auto-purge:</strong> ${item.purge_after ? formatDateTime(item.purge_after) : 'Never'}</div>
+                        </div>
+                        <div class="section-title" style="margin-bottom:8px">Record Snapshot</div>
+                        <div style="font-size:12px">${rows || '<em>No data</em>'}</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="closeModal()">Close</button>
+                        <button class="btn-primary"   onclick="closeModal();restoreTrashItem(${trashId},'${safeText(item.entity_label || item.entity_id)}')">Restore</button>
+                        <button class="btn-danger"    onclick="closeModal();purgeTrashItem(${trashId},'${safeText(item.entity_label || item.entity_id)}')">Purge Permanently</button>
+                    </div>
+                </div>
+            </div>`);
+    } catch (err) {
+        showToast('Could not load detail: ' + err.message);
+    }
+}
+
+async function restoreTrashItem(trashId, label) {
+    if (!confirm(`Restore "${label}" from trash? The record will be reactivated.`)) return;
+    try {
+        await apiFetch('trash.php', { action: 'restore', trash_id: trashId }, 'POST');
+        showToast(`✓ "${label}" restored successfully.`);
+        loadTrash(_trashCurrentType);
+        await loadDispatchData();
+        renderQueueTable();
+    } catch (err) {
+        showToast('Restore failed: ' + err.message);
+    }
+}
+
+async function purgeTrashItem(trashId, label) {
+    if (!confirm(`PERMANENTLY delete "${label}"? This cannot be undone.`)) return;
+    try {
+        await apiFetch('trash.php', { action: 'purge', trash_id: trashId }, 'POST');
+        showToast(`"${label}" permanently deleted.`);
+        loadTrash(_trashCurrentType);
+    } catch (err) {
+        showToast('Purge failed: ' + err.message);
+    }
+}
+
+async function purgeExpiredTrash() {
+    if (!confirm('Permanently delete all expired trash items (past their auto-purge date)?')) return;
+    try {
+        const resp = await apiFetch('trash.php', { action: 'purge_expired' }, 'POST');
+        showToast(resp.message || 'Expired items purged.');
+        loadTrash(_trashCurrentType);
+    } catch (err) {
+        showToast('Purge failed: ' + err.message);
+    }
+}
