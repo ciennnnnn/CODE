@@ -2492,7 +2492,7 @@ async function loadCitizens() {
             <td style="text-align:center;font-weight:700">${c.total_cases || 0}</td>
             <td style="text-align:center;font-weight:700;color:var(--green)">${c.closed_cases || 0}</td>
             <td>
-              <button class="btn-secondary btn-sm" onclick="printCitizenReport(${parseInt(c.user_id, 10)})">&#128424; Print PDF</button>
+              <button class="btn-secondary btn-sm" onclick="printCitizenReport(${parseInt(c.user_id, 10)},${parseInt(c.total_cases||0,10)},${parseInt(c.closed_cases||0,10)})">&#128424; Print PDF</button>
             </td>
           </tr>`).join('');
     } catch (err) {
@@ -2504,14 +2504,15 @@ async function loadCitizens() {
     }
 }
 
-async function printCitizenReport(userId) {
+async function printCitizenReport(userId, tableTotalCases, tableClosedCases) {
     showToast('Preparing citizen report…');
     try {
-        const resp = await fetch('/api/dispatch.php?action=citizenDetail&user_id=' + encodeURIComponent(userId));
-        const data = await resp.json();
-        if (!data.success) throw new Error(data.message || 'Could not load citizen data');
+        const data = await apiFetch('dispatch.php', {action: 'citizenDetail', user_id: userId});
+        if (!data.success) throw new Error(data.error || data.message || 'Could not load citizen data');
 
         const { citizen, cases } = data;
+        const totalCases  = tableTotalCases !== undefined ? tableTotalCases : cases.length;
+        const closedCases = tableClosedCases !== undefined ? tableClosedCases : cases.filter(c => c.status === 'closed').length;
         const now = new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' });
 
         const casesRows = cases.length
@@ -2520,9 +2521,9 @@ async function printCitizenReport(userId) {
                   <td>${i + 1}</td>
                   <td><code>${_esc(c.tracking_id)}</code></td>
                   <td>${_esc(c.category)}</td>
-                  <td>${_esc(c.brgy || '—')}</td>
-                  <td>${_esc(c.priority || '—')}</td>
-                  <td>${_esc(c.status)}</td>
+                  <td>${_esc(c.brgy || c.asset_town || '—')}</td>
+                  <td style="text-transform:capitalize">${_esc(c.priority || '—')}</td>
+                  <td style="text-transform:capitalize">${_esc(c.status)}</td>
                   <td>${c.submitted_at ? c.submitted_at.substring(0, 10) : '—'}</td>
                   <td>${_esc(c.description || '—')}</td>
                 </tr>`).join('')
@@ -2537,31 +2538,31 @@ async function printCitizenReport(userId) {
   @page { margin: 18mm 14mm; size: A4; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
-  /* Header */
   .rpt-header { display: flex; justify-content: space-between; align-items: flex-start;
                 border-bottom: 3px solid #111; padding-bottom: 12px; margin-bottom: 18px; }
   .rpt-brand  { font-size: 24px; font-weight: 900; letter-spacing: -1px; }
   .rpt-brand-sub { font-size: 10px; color: #777; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
   .rpt-meta   { text-align: right; font-size: 11px; color: #777; line-height: 1.6; }
-  /* Section headings */
+  .summary-bar { display: flex; gap: 24px; background: #f5f5f5; border: 1px solid #e0e0e0;
+                 border-radius: 6px; padding: 10px 16px; margin: 14px 0 0; }
+  .summary-item { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+  .summary-val { font-size: 20px; font-weight: 900; color: #111; line-height: 1; }
+  .summary-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-top: 3px; }
+  .summary-val.green { color: #16a34a; }
   h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
        border-bottom: 1.5px solid #ddd; padding-bottom: 5px; margin: 18px 0 10px; color: #333; }
-  /* Info grid */
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; }
   .info-row  { display: flex; gap: 8px; align-items: baseline; }
   .info-lbl  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
                color: #888; min-width: 96px; flex-shrink: 0; }
   .info-val  { font-weight: 600; font-size: 12px; }
-  /* Table */
   table  { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
   thead tr { background: #111; color: #fff; }
   th  { padding: 7px 8px; text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; }
   td  { padding: 6px 8px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
   tr:nth-child(even) td { background: #f9f9f9; }
   code { font-family: monospace; font-size: 10px; background: #f0f0f0; padding: 1px 4px; border-radius: 2px; }
-  /* Footer */
-  .rpt-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #ddd;
-                font-size: 9.5px; color: #aaa; }
+  .rpt-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 9.5px; color: #aaa; }
   @media print { @page { margin: 15mm 12mm; } }
 </style>
 </head>
@@ -2572,6 +2573,11 @@ async function printCitizenReport(userId) {
     <div class="rpt-brand">TRAPICO</div>
     <div class="rpt-brand-sub">Traffic Complaint Information System</div>
     <div style="font-size:11px;color:#888;margin-top:6px">Quezon City — Barangay Traffic Management</div>
+    <div class="summary-bar">
+      <div class="summary-item"><span class="summary-val">${totalCases}</span><span class="summary-lbl">Total Cases</span></div>
+      <div class="summary-item"><span class="summary-val green">${closedCases}</span><span class="summary-lbl">Closed</span></div>
+      <div class="summary-item"><span class="summary-val">${totalCases - closedCases}</span><span class="summary-lbl">Open / Active</span></div>
+    </div>
   </div>
   <div class="rpt-meta">
     <div style="font-size:12px;font-weight:700;color:#333">Citizen Case Report</div>
@@ -2597,7 +2603,7 @@ async function printCitizenReport(userId) {
   <div class="info-row"><span class="info-lbl">Emergency Phone</span><span class="info-val">${_esc(citizen.emergency_contact_phone || '—')}</span></div>
 </div>
 
-<h2>Complaint History &mdash; ${cases.length} case${cases.length !== 1 ? 's' : ''} on record</h2>
+<h2>Complaint History &mdash; ${totalCases} case${totalCases !== 1 ? 's' : ''} on record &mdash; ${closedCases} closed</h2>
 <table>
   <thead>
     <tr>
@@ -2612,9 +2618,7 @@ async function printCitizenReport(userId) {
   <p>CONFIDENTIAL — For official use only. Generated by TRAPICO Dispatch Command Center on ${_esc(now)}.</p>
 </div>
 
-<script>
-  window.onload = function () { window.print(); };
-<\/script>
+<script>window.onload = function () { window.print(); };<\/script>
 </body>
 </html>`;
 
