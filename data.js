@@ -225,7 +225,7 @@ function setActivePage(pageId) {
     citizens:'Citizen Records',
     officers:'Field Officers', analytics:'Analytics', assigned:'Assigned Cases',
     job:'Active Job', drafts:'Drafts', history:'Case History', performance:'My Performance',
-    about:'About Us', messages:'Messages',
+    about:'About Us', messages:'Messages', faq:'FAQ',
   };
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titleMap[pageId] || 'Dashboard';
