@@ -1418,9 +1418,14 @@ function renderOfficers() {
         const statusLabel = o.status === 'available' ? 'AVAILABLE' : o.status === 'busy' ? 'BUSY' : 'OFFLINE';
         const chatKey  = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
         const hasAlert = officerChatAlertMap[chatKey];
+        const unread   = Number(officerUnreadCountMap[chatKey] || 0);
 
         return `
-        <div class="officer-full-card">
+        <div class="officer-full-card" style="position:relative">
+          <div id="unread-badge-${safeText(chatKey)}"
+               style="display:${hasAlert ? 'flex' : 'none'};position:absolute;top:-8px;right:-8px;background:#E63946;color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:22px;height:22px;align-items:center;justify-content:center;padding:0 6px;font-family:var(--font-mono);z-index:3;box-shadow:0 0 0 3px rgba(230,57,70,0.25),0 2px 6px rgba(0,0,0,0.18)">
+            ${hasAlert ? (unread > 0 ? unread : '!') : ''}
+          </div>
           <div class="officer-full-header">
             <div class="officer-avatar-lg">${initials}</div>
             <div style="flex:1">
@@ -1445,8 +1450,10 @@ function renderOfficers() {
           </div>
           ${perfBar(`Workload`, workload)}
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">View Cases</button>
-            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">Message</button>
+            <button class="btn-secondary btn-sm" style="flex:1" onclick="openOfficerCasesModal('${safeText(String(o.id))}','${safeText(o.name)}')">VIEW CASES</button>
+            <button id="contact-btn-${safeText(chatKey)}" class="${hasAlert ? 'btn-danger' : 'btn-secondary'} btn-sm" style="flex:1" onclick="openChatModal('${safeText(o.user_id || o.id)}','${safeText(o.name)}','${_chatReceiverRole(o)}')">
+              <span id="contact-label-${safeText(chatKey)}">${hasAlert && unread > 0 ? `MESSAGE (${unread})` : 'MESSAGE'}</span>
+            </button>
           </div>
         </div>`;
     }).join('');
@@ -1541,11 +1548,25 @@ async function openOfficerCasesModal(officerId, officerName) {
 
     function refreshOfficerContactButtonStyles() {
       OFFICERS_DATA.forEach(o => {
-        const key = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
-        const btn = document.getElementById(`contact-btn-${key}`);
-        if (!btn) return;
-        btn.classList.remove('btn-secondary', 'btn-danger');
-        btn.classList.add(officerChatAlertMap[key] ? 'btn-danger' : 'btn-secondary');
+        const key      = _chatPartnerKey(_chatReceiverRole(o), o.user_id || o.id);
+        const hasAlert = officerChatAlertMap[key];
+        const count    = Number(officerUnreadCountMap[key] || 0);
+
+        const btn   = document.getElementById(`contact-btn-${key}`);
+        const badge = document.getElementById(`unread-badge-${key}`);
+        const label = document.getElementById(`contact-label-${key}`);
+
+        if (btn) {
+          btn.classList.remove('btn-secondary', 'btn-danger');
+          btn.classList.add(hasAlert ? 'btn-danger' : 'btn-secondary');
+        }
+        if (badge) {
+          badge.style.display = hasAlert ? 'flex' : 'none';
+          badge.textContent   = hasAlert ? (count > 0 ? String(count) : '!') : '';
+        }
+        if (label) {
+          label.textContent = hasAlert && count > 0 ? `MESSAGE (${count})` : 'MESSAGE';
+        }
       });
       updateOfficerNavBadge();
     }
