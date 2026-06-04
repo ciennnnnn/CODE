@@ -31,6 +31,9 @@ function getJsonPayload(): array
 
 function jsonResponse(array $payload, int $status = 200): void
 {
+    /* Clear any accidental pre-output: PHP notices, session leftovers,
+       or content injected by Hostinger's server before we write JSON. */
+    while (ob_get_level() > 0) { ob_end_clean(); }
     header('Content-Type: application/json; charset=utf-8');
     http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);

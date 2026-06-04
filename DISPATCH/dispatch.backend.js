@@ -2423,7 +2423,16 @@ async function loadCitizens() {
         try {
             data = JSON.parse(rawText);
         } catch (jsonErr) {
-            throw new Error('Server sent non-JSON (first 400 chars): ' + rawText.substring(0, 400));
+            /* Hostinger may inject content before/after the JSON.
+               Extract the outermost {...} and try again. */
+            const start = rawText.indexOf('{');
+            const end   = rawText.lastIndexOf('}');
+            if (start !== -1 && end > start) {
+                try { data = JSON.parse(rawText.slice(start, end + 1)); }
+                catch (e2) { throw new Error('Parse failed. Tail: ' + rawText.slice(-200)); }
+            } else {
+                throw new Error('No JSON found in response: ' + rawText.substring(0, 300));
+            }
         }
         if (!data.success) throw new Error(data.error || data.message || 'Failed to load citizens');
 
