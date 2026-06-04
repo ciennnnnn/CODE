@@ -6,11 +6,29 @@ error_reporting(0);
 require_once __DIR__ . '/db.php';
 
 if (session_status() === PHP_SESSION_NONE) {
+    /* Use a writable sessions directory inside the project so Hostinger shared
+       hosting can persist sessions reliably between requests. */
+    $sessionDir = dirname(__DIR__) . '/sessions';
+    if (!is_dir($sessionDir)) {
+        @mkdir($sessionDir, 0700, true);
+    }
+    if (is_writable($sessionDir)) {
+        session_save_path($sessionDir);
+    }
+    ini_set('session.cookie_secure', '0');
+    ini_set('session.cookie_samesite', 'Lax');
+    ini_set('session.cookie_httponly', '1');
     session_start();
 }
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+$_origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($_origin !== '') {
+    header('Access-Control-Allow-Origin: ' . $_origin);
+    header('Access-Control-Allow-Credentials: true');
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-TRAPICO-ROLE');
 

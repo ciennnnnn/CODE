@@ -39,7 +39,7 @@ try {
         $user = $stmt->fetch();
         $redirect = 'CITIZEN/civilian.html';
     } elseif ($role === 'dispatch') {
-        /* Dispatch officers log in with their unique badge number only */
+        /* Dispatch officers log in with their badge number */
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
                     u.full_name AS name, u.email,
@@ -54,7 +54,7 @@ try {
         $user = $stmt->fetch();
         $redirect = 'DISPATCH/dispatch.html?v=20260507';
     } elseif ($role === 'field') {
-        /* Field officers log in with their unique badge number only */
+        /* Field officers log in with their badge number */
         $stmt = $db->prepare(
             'SELECT u.user_id AS id, u.user_id, u.username, u.password_hash,
                     u.full_name AS name, u.email,
