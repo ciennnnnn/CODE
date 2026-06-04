@@ -1553,3 +1553,182 @@ a.btn-sm {
     height: calc(100dvh - 54px) !important;
   }
 }
+
+/* ================================================================
+   MOBILE FINE-TUNING — Per-screenshot fixes
+   ================================================================ */
+
+/* ── SS1: Messages chat header — clean back + avatar + name row ─ */
+@media (max-width: 768px) {
+  .messenger-chat-header {
+    padding: 10px 14px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+  }
+  /* Back button: compact pill-style, sits left */
+  .chat-back-btn {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px !important;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 10px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0;
+    height: 30px;
+    box-sizing: border-box;
+  }
+  .chat-back-btn:active { background: var(--border); }
+  /* Avatar smaller on mobile */
+  .chat-header-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+    flex-shrink: 0;
+  }
+  .chat-header-name {
+    font-size: 13px !important;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .chat-header-sub {
+    font-size: 10px !important;
+    color: var(--mist);
+    margin-top: 1px;
+  }
+}
+
+/* ── SS2: Drafts — compact row layout, pill buttons ────────────── */
+.draft-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+.draft-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+/* Override the mobile column rule from earlier */
+@media (max-width: 768px) {
+  .draft-card {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px;
+    padding: 14px !important;
+  }
+  .draft-card > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .draft-card > div:first-child .track-id {
+    font-size: 11px;
+    word-break: break-all;
+  }
+  .draft-card > div:first-child .draft-sub {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .draft-actions {
+    flex-direction: column !important;
+    gap: 6px;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+  .draft-actions .btn-sm,
+  .draft-actions .btn-primary,
+  .draft-actions .btn-secondary {
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    font-size: 11px !important;
+    padding: 8px 6px !important;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+}
+
+/* ── SS3: Assigned card — proportional 3-button row ────────────── */
+@media (max-width: 768px) {
+  .assigned-card-btns {
+    display: flex;
+    flex-direction: row !important;
+    gap: 6px;
+    width: 100%;
+  }
+  .assigned-card-btns .btn-sm {
+    flex: 1 1 0;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+    font-size: 12px !important;
+    padding: 9px 4px !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+}
+@media (max-width: 380px) {
+  .assigned-card-btns .btn-sm {
+    font-size: 10px !important;
+    padding: 8px 2px !important;
+  }
+}
+
+/* ── SS4: Dashboard task card — info row + 2-button row ─────────── */
+@media (max-width: 600px) {
+  .task-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px 10px;
+    padding: 14px !important;
+  }
+  /* Number stays top-left */
+  .task-num {
+    font-size: 20px;
+    width: 22px;
+    flex-shrink: 0;
+    line-height: 1.1;
+    padding-top: 2px;
+  }
+  /* Body fills the row beside the number */
+  .task-body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .task-id   { font-size: 10px !important; word-break: break-all; }
+  .task-cat  { font-size: 13px !important; font-weight: 600; margin-top: 2px; }
+  .task-meta { font-size: 11px !important; margin-top: 2px; }
+  /* Actions: pushed to its own full-width row */
+  .task-actions {
+    flex: 0 0 100%;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .task-actions .btn-sm,
+  .task-actions .btn-primary,
+  .task-actions .btn-secondary {
+    flex: 1;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    font-size: 13px !important;
+    font-weight: 700;
+    padding: 10px 8px !important;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+}
