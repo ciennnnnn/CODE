@@ -2436,11 +2436,11 @@ async function loadCitizens() {
             <td style="font-weight:600">${_esc(c.full_name || '—')}</td>
             <td class="mono" style="font-size:12px">${_esc(c.email || '—')}</td>
             <td style="font-size:12px">${_esc(c.phone_number || '—')}</td>
-            <td style="font-size:12px">${_esc(c.last_brgy || '—')}</td>
+            <td style="font-size:12px">${_esc(c.home_brgy || '—')}</td>
             <td style="text-align:center;font-weight:700">${c.total_cases || 0}</td>
             <td style="text-align:center;font-weight:700;color:var(--green)">${c.closed_cases || 0}</td>
             <td>
-              <button class="btn-secondary btn-sm" onclick="printCitizenReport(${c.user_id}, ${JSON.stringify(_esc(c.full_name))})">&#128424; Print PDF</button>
+              <button class="btn-secondary btn-sm" onclick="printCitizenReport(${parseInt(c.user_id, 10)})">&#128424; Print PDF</button>
             </td>
           </tr>`).join('');
     } catch (err) {
@@ -2452,7 +2452,7 @@ async function loadCitizens() {
     }
 }
 
-async function printCitizenReport(userId, displayName) {
+async function printCitizenReport(userId) {
     showToast('Preparing citizen report…');
     try {
         const resp = await fetch('/api/dispatch.php?action=citizenDetail&user_id=' + encodeURIComponent(userId));
@@ -2531,11 +2531,12 @@ async function printCitizenReport(userId, displayName) {
 <h2>Personal Information</h2>
 <div class="info-grid">
   <div class="info-row"><span class="info-lbl">Full Name</span><span class="info-val">${_esc(citizen.full_name || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Middle Name</span><span class="info-val">${_esc(citizen.middle_name || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Email</span><span class="info-val">${_esc(citizen.email || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Phone</span><span class="info-val">${_esc(citizen.phone_number || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Sex</span><span class="info-val">${_esc(citizen.sex || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Birthdate</span><span class="info-val">${citizen.birthdate ? String(citizen.birthdate).substring(0,10) : '—'}</span></div>
-  <div class="info-row"><span class="info-lbl">Middle Name</span><span class="info-val">${_esc(citizen.middle_name || '—')}</span></div>
+  <div class="info-row"><span class="info-lbl">Barangay</span><span class="info-val">${_esc(citizen.barangay || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Street</span><span class="info-val">${_esc(citizen.street || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${_esc(citizen.city || '—')}</span></div>
   <div class="info-row"><span class="info-lbl">Province</span><span class="info-val">${_esc(citizen.province || '—')}</span></div>

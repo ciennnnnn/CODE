@@ -682,8 +682,9 @@ if ($action === 'citizens') {
     $search = trim((string)($_REQUEST['search'] ?? $data['search'] ?? ''));
     $brgy   = trim((string)($_REQUEST['brgy']   ?? $data['brgy']   ?? ''));
 
-    $where  = ['u.role = :role'];
-    $params = [':role' => 'regular'];
+    /* Citizens are stored with role = 'citizen' in the users table */
+    $where  = ["u.role = 'citizen'"];
+    $params = [];
 
     if ($search !== '') {
         $where[] = '(u.full_name LIKE :search OR u.email LIKE :search)';
@@ -696,18 +697,15 @@ if ($action === 'citizens') {
 
     $sql =
         "SELECT u.user_id, u.full_name, u.email,
-                COALESCE(u.phone_number,'—') AS phone_number,
-                COALESCE((
-                    SELECT asset_town FROM complaints
-                    WHERE user_id = u.user_id ORDER BY submitted_at DESC LIMIT 1
-                ),'—') AS last_brgy,
+                COALESCE(u.phone_number, '') AS phone_number,
+                COALESCE(u.barangay, '') AS home_brgy,
                 COUNT(c.complaint_id) AS total_cases,
-                COALESCE(SUM(c.status = 'closed'), 0) AS closed_cases,
+                SUM(CASE WHEN c.status = 'closed' THEN 1 ELSE 0 END) AS closed_cases,
                 MAX(c.submitted_at) AS last_case_at
          FROM users u
          LEFT JOIN complaints c ON c.user_id = u.user_id
          WHERE " . implode(' AND ', $where) . "
-         GROUP BY u.user_id
+         GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.barangay
          ORDER BY total_cases DESC, u.full_name ASC";
 
     $stmt = $db->prepare($sql);
@@ -721,15 +719,16 @@ if ($action === 'citizenDetail') {
 
     $uStmt = $db->prepare(
         "SELECT user_id, full_name, email,
-                COALESCE(phone_number,'') AS phone_number,
-                COALESCE(middle_name,'')  AS middle_name,
+                COALESCE(phone_number, '') AS phone_number,
+                COALESCE(middle_name, '')  AS middle_name,
+                COALESCE(barangay, '')     AS barangay,
                 birthdate, sex,
-                COALESCE(street,'')   AS street,
-                COALESCE(city,'')     AS city,
-                COALESCE(province,'') AS province,
-                COALESCE(zip_code,'') AS zip_code
+                COALESCE(street, '')   AS street,
+                COALESCE(city, '')     AS city,
+                COALESCE(province, '') AS province,
+                COALESCE(zip_code, '') AS zip_code
          FROM users
-         WHERE user_id = :uid AND role = 'regular'
+         WHERE user_id = :uid AND role = 'citizen'
          LIMIT 1"
     );
     $uStmt->execute([':uid' => $userId]);
