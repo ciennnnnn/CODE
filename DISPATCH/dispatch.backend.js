@@ -312,6 +312,10 @@ async function loadDispatchData() {
 
   if (queueResp.status === 'fulfilled') {
     QUEUE_DATA = queueResp.value.complaints || [];
+    const statuses = QUEUE_DATA.map(c => c.status);
+    console.log('[TRAPICO DEBUG] queue loaded:', QUEUE_DATA.length, 'complaints. Statuses:', statuses);
+  } else {
+    console.warn('[TRAPICO DEBUG] queue FAILED:', queueResp.reason);
   }
 
   if (officersResp.status === 'fulfilled') {
