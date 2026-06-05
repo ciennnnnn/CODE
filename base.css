@@ -930,7 +930,7 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 2px solid var(--ink);
-  position: sticky; top: 0; background: var(--white); z-index: 1;
+  position: sticky; top: 0; background: var(--white); z-index: 300;
 }
 
 .modal-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
@@ -945,11 +945,13 @@ input:checked + .toggle-slider::before { transform: translateX(18px); }
 .modal-close:hover { color: var(--accent); }
 
 .modal-body { padding: 24px; }
+/* Contain Leaflet's internal tile/marker z-indexes (200–800) inside the map box */
+.modal-body .leaflet-container { z-index: 0; isolation: isolate; }
 .modal-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
   display: flex; gap: 12px; justify-content: flex-end;
-  position: sticky; bottom: 0; background: var(--white);
+  position: sticky; bottom: 0; background: var(--white); z-index: 300;
 }
 
 /* ── RATING STARS ──────────────────────────────────────────── */
