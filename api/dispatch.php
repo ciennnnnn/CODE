@@ -157,8 +157,11 @@ if ($action === 'queue') {
                 CASE WHEN EXISTS (
                     SELECT 1 FROM duplicate_complaint_detection d
                     WHERE d.primary_complaint_id = c.complaint_id
-                       OR d.duplicate_complaint_id = c.complaint_id
-                ) THEN 1 ELSE 0 END AS duplicate
+                ) THEN 1 ELSE 0 END AS duplicate,
+                (SELECT c2.tracking_id FROM duplicate_complaint_detection d2
+                 JOIN complaints c2 ON c2.complaint_id = d2.duplicate_complaint_id
+                 WHERE d2.primary_complaint_id = c.complaint_id
+                 LIMIT 1) AS duplicate_of
          FROM complaints c
          LEFT JOIN users u ON u.user_id = c.user_id
          WHERE c.status IN ('submitted','verified','resolved','closed','rejected','cancelled')
@@ -339,6 +342,11 @@ if ($action === 'reject') {
              WHERE complaint_id = :cid'
         )->execute([':status' => 'rejected', ':did' => $dispatchId, ':cid' => $complaintId]);
     }
+
+    $db->prepare(
+        'DELETE FROM duplicate_complaint_detection
+         WHERE primary_complaint_id = :cid OR duplicate_complaint_id = :cid'
+    )->execute([':cid' => $complaintId]);
 
     sendToTrash(
         $db, 'complaint',
@@ -593,6 +601,11 @@ if ($action === 'closeCase') {
 
      $db->prepare('UPDATE complaints SET status = :status, dispatch_id = :did WHERE complaint_id = :cid')
          ->execute([':status' => 'closed', ':did' => $dispatchId, ':cid' => $complaintId]);
+
+    $db->prepare(
+        'DELETE FROM duplicate_complaint_detection
+         WHERE primary_complaint_id = :cid OR duplicate_complaint_id = :cid'
+    )->execute([':cid' => $complaintId]);
 
     $offStmt = $db->prepare(
         'SELECT field_officer_id FROM assignments

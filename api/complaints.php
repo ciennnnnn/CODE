@@ -240,6 +240,11 @@ if ($action === 'cancel') {
          WHERE complaint_id = :cid"
     )->execute([':cid' => $row['complaint_id']]);
 
+    $db->prepare(
+        'DELETE FROM duplicate_complaint_detection
+         WHERE primary_complaint_id = :cid OR duplicate_complaint_id = :cid'
+    )->execute([':cid' => $row['complaint_id']]);
+
     sendToTrash(
         $db, 'complaint',
         (string)$row['complaint_id'], $id, $snapshot,

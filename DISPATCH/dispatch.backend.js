@@ -488,7 +488,7 @@ function renderQueueTable() {
         <td style="font-size:12px">${safeText(c.brgy)}</td>
         <td>${priorityBadge(c.priority)}</td>
         <td class="mono" style="font-size:12px">${formatDateTime(c.date)}</td>
-        <td>${c.duplicate ? '<span class="dup-flag">Dup.</span>' : '—'}</td>
+        <td>${c.duplicate ? `<span class="dup-flag" title="Possible duplicate of ${safeText(c.duplicate_of || 'another complaint')}">Dup. of ${safeText(c.duplicate_of || '?')}</span>` : '—'}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-secondary btn-sm" onclick="openReviewModal('${safeText(c.id)}')">Review</button>
