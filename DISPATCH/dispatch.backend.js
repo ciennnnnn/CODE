@@ -438,6 +438,7 @@ function renderQueueTable() {
   const resolved = deduped.filter(c => c.status === 'resolved');
   const closed = deduped.filter(c => c.status === 'closed');
   const rejected = deduped.filter(c => c.status === 'rejected');
+  const cancelled = deduped.filter(c => c.status === 'cancelled');
 
     document.getElementById('tab-submitted-count').textContent = `(${submitted.length})`;
     document.getElementById('tab-verified-count').textContent = `(${verified.length})`;
@@ -447,6 +448,8 @@ function renderQueueTable() {
     if (closedCountEl) closedCountEl.textContent = `(${closed.length})`;
     const rejectedCountEl = document.getElementById('tab-rejected-count');
     if (rejectedCountEl) rejectedCountEl.textContent = `(${rejected.length})`;
+    const cancelledCountEl = document.getElementById('tab-cancelled-count');
+    if (cancelledCountEl) cancelledCountEl.textContent = `(${cancelled.length})`;
 
     let list = submitted;
     if (dispatchActiveQueueTab === 'verified') {
@@ -457,6 +460,8 @@ function renderQueueTable() {
       list = closed;
     } else if (dispatchActiveQueueTab === 'rejected') {
       list = rejected;
+    } else if (dispatchActiveQueueTab === 'cancelled') {
+      list = cancelled;
     }
     list = list.filter(c => {
       const id = String(c.id || '').toLowerCase();
@@ -489,11 +494,13 @@ function renderQueueTable() {
             <button class="btn-secondary btn-sm" onclick="openReviewModal('${safeText(c.id)}')">Review</button>
             ${c.status === 'rejected'
               ? `<span class="badge badge-rejected" title="${safeText(c.rejection_reason || '')}">Rejected</span>`
-              : (c.status === 'resolved'
-                ? `<button class="btn-success btn-sm" onclick="openCloseCaseModal('${safeText(c.id)}')">✓ Close Case</button>`
-                : (c.status === 'closed'
-                  ? `<span class="badge badge-closed">Closed</span>`
-                  : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`))}
+              : (c.status === 'cancelled'
+                ? `<span class="badge badge-cancelled">Cancelled by Citizen</span>`
+                : (c.status === 'resolved'
+                  ? `<button class="btn-success btn-sm" onclick="openCloseCaseModal('${safeText(c.id)}')">✓ Close Case</button>`
+                  : (c.status === 'closed'
+                    ? `<span class="badge badge-closed">Closed</span>`
+                    : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`)))}
           </div>
         </td>
       </tr>`).join('');

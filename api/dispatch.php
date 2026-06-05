@@ -161,7 +161,7 @@ if ($action === 'queue') {
                 ) THEN 1 ELSE 0 END AS duplicate
          FROM complaints c
          LEFT JOIN users u ON u.user_id = c.user_id
-         WHERE c.status IN ('submitted','verified','resolved','closed','rejected')
+         WHERE c.status IN ('submitted','verified','resolved','closed','rejected','cancelled')
          ORDER BY c.submitted_at DESC"
     );
     successResponse(['complaints' => $stmt->fetchAll()]);
