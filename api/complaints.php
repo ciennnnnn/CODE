@@ -181,9 +181,10 @@ if ($action === 'submit') {
              FROM complaints
              WHERE submitted_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
                AND complaint_id != :cid
+               AND category = :cat
                AND status NOT IN ("cancelled")'
         );
-        $dupStmt->execute([':cid' => $newComplaintId]);
+        $dupStmt->execute([':cid' => $newComplaintId, ':cat' => $category]);
         while ($row = $dupStmt->fetch()) {
             $distance = getDistanceMeters((float)$coords['lat'], (float)$coords['lng'], (float)$row['lat'], (float)$row['lng']);
             if ($distance <= 100) {
