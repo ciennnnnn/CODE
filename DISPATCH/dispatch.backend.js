@@ -514,7 +514,7 @@ function renderQueueTable() {
                     ? `<span class="badge badge-closed">Closed</span>`
                     : (c.status === 'assigned'
                       ? `<span class="badge badge-assigned" style="font-size:11px">Assigned</span>`
-                      : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button>`))))}
+                      : ``))))}
           </div>
         </td>
       </tr>`).join('');
