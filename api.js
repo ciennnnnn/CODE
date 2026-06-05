@@ -122,6 +122,14 @@ async function rawFetch(url, options) {
         throw new Error(`Invalid server response (HTTP ${res.status})`);
     }
 
+    if (res.status === 403) {
+        const role = getClientRoleContext();
+        const loginMap = { regular: '/citizen-login.html', dispatch: '/dispatch-login.html', field: '/field-login.html' };
+        if (role && loginMap[role] && !isAuthPage()) {
+            window.location.href = loginMap[role];
+        }
+        throw new Error(json.error || 'Forbidden. Please sign in again.');
+    }
     if (!res.ok || json.success === false) {
         throw new Error(json.error || 'Server returned an error');
     }

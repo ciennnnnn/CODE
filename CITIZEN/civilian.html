@@ -158,8 +158,23 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="f-address">Specific Address / Landmark *</label>
-            <input id="f-address" class="form-input" type="text" placeholder="Latundan Street, Talanay, Batasan Hills" />
+            <label>Specific Address *</label>
+            <input id="f-street" class="form-input" type="text" placeholder="Street / House No. (e.g. 9 Latundan St)" style="margin-bottom:8px" oninput="syncAddressFromParts()" />
+            <div class="form-row-3" style="gap:10px">
+              <div class="form-group" style="margin-bottom:0">
+                <label for="f-brgy-addr" style="font-size:11px;margin-bottom:3px">Barangay</label>
+                <input id="f-brgy-addr" class="form-input" type="text" readonly style="background:var(--bg,#f8f8f8);color:var(--mist,#888);cursor:default" />
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label for="f-city" style="font-size:11px;margin-bottom:3px">City</label>
+                <input id="f-city" class="form-input" type="text" value="Quezon City" placeholder="City" oninput="syncAddressFromParts()" />
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label for="f-country" style="font-size:11px;margin-bottom:3px">Country</label>
+                <input id="f-country" class="form-input" type="text" value="Philippines" readonly style="background:var(--bg,#f8f8f8);color:var(--mist,#888);cursor:default" />
+              </div>
+            </div>
+            <input type="hidden" id="f-address" />
           </div>
           <div class="btn-row">
             <button class="btn-secondary" onclick="setActivePage('dash')">Cancel</button>

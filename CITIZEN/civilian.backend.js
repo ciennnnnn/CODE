@@ -64,6 +64,15 @@ function setPinnedLocation(lat, lng, zoom = 17, prefix = 'Pinned') {
     if (label) label.textContent = `Pinned ${prefix}: ${pinnedLat.toFixed(5)}, ${pinnedLng.toFixed(5)}`;
 }
 
+function syncAddressFromParts() {
+    const street = document.getElementById('f-street')?.value.trim() || '';
+    const brgy   = document.getElementById('f-brgy')?.value || '';
+    const city   = document.getElementById('f-city')?.value.trim() || 'Quezon City';
+    const parts  = [street, brgy, city, 'Philippines'].filter(Boolean);
+    const el = document.getElementById('f-address');
+    if (el) el.value = parts.join(', ');
+}
+
 function buildAddressFromSearchResult(result, fallback = '') {
     const addr = result?.address || {};
     const streetLine = addr.house_number
@@ -82,9 +91,6 @@ function buildAddressFromSearchResult(result, fallback = '') {
 }
 
 async function fillAddressFromReverseGeocode(lat, lng) {
-    const input = document.getElementById('f-address');
-    if (!input) return;
-
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}&addressdetails=1`;
         const res = await fetch(url, {headers: {'Accept': 'application/json'}});
@@ -94,15 +100,13 @@ async function fillAddressFromReverseGeocode(lat, lng) {
         const streetLine = addr.house_number
             ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
             : (addr.road || addr.pedestrian || addr.footway || addr.path || '');
-        const parts = [
-            streetLine,
-            addr.suburb || addr.neighbourhood || addr.village || '',
-            addr.quarter || addr.city_district || '',
-            addr.city || addr.town || 'Quezon City',
-            'Philippines',
-        ].map(x => String(x || '').trim()).filter(Boolean);
-        const text = parts.length > 1 ? parts.join(', ') : String(data?.display_name || '').trim();
-        if (text) input.value = text;
+        const city = addr.city || addr.town || 'Quezon City';
+
+        const streetEl = document.getElementById('f-street');
+        const cityEl   = document.getElementById('f-city');
+        if (streetEl && streetLine) streetEl.value = streetLine;
+        if (cityEl) cityEl.value = city;
+        syncAddressFromParts();
     } catch (_) {
         /* best effort */
     }
@@ -126,6 +130,7 @@ async function initCivilian() {
         if (sbi) sbi.textContent = initials;
 
         autoFillIncidentDateTime(new Date(), 'Defaults to now — update if different.');
+        updateAddressField();
 
         /* Set date constraints: max = today, min = 7 days ago */
         const _dateInput = document.getElementById('f-date');
@@ -463,15 +468,16 @@ function goToStep(step) {
     if (step === 2) {
         const cat = document.getElementById('f-cat')?.value;
         const brgy = document.getElementById('f-brgy')?.value;
-        const address = document.getElementById('f-address')?.value.trim();
+        const address = document.getElementById('f-street')?.value.trim();
         if (!cat) {
             showToast('Please select a complaint category before proceeding.');
             return;
         }
         if (!address) {
-            showToast('Please enter an incident address before proceeding.');
+            showToast('Please enter a street address before proceeding.');
             return;
         }
+        syncAddressFromParts();
         // DO NOT require evidence here!
     }
     // Sign out: clear all form/session data and redirect to login
@@ -663,6 +669,8 @@ async function submitComplaint() {
         if (pinLabel) pinLabel.textContent = 'Click the map to pin the exact incident location.';
         document.getElementById('f-cat').value = '';
         document.getElementById('f-address').value = '';
+        const _s = document.getElementById('f-street'); if (_s) _s.value = '';
+        const _c = document.getElementById('f-city');   if (_c) _c.value = 'Quezon City';
         document.getElementById('f-desc').value = '';
         autoFillIncidentDateTime(new Date(), 'Auto-updated: current time');
         document.getElementById('anon-toggle').checked = false;
@@ -1403,8 +1411,16 @@ async function searchIncidentLocation() {
         }
 
         setPinnedLocation(lat, lng, 17, 'Pinned');
-        const addrInput = document.getElementById('f-address');
-        if (addrInput) addrInput.value = buildAddressFromSearchResult(found, raw);
+        const _addr = found?.address || {};
+        const _street = _addr.house_number
+            ? `${_addr.house_number} ${_addr.road || _addr.pedestrian || ''}`.trim()
+            : (_addr.road || _addr.pedestrian || _addr.footway || '');
+        const _city = _addr.city || _addr.town || 'Quezon City';
+        const _streetEl = document.getElementById('f-street');
+        const _cityEl   = document.getElementById('f-city');
+        if (_streetEl) _streetEl.value = _street || buildAddressFromSearchResult(found, raw).split(',')[0].trim();
+        if (_cityEl)   _cityEl.value   = _city;
+        syncAddressFromParts();
         showToast('Location found and pinned!');
     } catch (_) {
         showToast('Search failed. Please try again.');
@@ -1447,10 +1463,9 @@ function useGpsLocation() {
 
 function updateAddressField() {
     const brgy = document.getElementById('f-brgy')?.value || '';
-    const addressInput = document.getElementById('f-address');
-    if (addressInput) {
-        addressInput.placeholder = `Enter address in ${brgy}`;
-    }
+    const brgyAddr = document.getElementById('f-brgy-addr');
+    if (brgyAddr) brgyAddr.value = brgy;
+    syncAddressFromParts();
 }
 
 /* ── TIMELINE (API-backed, overrides data.js version) ──────── */

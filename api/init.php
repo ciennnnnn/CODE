@@ -99,7 +99,10 @@ function requireLogin(): array
 function requireRole(string $role): array
 {
     $user = requireLogin();
-    if (!isset($user['role']) || $user['role'] !== $role) {
+    $userRole = $user['role'] ?? '';
+    // Accept both the short form ('dispatch') and DB-native form ('dispatch_officer')
+    $compat = ['dispatch' => 'dispatch_officer', 'field' => 'field_officer', 'regular' => 'citizen'];
+    if ($userRole !== $role && ($compat[$role] ?? null) !== $userRole) {
         errorResponse('Forbidden. Your role cannot access this endpoint.', 403);
     }
     return $user;
