@@ -65,11 +65,9 @@ function setPinnedLocation(lat, lng, zoom = 17, prefix = 'Pinned') {
 }
 
 function syncAddressFromParts() {
-    const street = document.getElementById('f-street')?.value.trim() || '';
-    const brgy   = document.getElementById('f-brgy')?.value || '';
-    const parts  = [street, brgy, 'Quezon City', 'Philippines'].filter(Boolean);
-    const el = document.getElementById('f-address');
-    if (el) el.value = parts.join(', ');
+    const val = document.getElementById('f-street')?.value || '';
+    const el  = document.getElementById('f-address');
+    if (el) el.value = val;
 }
 
 function buildAddressFromSearchResult(result, fallback = '') {
@@ -90,17 +88,13 @@ function buildAddressFromSearchResult(result, fallback = '') {
 }
 
 function _applyGeocodedAddress(addr, streetOverride = null) {
-    // streetOverride: use the typed search query directly; otherwise extract from geocode
     const streetLine = streetOverride !== null ? streetOverride : (
         addr.house_number
             ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
             : (addr.road || addr.pedestrian || addr.footway || addr.path || '')
     );
 
-    const streetEl = document.getElementById('f-street');
-    if (streetEl && streetLine) streetEl.value = streetLine;
-
-    // Auto-detect barangay from geocoding result and update the dropdown
+    // Auto-detect barangay; fall back to current dropdown value
     const KNOWN_BRGYS = ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'];
     const geocodeRaw = [addr.suburb, addr.neighbourhood, addr.quarter, addr.village, addr.city_district]
         .filter(Boolean).join(' ').toLowerCase();
@@ -109,8 +103,17 @@ function _applyGeocodedAddress(addr, streetOverride = null) {
         const brgyEl = document.getElementById('f-brgy');
         if (brgyEl) brgyEl.value = matched;
     }
+    const brgy = document.getElementById('f-brgy')?.value || '';
 
-    syncAddressFromParts();
+    // Build and display full address in the visible field
+    const parts = [streetLine, brgy, 'Quezon City', 'Philippines'].filter(Boolean);
+    const fullAddress = parts.join(', ');
+    const streetEl = document.getElementById('f-street');
+    if (streetEl && fullAddress) streetEl.value = fullAddress;
+
+    // Sync hidden field
+    const hiddenEl = document.getElementById('f-address');
+    if (hiddenEl) hiddenEl.value = fullAddress;
 }
 
 async function fillAddressFromReverseGeocode(lat, lng) {
@@ -1464,6 +1467,7 @@ function useGpsLocation() {
 }
 
 function updateAddressField() {
+    // If the visible field already has a full address, re-sync the hidden field
     syncAddressFromParts();
 }
 
