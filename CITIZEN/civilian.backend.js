@@ -90,23 +90,37 @@ function buildAddressFromSearchResult(result, fallback = '') {
     return String(result?.display_name || fallback || '').trim();
 }
 
+function _applyGeocodedAddress(addr) {
+    const streetLine = addr.house_number
+        ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
+        : (addr.road || addr.pedestrian || addr.footway || addr.path || '');
+    const city = addr.city || addr.town || 'Quezon City';
+
+    const streetEl = document.getElementById('f-street');
+    const cityEl   = document.getElementById('f-city');
+    if (streetEl && streetLine) streetEl.value = streetLine;
+    if (cityEl) cityEl.value = city;
+
+    // Auto-detect barangay from geocoding result
+    const KNOWN_BRGYS = ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'];
+    const raw = [addr.suburb, addr.neighbourhood, addr.quarter, addr.village, addr.city_district]
+        .filter(Boolean).join(' ').toLowerCase();
+    const matched = KNOWN_BRGYS.find(b => raw.includes(b.toLowerCase()));
+    if (matched) {
+        const brgyEl = document.getElementById('f-brgy');
+        if (brgyEl) { brgyEl.value = matched; updateAddressField(); }
+    }
+
+    syncAddressFromParts();
+}
+
 async function fillAddressFromReverseGeocode(lat, lng) {
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}&addressdetails=1`;
         const res = await fetch(url, {headers: {'Accept': 'application/json'}});
         if (!res.ok) return;
         const data = await res.json();
-        const addr = data?.address || {};
-        const streetLine = addr.house_number
-            ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
-            : (addr.road || addr.pedestrian || addr.footway || addr.path || '');
-        const city = addr.city || addr.town || 'Quezon City';
-
-        const streetEl = document.getElementById('f-street');
-        const cityEl   = document.getElementById('f-city');
-        if (streetEl && streetLine) streetEl.value = streetLine;
-        if (cityEl) cityEl.value = city;
-        syncAddressFromParts();
+        _applyGeocodedAddress(data?.address || {});
     } catch (_) {
         /* best effort */
     }
@@ -1411,16 +1425,7 @@ async function searchIncidentLocation() {
         }
 
         setPinnedLocation(lat, lng, 17, 'Pinned');
-        const _addr = found?.address || {};
-        const _street = _addr.house_number
-            ? `${_addr.house_number} ${_addr.road || _addr.pedestrian || ''}`.trim()
-            : (_addr.road || _addr.pedestrian || _addr.footway || '');
-        const _city = _addr.city || _addr.town || 'Quezon City';
-        const _streetEl = document.getElementById('f-street');
-        const _cityEl   = document.getElementById('f-city');
-        if (_streetEl) _streetEl.value = _street || buildAddressFromSearchResult(found, raw).split(',')[0].trim();
-        if (_cityEl)   _cityEl.value   = _city;
-        syncAddressFromParts();
+        _applyGeocodedAddress(found?.address || {});
         showToast('Location found and pinned!');
     } catch (_) {
         showToast('Search failed. Please try again.');
