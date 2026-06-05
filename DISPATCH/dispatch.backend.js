@@ -418,6 +418,13 @@ function switchQueueTab(el) {
     renderQueueTable();
 }
 
+function _switchToAssignedTab() {
+    dispatchActiveQueueTab = 'assigned';
+    document.querySelectorAll('#queue-tabs .tab').forEach(t => t.classList.remove('active'));
+    const el = document.querySelector('#queue-tabs .tab[data-tab="assigned"]');
+    if (el) el.classList.add('active');
+}
+
 function renderQueueTable() {
     const search = (document.getElementById('queue-search')?.value || '').toLowerCase();
     const priority = document.getElementById('queue-priority')?.value || '';
@@ -434,7 +441,7 @@ function renderQueueTable() {
   }
 
   const submitted = deduped.filter(c => c.status === 'submitted');
-  const assigned = deduped.filter(c => c.status === 'assigned');
+  const assigned = deduped.filter(c => ['assigned', 'en_route', 'in_progress'].includes(c.status));
   const resolved = deduped.filter(c => c.status === 'resolved');
   const closed = deduped.filter(c => c.status === 'closed');
   const rejected = deduped.filter(c => c.status === 'rejected');
@@ -501,7 +508,9 @@ function renderQueueTable() {
                   ? `<button class="btn-success btn-sm" onclick="openCloseCaseModal('${safeText(c.id)}')">✓ Close Case</button>`
                   : (c.status === 'closed'
                     ? `<span class="badge badge-closed">Closed</span>`
-                    : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`)))}
+                    : (c.status === 'assigned'
+                      ? `<span class="badge badge-assigned" style="font-size:11px">Assigned</span><button class="btn-danger btn-sm" onclick="reassignCase('${safeText(c.id)}')">Reassign</button>`
+                      : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`))))}
           </div>
         </td>
       </tr>`).join('');
@@ -1152,9 +1161,10 @@ async function confirmVerifyAssign(id) {
     try {
         await apiFetch('dispatch.php', {action: 'verifyAssign', id, officer_id: dispatchSelectedOfficerId}, 'POST');
         showToast(`✓ Complaint verified and assigned to ${safeText(officer?.name || 'officer')}.`);
-      showNotification(`Complaint ${id} assigned`, `Assigned to ${officer?.name || 'officer'}`);
+        showNotification(`Complaint ${id} assigned`, `Assigned to ${officer?.name || 'officer'}`);
         await loadDispatchData();
         renderDashboard();
+        _switchToAssignedTab();
         renderQueueTable();
         renderActiveCases();
     } catch (error) {
@@ -1225,9 +1235,10 @@ async function confirmVerifyModal(id) {
     try {
         await apiFetch('dispatch.php', {action: 'verifyAssign', id, officer_id: dispatchSelectedOfficerId}, 'POST');
         showToast(`✓ Complaint verified and assigned to ${safeText(officer?.name || 'officer')}.`);
-      showNotification(`Complaint ${id} assigned`, `Assigned to ${officer?.name || 'officer'}`);
+        showNotification(`Complaint ${id} assigned`, `Assigned to ${officer?.name || 'officer'}`);
         await loadDispatchData();
         renderDashboard();
+        _switchToAssignedTab();
         renderQueueTable();
         renderActiveCases();
     } catch (error) {
