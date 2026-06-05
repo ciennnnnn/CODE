@@ -89,19 +89,22 @@ function buildAddressFromSearchResult(result, fallback = '') {
     return String(result?.display_name || fallback || '').trim();
 }
 
-function _applyGeocodedAddress(addr) {
-    const streetLine = addr.house_number
-        ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
-        : (addr.road || addr.pedestrian || addr.footway || addr.path || '');
+function _applyGeocodedAddress(addr, streetOverride = null) {
+    // streetOverride: use the typed search query directly; otherwise extract from geocode
+    const streetLine = streetOverride !== null ? streetOverride : (
+        addr.house_number
+            ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
+            : (addr.road || addr.pedestrian || addr.footway || addr.path || '')
+    );
 
     const streetEl = document.getElementById('f-street');
     if (streetEl && streetLine) streetEl.value = streetLine;
 
     // Auto-detect barangay from geocoding result and update the dropdown
     const KNOWN_BRGYS = ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'];
-    const raw = [addr.suburb, addr.neighbourhood, addr.quarter, addr.village, addr.city_district]
+    const geocodeRaw = [addr.suburb, addr.neighbourhood, addr.quarter, addr.village, addr.city_district]
         .filter(Boolean).join(' ').toLowerCase();
-    const matched = KNOWN_BRGYS.find(b => raw.includes(b.toLowerCase()));
+    const matched = KNOWN_BRGYS.find(b => geocodeRaw.includes(b.toLowerCase()));
     if (matched) {
         const brgyEl = document.getElementById('f-brgy');
         if (brgyEl) brgyEl.value = matched;
@@ -1419,7 +1422,7 @@ async function searchIncidentLocation() {
         }
 
         setPinnedLocation(lat, lng, 17, 'Pinned');
-        _applyGeocodedAddress(found?.address || {});
+        _applyGeocodedAddress(found?.address || {}, raw);
         showToast('Location found and pinned!');
     } catch (_) {
         showToast('Search failed. Please try again.');
