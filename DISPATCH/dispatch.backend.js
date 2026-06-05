@@ -434,14 +434,15 @@ function renderQueueTable() {
   }
 
   const submitted = deduped.filter(c => c.status === 'submitted');
-  const verified = deduped.filter(c => c.status === 'verified');
+  const assigned = deduped.filter(c => c.status === 'assigned');
   const resolved = deduped.filter(c => c.status === 'resolved');
   const closed = deduped.filter(c => c.status === 'closed');
   const rejected = deduped.filter(c => c.status === 'rejected');
   const cancelled = deduped.filter(c => c.status === 'cancelled');
 
     document.getElementById('tab-submitted-count').textContent = `(${submitted.length})`;
-    document.getElementById('tab-verified-count').textContent = `(${verified.length})`;
+    const assignedCountEl = document.getElementById('tab-assigned-count');
+    if (assignedCountEl) assignedCountEl.textContent = `(${assigned.length})`;
     const resolvedCountEl = document.getElementById('tab-resolved-count');
     if (resolvedCountEl) resolvedCountEl.textContent = `(${resolved.length})`;
     const closedCountEl = document.getElementById('tab-closed-count');
@@ -452,8 +453,8 @@ function renderQueueTable() {
     if (cancelledCountEl) cancelledCountEl.textContent = `(${cancelled.length})`;
 
     let list = submitted;
-    if (dispatchActiveQueueTab === 'verified') {
-      list = verified;
+    if (dispatchActiveQueueTab === 'assigned') {
+      list = assigned;
     } else if (dispatchActiveQueueTab === 'resolved') {
       list = resolved;
     } else if (dispatchActiveQueueTab === 'closed') {

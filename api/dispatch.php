@@ -164,7 +164,7 @@ if ($action === 'queue') {
                  LIMIT 1) AS duplicate_of
          FROM complaints c
          LEFT JOIN users u ON u.user_id = c.user_id
-         WHERE c.status IN ('submitted','verified','resolved','closed','rejected','cancelled')
+         WHERE c.status IN ('submitted','verified','assigned','resolved','closed','rejected','cancelled')
          ORDER BY c.submitted_at DESC"
     );
     successResponse(['complaints' => $stmt->fetchAll()]);
