@@ -18,7 +18,9 @@ if ($action === 'assigned') {
                 c.category AS cat, c.asset_town AS brgy, c.priority, c.status,
                 c.submitted_at AS date, c.description AS `desc`,
                 c.latitude AS lat, c.longitude AS lng, c.is_anonymous AS anon,
-                u.full_name AS reporter
+                u.full_name AS reporter,
+                (SELECT GROUP_CONCAT(m.file_url ORDER BY m.media_id SEPARATOR "||")
+                 FROM media m WHERE m.complaint_id = c.complaint_id AND m.uploaded_by_role = "citizen") AS citizen_media
          FROM assignments a
          JOIN complaints c ON c.complaint_id = a.complaint_id
          LEFT JOIN users u ON u.user_id = c.user_id

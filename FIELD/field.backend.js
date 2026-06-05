@@ -1769,7 +1769,21 @@ function showCaseDetailsMap(caseId) {
         const lng = Number.parseFloat(caseData.lng);
         const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
         const coordText = hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'Coordinates unavailable';
-    
+
+        const reporterName = caseData.anon == 1 ? 'Anonymous' : (caseData.reporter ? safeText(caseData.reporter) : 'Citizen');
+
+        const mediaUrls = caseData.citizen_media ? caseData.citizen_media.split('||').filter(Boolean) : [];
+        const evidenceHtml = mediaUrls.length
+            ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+                ${mediaUrls.map(url => {
+                    const isVideo = /\.(mp4|mov|webm|ogg)(\?|$)/i.test(url);
+                    return isVideo
+                        ? `<video src="${safeText(url)}" controls style="max-width:100%;max-height:160px;border-radius:6px;border:1px solid var(--border)"></video>`
+                        : `<a href="${safeText(url)}" target="_blank" rel="noopener"><img src="${safeText(url)}" alt="Evidence" style="height:120px;width:auto;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" /></a>`;
+                }).join('')}
+               </div>`
+            : `<div style="font-size:13px;color:var(--mist)">No evidence submitted.</div>`;
+
         openModal(`
             <div class="modal-overlay" onclick="if(event.target===this){ closeModal(); if(detailsMapInstance) detailsMapInstance.remove(); detailsMapInstance=null; }">
                 <div class="modal" style="max-width:620px;max-height:85vh;overflow-y:auto">
@@ -1785,28 +1799,34 @@ function showCaseDetailsMap(caseId) {
                             ${statusBadge(caseData.status)}
                             ${priorityBadge(caseData.priority)}
                         </div>
-                    
+
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
                             <div><div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:4px">Barangay</div><div style="font-weight:500">${safeText(caseData.brgy)}</div></div>
                             <div><div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:4px">Priority</div><div style="font-weight:500">${safeText(caseData.priority)}</div></div>
                             <div><div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:4px">Reported</div><div style="font-weight:500">${formatDateTime(caseData.date)}</div></div>
                             <div><div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:4px">Status</div><div style="font-weight:500;text-transform:capitalize">${safeText(caseData.status)}</div></div>
+                            <div><div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:4px">Complainant</div><div style="font-weight:500">${reporterName}</div></div>
                         </div>
-                    
+
                         <div>
                             <div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:8px;font-weight:600">Description</div>
                             <div style="font-size:13px;line-height:1.6;color:var(--ink-dim)">${safeText(caseData.desc)}</div>
                         </div>
-                    
+
+                        <div>
+                            <div style="color:var(--mist);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:8px;font-weight:600">Complainant Evidence</div>
+                            ${evidenceHtml}
+                        </div>
+
                         <div style="height:280px;border-radius:8px;border:1px solid var(--border);overflow:hidden;position:relative">
                             <div id="details-case-map" style="height:100%"></div>
                         </div>
-                    
+
                         <div style="padding:12px;background:var(--surface);border-radius:6px;border:1px solid var(--border)">
                             <div style="font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Coordinates</div>
                             <div class="mono" style="font-size:13px;font-weight:500">${safeText(coordText)}</div>
                         </div>
-                    
+
                         <button class="btn-secondary" onclick="closeModal(); if(detailsMapInstance) detailsMapInstance.remove(); detailsMapInstance=null;">Close</button>
                     </div>
                 </div>
