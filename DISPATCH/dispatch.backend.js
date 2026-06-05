@@ -437,6 +437,7 @@ function renderQueueTable() {
   const verified = deduped.filter(c => c.status === 'verified');
   const resolved = deduped.filter(c => c.status === 'resolved');
   const closed = deduped.filter(c => c.status === 'closed');
+  const rejected = deduped.filter(c => c.status === 'rejected');
 
     document.getElementById('tab-submitted-count').textContent = `(${submitted.length})`;
     document.getElementById('tab-verified-count').textContent = `(${verified.length})`;
@@ -444,6 +445,8 @@ function renderQueueTable() {
     if (resolvedCountEl) resolvedCountEl.textContent = `(${resolved.length})`;
     const closedCountEl = document.getElementById('tab-closed-count');
     if (closedCountEl) closedCountEl.textContent = `(${closed.length})`;
+    const rejectedCountEl = document.getElementById('tab-rejected-count');
+    if (rejectedCountEl) rejectedCountEl.textContent = `(${rejected.length})`;
 
     let list = submitted;
     if (dispatchActiveQueueTab === 'verified') {
@@ -452,6 +455,8 @@ function renderQueueTable() {
       list = resolved;
     } else if (dispatchActiveQueueTab === 'closed') {
       list = closed;
+    } else if (dispatchActiveQueueTab === 'rejected') {
+      list = rejected;
     }
     list = list.filter(c => {
       const id = String(c.id || '').toLowerCase();
@@ -482,11 +487,13 @@ function renderQueueTable() {
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn-secondary btn-sm" onclick="openReviewModal('${safeText(c.id)}')">Review</button>
-            ${c.status === 'resolved'
-              ? `<button class="btn-success btn-sm" onclick="openCloseCaseModal('${safeText(c.id)}')">✓ Close Case</button>`
-              : (c.status === 'closed'
-                ? `<span class="badge badge-closed">Closed</span>`
-                : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`)}
+            ${c.status === 'rejected'
+              ? `<span class="badge badge-rejected" title="${safeText(c.rejection_reason || '')}">Rejected</span>`
+              : (c.status === 'resolved'
+                ? `<button class="btn-success btn-sm" onclick="openCloseCaseModal('${safeText(c.id)}')">✓ Close Case</button>`
+                : (c.status === 'closed'
+                  ? `<span class="badge badge-closed">Closed</span>`
+                  : `<button class="btn-success btn-sm" onclick="openVerifyModal('${safeText(c.id)}')">✓ Verify</button><button class="btn-danger btn-sm" onclick="openRejectModal('${safeText(c.id)}')">✗ Reject</button>`))}
           </div>
         </td>
       </tr>`).join('');

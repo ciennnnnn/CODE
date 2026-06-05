@@ -152,6 +152,7 @@ if ($action === 'queue') {
                 c.priority, c.status, c.submitted_at AS date,
                 c.is_anonymous AS anon, c.description,
                 c.latitude AS lat, c.longitude AS lng,
+                c.rejection_reason,
                 COALESCE(u.username, 'Citizen') AS user,
                 CASE WHEN EXISTS (
                     SELECT 1 FROM duplicate_complaint_detection d
@@ -160,7 +161,7 @@ if ($action === 'queue') {
                 ) THEN 1 ELSE 0 END AS duplicate
          FROM complaints c
          LEFT JOIN users u ON u.user_id = c.user_id
-         WHERE c.status IN ('submitted','verified','resolved','closed')
+         WHERE c.status IN ('submitted','verified','resolved','closed','rejected')
          ORDER BY c.submitted_at DESC"
     );
     successResponse(['complaints' => $stmt->fetchAll()]);
