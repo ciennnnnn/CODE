@@ -17,7 +17,7 @@ const fieldReplacements = [
   [ch(0xf0, 0x178, 0x201c, 0x2039) + ' ', ''],
   // L406: ⬡/logout emoji garbled prefix
   [ch(0xe2, 0xac, 0xa1) + ' ', ''],
-  // L429: left arrow ← garbled
+  // L429: left arrow ← garbledeugwugey
   [ch(0xe2, 0x2020, 0x90), '&#8592;'],
 ];
 
