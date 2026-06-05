@@ -67,8 +67,7 @@ function setPinnedLocation(lat, lng, zoom = 17, prefix = 'Pinned') {
 function syncAddressFromParts() {
     const street = document.getElementById('f-street')?.value.trim() || '';
     const brgy   = document.getElementById('f-brgy')?.value || '';
-    const city   = document.getElementById('f-city')?.value.trim() || 'Quezon City';
-    const parts  = [street, brgy, city, 'Philippines'].filter(Boolean);
+    const parts  = [street, brgy, 'Quezon City', 'Philippines'].filter(Boolean);
     const el = document.getElementById('f-address');
     if (el) el.value = parts.join(', ');
 }
@@ -94,21 +93,18 @@ function _applyGeocodedAddress(addr) {
     const streetLine = addr.house_number
         ? `${addr.house_number} ${addr.road || addr.pedestrian || addr.footway || ''}`.trim()
         : (addr.road || addr.pedestrian || addr.footway || addr.path || '');
-    const city = addr.city || addr.town || 'Quezon City';
 
     const streetEl = document.getElementById('f-street');
-    const cityEl   = document.getElementById('f-city');
     if (streetEl && streetLine) streetEl.value = streetLine;
-    if (cityEl) cityEl.value = city;
 
-    // Auto-detect barangay from geocoding result
+    // Auto-detect barangay from geocoding result and update the dropdown
     const KNOWN_BRGYS = ['Commonwealth', 'Batasan Hills', 'Central', 'Sto. Cristo'];
     const raw = [addr.suburb, addr.neighbourhood, addr.quarter, addr.village, addr.city_district]
         .filter(Boolean).join(' ').toLowerCase();
     const matched = KNOWN_BRGYS.find(b => raw.includes(b.toLowerCase()));
     if (matched) {
         const brgyEl = document.getElementById('f-brgy');
-        if (brgyEl) { brgyEl.value = matched; updateAddressField(); }
+        if (brgyEl) brgyEl.value = matched;
     }
 
     syncAddressFromParts();
@@ -144,7 +140,6 @@ async function initCivilian() {
         if (sbi) sbi.textContent = initials;
 
         autoFillIncidentDateTime(new Date(), 'Defaults to now — update if different.');
-        updateAddressField();
 
         /* Set date constraints: max = today, min = 7 days ago */
         const _dateInput = document.getElementById('f-date');
@@ -684,7 +679,6 @@ async function submitComplaint() {
         document.getElementById('f-cat').value = '';
         document.getElementById('f-address').value = '';
         const _s = document.getElementById('f-street'); if (_s) _s.value = '';
-        const _c = document.getElementById('f-city');   if (_c) _c.value = 'Quezon City';
         document.getElementById('f-desc').value = '';
         autoFillIncidentDateTime(new Date(), 'Auto-updated: current time');
         document.getElementById('anon-toggle').checked = false;
@@ -1467,9 +1461,6 @@ function useGpsLocation() {
 }
 
 function updateAddressField() {
-    const brgy = document.getElementById('f-brgy')?.value || '';
-    const brgyAddr = document.getElementById('f-brgy-addr');
-    if (brgyAddr) brgyAddr.value = brgy;
     syncAddressFromParts();
 }
 
