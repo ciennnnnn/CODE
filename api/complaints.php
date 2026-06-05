@@ -241,20 +241,24 @@ if ($action === 'cancel') {
          WHERE complaint_id = :cid"
     )->execute([':cid' => $row['complaint_id']]);
 
-    $db->prepare(
-        'DELETE FROM duplicate_complaint_detection
-         WHERE primary_complaint_id = :cid OR duplicate_complaint_id = :cid'
-    )->execute([':cid' => $row['complaint_id']]);
+    try {
+        $db->prepare(
+            'DELETE FROM duplicate_complaint_detection
+             WHERE primary_complaint_id = :cid OR duplicate_complaint_id = :cid'
+        )->execute([':cid' => $row['complaint_id']]);
 
-    sendToTrash(
-        $db, 'complaint',
-        (string)$row['complaint_id'], $id, $snapshot,
-        $userId, 'citizen',
-        'Citizen cancelled within 30-minute window'
-    );
+        sendToTrash(
+            $db, 'complaint',
+            (string)$row['complaint_id'], $id, $snapshot,
+            $userId, 'citizen',
+            'Citizen cancelled within 30-minute window'
+        );
 
-    $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
-       ->execute([':cid' => $row['complaint_id'], ':uid' => $userId, ':status' => 'cancelled', ':notes' => 'User cancelled the complaint before verification.']);
+        $db->prepare('INSERT INTO status_history (complaint_id, changed_by, status, notes) VALUES (:cid, :uid, :status, :notes)')
+           ->execute([':cid' => $row['complaint_id'], ':uid' => $userId, ':status' => 'cancelled', ':notes' => 'User cancelled the complaint before verification.']);
+    } catch (Throwable $e) {
+        error_log('[complaints.php] Cancel audit error: ' . $e->getMessage());
+    }
 
     successResponse(['message' => 'Complaint cancelled successfully.']);
 }
